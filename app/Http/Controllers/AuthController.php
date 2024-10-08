@@ -42,7 +42,7 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'The provided credentials are incorrect.'
-            ]);
+            ], 400);
         }
 
         $token = $user->createToken($user->email);
@@ -60,37 +60,6 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'You are logged out.'
-        ]);
-    }
-
-    public function changePassword(Request $request) 
-    {
-        $request->validate([
-            'current_password' => 'required',
-            'new_password' => 'required|string|confirmed'
-        ]);
-
-        $user = $request->user();
-
-        if (!Hash::check($request->current_password, $user->password))
-        {
-            return response()->json([
-                'success' => false,
-                'message' => 'The provided credentials are incorrect.'
-            ]);
-        }
-
-        $user->password = Hash::make($request->new_password);
-        $user->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Password changed successfully.'
-        ]);
-    }
-
-    public function resetPassword(Request $request) 
-    {
-        
+        ], 200);
     }
 }
