@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('civil_status', 20)->nullable();
             $table->string('religion')->nullable();
             $table->string('phone_number', 30)->nullable();
+            $table->date('last_consultation')->nullable();
             $table->timestamps();
         });
 

@@ -10,6 +10,7 @@ class ConsultationRecord extends Model
     use HasFactory;
 
     protected $fillable = [
+        'patient_id',
         'height',
         'weight',
         'blood_pressure',

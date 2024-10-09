@@ -20,6 +20,7 @@ class Patient extends Model
         'address',
         'civil_status',
         'religion',
-        'phone_number'
+        'phone_number',
+        'last_consultation'
     ];
 }

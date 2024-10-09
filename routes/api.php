@@ -1,14 +1,13 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsultationRecordController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\PatientController;
-use App\Models\ConsultationRecord;
 
-Route::post('/register', [AuthController::class, 'register'])->middleware('auth:sanctum');
+Route::post('/register', [AuthController::class, 'register']);
+// ->middleware('auth:sanctum');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
