@@ -14,20 +14,21 @@ class PatientController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'first_name' => 'required|max:100',
-            'middle_name' => 'max:100',
-            'last_name'=> 'required|max:100',
-            'suffix' => 'max:20',
+        $fields = $request->validate([
+            'patient_number' => 'required|integer|unique:patients',
+            'first_name' => 'required|string|max:100',
+            'middle_name' => 'string|max:100',
+            'last_name'=> 'required|string|max:100',
+            'suffix' => 'string|max:20',
             'birthday' => 'date',
-            'sex' => 'max:20',
-            'address' => 'max:255',
-            'civil_status' => 'max:20',
-            'religion' => 'max:255',
-            'phone_number' => 'max:40'
+            'sex' => 'string|max:20',
+            'address' => 'string|max:255',
+            'civil_status' => 'string|max:20',
+            'religion' => 'string|max:255',
+            'phone_number' => 'string|max:30'
         ]);
 
-        $patient = Patient::create($request->all());
+        $patient = Patient::create($fields);
 
         return $patient;
     }
@@ -39,20 +40,21 @@ class PatientController extends Controller
 
     public function update(Request $request, Patient $patient)
     {
-        $request->validate([
-            'first_name' => 'max:100',
-            'middle_name' => 'max:100',
-            'last_name'=> 'max:100',
-            'suffix' => 'max:20',
+        $fields = $request->validate([
+            'patient_number' => 'required|integer|unique:patients',
+            'first_name' => 'required|string|max:100',
+            'middle_name' => 'string|max:100',
+            'last_name'=> 'required|string|max:100',
+            'suffix' => 'string|max:20',
             'birthday' => 'date',
-            'sex' => 'max:20',
-            'address' => 'max:255',
-            'civil_status' => 'max:20',
-            'religion' => 'max:255',
-            'phone_number' => 'max:40'
+            'sex' => 'string|max:20',
+            'address' => 'string|max:255',
+            'civil_status' => 'string|max:20',
+            'religion' => 'string|max:255',
+            'phone_number' => 'string|max:30'
         ]);
 
-        $patient->update($request->all());
+        $patient->update($fields);
 
         return $patient;
     }

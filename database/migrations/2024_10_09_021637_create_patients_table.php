@@ -11,21 +11,21 @@ return new class extends Migration
     {
         Schema::create('patients', function (Blueprint $table) {
             $table->id();
-            $table->integer('patient_number');
+            $table->integer('patient_number')->unique()->nullable();
             $table->string('first_name', 100);
             $table->string('middle_name', 100)->nullable();
             $table->string('last_name', 100);
-            $table->string('suffix', 50)->nullable();
+            $table->string('suffix', 20)->nullable();
             $table->date('birthday')->nullable();
             $table->string('sex', 20)->nullable();
             $table->string('address')->nullable();
             $table->string('civil_status', 20)->nullable();
             $table->string('religion')->nullable();
-            $table->string('phone_number', 40)->nullable();
+            $table->string('phone_number', 30)->nullable();
             $table->timestamps();
         });
 
-        // DB::statement('ALTER TABLE patient_number AUTO_INCREMENT = 1000;');
+        // DB::statement('ALTER TABLE id AUTO_INCREMENT = 1000;');
     }
 
     public function down(): void

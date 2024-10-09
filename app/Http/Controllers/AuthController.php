@@ -11,11 +11,14 @@ class AuthController extends Controller
     public function register(Request $request) 
     {
         $fields = $request->validate([
-            'role' => 'required|string|max:255',
-            'first_name' => 'required|string|max:255',
-            'middle_name' => 'string|max:255',
-            'last_name' => 'required|string|max:255',
-            'suffix' => 'string|max:255',
+            'role' => 'required|string|max:10',
+            'username' => 'required|string|max:50',
+            'first_name' => 'required|string|max:100',
+            'middle_name' => 'string|max:100',
+            'last_name' => 'required|string|max:100',
+            'suffix' => 'string|max:20',
+            'specialization' => 'string|max:100',
+            'license_number' => 'string|max:50',
             'email' => 'required|email|unique:users|max:255',
             'password' => 'required|string|min:8|max:255',
         ]);
