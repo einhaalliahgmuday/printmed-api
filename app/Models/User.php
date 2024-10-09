@@ -40,6 +40,17 @@ class User extends Authenticatable
         $this->attributes['role'] = strtolower($value);
     }
 
+    public function patients()
+    {
+        if($this->role === 'nurse')
+        {
+            return $this->belongsToMany(Patient::class, 'physician_patient_relationships', 'physician_id', 'patient_id');
+        }
+
+        //must not return null
+        return null;
+    }
+
     public function sendPasswordResetNotification($token)
     {
         $url = "https://127.0.0.1/reset-password?token=" . $token . "&email=" . $this->email;
