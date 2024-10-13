@@ -11,8 +11,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\ResetPasswordMail;
 
 class PasswordController extends Controller
-{
-    
+{   
     public function changePassword(Request $request) 
     {
         $request->validate([
@@ -42,17 +41,24 @@ class PasswordController extends Controller
     public function sendResetLink(Request $request) 
     {
         $request->validate([
-            'email' => 'required|email'
+            'role' => 'required|string|max:10|exists:users',
+            'personnel_number' => 'required|string|size:8|exists:users',
+            'email' => 'required|email|exists:users'
         ]);
 
-        $status = Password::sendResetLink(
-            $request->only('email'),
-            // function ($user, $token) {
-            //     $url = url("http://127.0.0.1/reset-password/?token={$token}&email={$user->email}");
+        $user = User::where('role', $request->role)
+                    ->where('email', $request->email)
+                    ->where('personnel_number', $request->personnel_number)
+                    ->first();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid credentials.'
+            ], 404);
+        }
 
-            //     Mail::to($user->email)->send(new ResetPasswordMail($url));
-            // }
-        );
+        $status = Password::sendResetLink($request->only('email'));
 
         return $status === Password::RESET_LINK_SENT
             ? response()->json(['status' => _($status)], 200)

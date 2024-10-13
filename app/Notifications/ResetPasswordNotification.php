@@ -11,50 +11,34 @@ class ResetPasswordNotification extends Notification
 {
     use Queueable;
 
-    public $url;
+    public $url, $userName;
 
-    /**
-     * Create a new notification instance.
-     */
-    public function __construct(string $url)
+    public function __construct(string $url, string $userName)
     {
         $this->url = $url;
+        $this->userName = $userName;
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
+
     public function via(object $notifiable): array
     {
         return ['mail'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
     public function toMail(object $notifiable): MailMessage
     {
-        $url = 'http://';
+        // $url = 'http://';
         return (new MailMessage)
                 ->view('emails.reset_password', [
-                    'url' => 'bfsdfsnadbfkab'
+                    'url' => $this->url,
+                    'name' => $this->userName
                 ]);
-                    // ->line('Forgot Password')
-                    // ->action('Click to reset', url($this->url))
-                    // ->line('Thank you for using our application!');
     }
 
-    /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray(object $notifiable): array
     {
         return [
-            //
+            
         ];
     }
 }

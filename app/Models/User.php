@@ -14,12 +14,13 @@ class User extends Authenticatable
 
     protected $fillable = [
         'role',
-        'username',
+        // 'username',
+        'personnel_number',
         'first_name',
         'middle_name',
         'last_name',
         'suffix',
-        'specialization',
+        'department',
         'license_number',
         'email',
         'password',
@@ -42,7 +43,7 @@ class User extends Authenticatable
 
     public function patients()
     {
-        if($this->role === 'nurse')
+        if($this->role === 'physician')
         {
             return $this->belongsToMany(Patient::class, 'physician_patient_relationships', 'physician_id', 'patient_id');
         }
@@ -53,8 +54,8 @@ class User extends Authenticatable
 
     public function sendPasswordResetNotification($token)
     {
-        $url = "https://127.0.0.1/reset-password?token=" . $token . "&email=" . $this->email;
+        $url = url("http://127.0.0.1/reset-password?token={$token}&email={$this->email}");
 
-        $this->notify(new ResetPasswordNotification($url));
+        $this->notify(new ResetPasswordNotification($url, $this->first_name));
     }
 }
