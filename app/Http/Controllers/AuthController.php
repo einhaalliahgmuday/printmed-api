@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Otp;
 use App\Models\User;
+use App\Notifications\OtpVerificationNotification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -38,7 +43,8 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        $user = User::where('role', strtolower($request->role))
+        $user = User::select('email', 'password')
+                    ->where('role', strtolower($request->role))
                     ->where('personnel_number', $request->personnel_number)
                     ->first();
 
@@ -50,12 +56,20 @@ class AuthController extends Controller
             ], 404);
         }
 
-        $token = $user->createToken($user->email);
+        //sends otp to user's email as another authentication
+        $otp = Otp::create([
+            'token' => Str::random(60),
+            'email' => $user->email,
+            'code' => rand(100000, 999999),
+            'expires_at' => now()->addMinutes(5)
+        ]);
 
-        return [
-            'user' => $user,
-            'token' => $token->plainTextToken
-        ];
+        $user->notify(new OtpVerificationNotification($otp));
+
+        return response()->json([
+            'success'=> true,
+            'message'=> 'OTP is sent to the user',
+        ], 200);
     }
 
     public function logout(Request $request) 
