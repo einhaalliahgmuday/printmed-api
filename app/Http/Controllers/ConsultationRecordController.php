@@ -51,7 +51,7 @@ class ConsultationRecordController extends Controller
         
         $date = Carbon::now('Asia/Manila')->toDateString();
         //updates last consultation date of patient
-        Patient::find($request->patient_id)->update([ 'last_consultation' => $date ]);
+        Patient::find($request->patient_id)->update([ 'last_visit' => $date ]);
 
         //checks if physician-patient relationship already exists in the pivot table
         //else inserts the relationship

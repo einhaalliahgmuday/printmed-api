@@ -10,7 +10,8 @@ class Patient extends Model
     use HasFactory;
 
     protected $fillable = [
-        'patient_number',
+        'patient_id',
+        'full_name',
         'first_name',
         'middle_name',
         'last_name',
@@ -21,6 +22,19 @@ class Patient extends Model
         'civil_status',
         'religion',
         'phone_number',
-        'last_consultation'
+        'last_visit'
     ];
+
+    public static function generatePatientNumber()
+    {
+        $year = date('Y');
+        $lastPatient = self::select('patient_id')
+                        ->where('patient_id', 'like', "%$year-%")
+                        ->orderBy('patient_id', 'desc')
+                        ->first();
+        
+        $increment = $lastPatient ? (int) substr($lastPatient->patient_id,5) + 1 : 1;
+
+        return sprintf('%s-%05d', $year, $increment);
+    }
 }
