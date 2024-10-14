@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ConsultationRecord;
 use App\Models\Patient;
-use App\Models\PhysicianPatientRelationship;
+use App\Models\PhysicianPatient;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -43,7 +43,7 @@ class ConsultationRecordController extends Controller
             'prescription' => 'required',
             'follow_up_date' => 'date',
             'physician_id' => 'integer|exists:users,id',
-            'physician_name' => 'string'
+            'physician_name' => 'string',
         ]);
 
         //creates the consultation record
@@ -57,12 +57,12 @@ class ConsultationRecordController extends Controller
         //else inserts the relationship
         if ($request->physician_id) 
         {
-            $isRelationshipExists = PhysicianPatientRelationship::where('physician_id', $request->physician_id)
+            $isRelationshipExists = PhysicianPatient::where('physician_id', $request->physician_id)
                                                                 ->where('patient_id', $request->patient_id)->exists();
             
             if (!$isRelationshipExists) 
             {
-                PhysicianPatientRelationship::create([
+                PhysicianPatient::create([
                     'physician_id' => $request->physician_id,
                     'patient_id' => $request->patient_id
                 ]);

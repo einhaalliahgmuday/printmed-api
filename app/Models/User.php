@@ -43,13 +43,12 @@ class User extends Authenticatable
 
     public function patients()
     {
-        if($this->role === 'physician')
+        if($this->role == 'physician')
         {
-            return $this->belongsToMany(Patient::class, 'physician_patient_relationships', 'physician_id', 'patient_id');
+            return $this->belongsToMany(Patient::class, 'physician_patients', 'physician_id', 'patient_id');
         }
 
-        //must not return null
-        return null;
+        return $this->belongsToMany(Patient::class)->whereRaw('1 = 0'); 
     }
 
     public function sendPasswordResetNotification($token)

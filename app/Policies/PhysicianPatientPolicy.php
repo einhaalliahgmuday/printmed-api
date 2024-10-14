@@ -3,11 +3,10 @@
 namespace App\Policies;
 
 use App\Models\PhysicianPatient;
-use App\Models\PhysicianPatientRelationship;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
-class PhysicianPatientRelationshipPolicy
+class PhysicianPatientPolicy
 {
     /**
      * Determine whether the user can view any models.
@@ -20,7 +19,7 @@ class PhysicianPatientRelationshipPolicy
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, PhysicianPatientRelationship $physicianPatientRelationship): bool
+    public function view(User $user, PhysicianPatient $physicianPatientRelationship): bool
     {
         //
     }
@@ -36,7 +35,7 @@ class PhysicianPatientRelationshipPolicy
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, PhysicianPatientRelationship $physicianPatientRelationship): bool
+    public function update(User $user, PhysicianPatient $physicianPatientRelationship): bool
     {
         //
     }
@@ -44,7 +43,7 @@ class PhysicianPatientRelationshipPolicy
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, PhysicianPatientRelationship $physicianPatientRelationship): bool
+    public function delete(User $user, PhysicianPatient $physicianPatientRelationship): bool
     {
         //
     }
@@ -52,7 +51,7 @@ class PhysicianPatientRelationshipPolicy
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(User $user, PhysicianPatientRelationship $physicianPatientRelationship): bool
+    public function restore(User $user, PhysicianPatient $physicianPatientRelationship): bool
     {
         //
     }
@@ -60,7 +59,7 @@ class PhysicianPatientRelationshipPolicy
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user, PhysicianPatientRelationship $physicianPatientRelationship): bool
+    public function forceDelete(User $user, PhysicianPatient $physicianPatientRelationship): bool
     {
         //
     }
