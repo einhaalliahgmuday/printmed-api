@@ -53,23 +53,78 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'The provided credentials are incorrect.'
-            ], 404);
+            ], 401);
         }
+
+        $token = Str::random(60);
 
         //sends otp to user's email as another authentication
         $otp = Otp::create([
-            'token' => Str::random(60),
+            'token' => Hash::make($token),
             'email' => $user->email,
             'code' => rand(100000, 999999),
             'expires_at' => now()->addMinutes(5)
         ]);
 
-        $user->notify(new OtpVerificationNotification($otp));
+        $user->notify(new OtpVerificationNotification($otp->code));
 
         return response()->json([
             'success'=> true,
-            'message'=> 'OTP is sent to the user',
+            'email' => $user->email,
+            'token' => $token
         ], 200);
+    }
+
+    public function verifyOtp(Request $request) 
+    {
+        $time = now();
+
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email|exists:otps',
+            'code' => 'required|size:6'
+        ]);
+
+        $otp = Otp::where('email', $request->email)
+            ->where('code', $request->code)
+            ->first();
+        
+        if (!$otp || !Hash::check($request->token, $otp->token)) 
+        {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid request.'
+            ], 400);
+        }
+
+        if ($otp && $time->isAfter($otp->expires_at))
+        {
+            return response()->json([
+                'success' => false,
+                'message' => 'OTP is expired.'
+            ], 400);
+        } 
+
+        $user = User::select('id', 'role', 'personnel_number', 
+                            'first_name', 'middle_name', 'last_name', 'suffix', 
+                            'department', 'license_number', 'email')
+                    ->where('email', $request->email)
+                    ->first();
+    
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found.'
+            ], 404);
+        }
+
+        $token = $user->createToken($user->email)->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'user' => $user,
+            'token' => $token
+        ]);
     }
 
     public function logout(Request $request) 

@@ -10,6 +10,7 @@ use App\Http\Controllers\UserController;
 Route::post('/register', [AuthController::class, 'register']);
 // ->middleware('auth:sanctum');
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 Route::post('/change-password', [PasswordController::class, 'changePassword'])->middleware('auth:sanctum');

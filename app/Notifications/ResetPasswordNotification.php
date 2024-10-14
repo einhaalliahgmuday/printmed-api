@@ -27,7 +27,6 @@ class ResetPasswordNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        // $url = 'http://';
         return (new MailMessage)
                 ->view('emails.reset_password', [
                     'url' => $this->url,
