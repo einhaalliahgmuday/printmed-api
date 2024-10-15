@@ -23,12 +23,18 @@ class QueueController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'department' => 'required|string|max:50|unique:queues'
+            'department' => 'required|string|max:50'
         ]);
 
-        $queue = Queue::create(['department' => $request->department]);
+        if (!Queue::where('department', $request->department)->first())
+        {
+            return Queue::create(['department' => $request->department]);
+        }
 
-        return $queue;
+        return response()->json([
+            'success' => false,
+            'message' => 'Department already exists in queue.'
+        ], 409);
     }
 
     public function incrementQueueTotal(Request $request) 
@@ -39,10 +45,17 @@ class QueueController extends Controller
 
         $queue = Queue::where('department', $request->department)->first();
         if ($queue->total == 0) {
-            $queue->increment('current');
+            $queue->current++;
+        } 
+        if ($queue->total > 0 && $queue->current == null) {
+            $total = $queue->total;
+            $queue->current = $total+1;
         }
-        $queue->increment('total');
-        $queue->increment('waiting');
+        if ($queue->total > 0 && $queue->total != $queue->completed) {
+            $queue->waiting++;
+        }
+        $queue->total++;
+
         $queue->save();
 
         event(new QueueUpdated($queue));
@@ -57,15 +70,32 @@ class QueueController extends Controller
         ]);
 
         $queue = Queue::where('department', $request->department)->first();
-        $queue->increment('current');
-        $queue->increment('completed');
-        if ($queue->waiting > 0) {
-            $queue->waiting--;
+        if ($queue->completed < $queue->total)
+        {
+            if ($queue->current != $queue->completed) {
+                $queue->completed++;
+            }
+            $queue->save();
+            if ($queue->current == $queue->total) {
+                $queue->current = null;
+            } else if ($queue->current < $queue->total) {
+                $queue->current++;
+            }
+            if ($queue->waiting > 0) {
+                $queue->waiting--;
+            }
+            $queue->save();
+
+            event(new QueueUpdated($queue));
+
+            return $queue;
         }
 
-        event(new QueueUpdated($queue));
-
-        return $queue;
+        return response()->json([
+            'success' => false,
+            'message' => 'Queue is completed or there is no number in queue, cannot increment current.',
+            'queue' => $queue
+        ]);
     }
 
     // public function clearQueue() 
