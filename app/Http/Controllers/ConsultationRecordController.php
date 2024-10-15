@@ -10,28 +10,10 @@ use Illuminate\Http\Request;
 
 class ConsultationRecordController extends Controller
 {
-    public function index(Request $request)
-    {
-        $request->validate([
-            'patient_id' => 'required|integer|exists:patients,id',
-            'physician_id' => 'sometimes|integer|exists:users,id'
-        ]);
-
-        //return consultation records by a specific physician
-        //for if doctors must ONLY see records they written
-        if ($request->has('physician_id')) 
-        {
-            return ConsultationRecord::where('physician_id', $request->physician_id)
-                                    ->where('patient_id', $request->patient_id)
-                                    ->get();
-        }
-
-        //returns all consultation records of patient
-        return ConsultationRecord::where('patient_id', $request->input('patient_id'))->get();
-    }
-
     public function store(Request $request)
     {
+        $user = $request->user();   //if user is doctor
+
         $fields = $request->validate([
             'patient_id' => 'required|integer|exists:patients,id',
             'height' => 'decimal:0,2',
@@ -39,48 +21,48 @@ class ConsultationRecordController extends Controller
             'blood_pressure' => 'string|max:7',
             'temperature' => 'decimal:0,2',
             'chief_complaint' => 'required',
+            'primary_diagnosis' => 'string',
             'diagnosis' => 'required',
             'prescription' => 'required',
-            'follow_up_date' => 'date',
-            'physician_id' => 'integer|exists:users,id',
-            'physician_name' => 'string',
+            'follow_up_date' => 'date'
         ]);
+
+        $fields['physician_id'] = $user->id;
+        $fields['physician_name'] = $user->full_name;
+        $fields['department'] = $user->department;
 
         //creates the consultation record
         $consultationRecord = ConsultationRecord::create($fields);
         
+        //updates last visit and follow-up dates of patient
         $date = Carbon::now('Asia/Manila')->toDateString();
-        //updates last consultation date of patient
-        Patient::find($request->patient_id)->update([ 'last_visit' => $date ]);
+        $followUpDate = $request->filled('follow_up_date') ? $request->follow_up_date : null;
+        Patient::find($request->patient_id)->update([ 'last_visit' => $date, 'follow_up_date' => $followUpDate ]);
 
-        //checks if physician-patient relationship already exists in the pivot table
-        //else inserts the relationship
-        if ($request->physician_id) 
-        {
-            $isRelationshipExists = PhysicianPatient::where('physician_id', $request->physician_id)
-                                                                ->where('patient_id', $request->patient_id)->exists();
-            
-            if (!$isRelationshipExists) 
-            {
-                PhysicianPatient::create([
-                    'physician_id' => $request->physician_id,
-                    'patient_id' => $request->patient_id
-                ]);
-            }
-        }
+        //assign physician to patient
+        Patient::find($request->patient_id)->physicians()->syncWithoutDetaching([$user->id]);
 
         return $consultationRecord;
     }
 
-    public function show(ConsultationRecord $consultationRecord)
+    public function show(Request $request, ConsultationRecord $consultationRecord)
     {
-        return $consultationRecord;
+        $user = $request->user();
+
+        if (in_array($user->role, ['physician', 'secretary']))
+        {
+            return $consultationRecord;
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthorized request.'
+        ]);
     }
 
     public function update(Request $request, ConsultationRecord $consultationRecord)
     {
         $fields = $request->validate([
-            // 'patient_id' => 'required|integer|exists:patients,id',
             'height' => 'decimal:0,2',
             'weight' => 'decimal:0,2',
             'blood_pressure' => 'string|max:7',
@@ -95,9 +77,6 @@ class ConsultationRecordController extends Controller
             'pediatrics_d' => 'text',
             'diagnosis' => 'required|text',
             'prescription' => 'required|text',
-            // 'follow_up_date' => 'date',
-            // 'physician_id' => 'integer|exists:users,id',
-            // 'physician_name' => 'string'
         ]);
 
         $consultationRecord->update($fields);
@@ -109,7 +88,7 @@ class ConsultationRecordController extends Controller
     {
         $dateThreshold = Carbon::now()->subYears(10);
 
-        //if consultation record is not past 10 years, patient cannot be deleted
+        //if consultation record is not past 10 years, record cannot be deleted
         if ($consultationRecord->created_at >= $dateThreshold) 
         {
             return response()->json([

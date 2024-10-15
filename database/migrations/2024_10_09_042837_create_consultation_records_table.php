@@ -24,11 +24,13 @@ return new class extends Migration
             $table->text('pediatrics_e')->nullable();
             $table->text('pediatrics_a')->nullable();
             $table->text('pediatrics_d')->nullable();
+            $table->text('primary_diagnosis')->nullable();
             $table->text('diagnosis');
             $table->text('prescription')->nullable();
             $table->date('follow_up_date')->nullable();
             $table->foreignId('physician_id')->nullable()->constrained('users', 'id');
             $table->string('physician_name');
+            $table->string('department')->nullable();
             $table->timestamps();
         });
     }

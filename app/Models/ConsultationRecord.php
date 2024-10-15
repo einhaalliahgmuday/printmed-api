@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -23,10 +24,17 @@ class ConsultationRecord extends Model
         'pediatrics_e',
         'pediatrics_a',
         'pediatrics_d',
+        'primary_diagnosis',
         'diagnosis',
         'prescription',
         'follow_up_date',
         'physician_id',
-        'physician_name'
+        'physician_name',
+        'department'
     ];
+
+    public function getCreatedAtAttribute($value)
+    {
+        return Carbon::parse($value)->format('Y-m-d');
+    }
 }
