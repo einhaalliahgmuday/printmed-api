@@ -13,12 +13,13 @@ use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+    use CommonMethodsTrait;
+
     public function register(Request $request) 
     {
         $fields = $request->validate([
             'role' => 'required|string|max:10',
             'personnel_number' => 'required|string|size:8|unique:users',
-            // 'username' => 'required|string|max:50',
             'first_name' => 'required|string|max:100',
             'middle_name' => 'string|max:100',
             'last_name' => 'required|string|max:100',
@@ -30,6 +31,7 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|max:255',
         ]);
 
+        $fields['full_name'] = $this->getFullName($request);
         $user = User::create($fields);
 
         return $user;

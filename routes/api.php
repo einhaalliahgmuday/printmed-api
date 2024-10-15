@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsultationRecordController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\PatientController;
+use App\Http\Controllers\PhysicianPatientController;
 use App\Http\Controllers\UserController;
 
 //login and registration routes
@@ -23,10 +24,14 @@ Route::post('/reset-password', [PasswordController::class, 'resetPassword']);
 Route::put('/update-email', [UserController::class, 'updateEmail'])->middleware('auth:sanctum');
 Route::put('/edit-user-information', [UserController::class, 'updateInformation'])->middleware('auth:sanctum');
 
-//patient information route
-Route::apiResource('patients', PatientController::class);
-Route::get('/is-patient-exists', [PatientController::class, 'isPatientExists']);
-// ->middleware('auth:sanctum');
+//get physicians
+Route::get('/physicians', [UserController::class, 'getPhysicians'])->middleware('auth:sanctum')->middleware('auth:sanctum');
+//assign physician
+Route::post('/assign-patient-physician', [PhysicianPatientController::class, 'assignPatientPhysician'])->middleware('auth:sanctum');
 
-//consultation record route
-Route::apiResource('consultation-records', ConsultationRecordController::class);
+//patient route
+Route::apiResource('patients', PatientController::class)->middleware('auth:sanctum');
+Route::get('/is-patient-exists', [PatientController::class, 'isPatientExists'])->middleware('auth:sanctum');
+
+//consultation records route
+Route::apiResource('consultation-records', ConsultationRecordController::class)->except(['index'])->middleware('auth:sanctum');

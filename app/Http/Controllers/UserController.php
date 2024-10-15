@@ -7,15 +7,23 @@ use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
+    use CommonMethodsTrait;
+
+    public function getPhysicians() 
+    {
+        return User::select('id', 'full_name', 'department')->where('role','physician')->get();
+    }
+
     public function updateEmail(Request $request) 
     {
         $user = $request->user();
 
         $request->validate([
-            'email' => 'email|unique:users|max:255',
+            'email' => 'required|email|unique:users|max:255',
         ]);
 
-        $user->update($$request->email);
+        $user->email = $request->email;
+        $user->save();
 
         return $user;
     }
@@ -35,12 +43,13 @@ class UserController extends Controller
             'email' => 'email|unique:users|max:255',
         ]);
 
-        if ($user->role == 'admin') {
+        if ($user->role === 'admin') {
+            $fields['full_name'] = $this->getFullName($request);
             $user->update($fields);
 
             return response()->json([
                 'success' => true,
-                'message' => 'User information successfully updated'
+                'message' => 'User information successfully updated.'
             ], 200);
         }
 

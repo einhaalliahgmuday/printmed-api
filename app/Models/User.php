@@ -14,7 +14,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'role',
-        // 'username',
+        'full_name',
         'personnel_number',
         'first_name',
         'middle_name',
@@ -43,7 +43,7 @@ class User extends Authenticatable
 
     public function patients()
     {
-        if($this->role == 'physician')
+        if($this->role === 'physician')
         {
             return $this->belongsToMany(Patient::class, 'physician_patients', 'physician_id', 'patient_id');
         }
