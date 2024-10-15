@@ -6,6 +6,7 @@ use App\Http\Controllers\ConsultationRecordController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PhysicianPatientController;
+use App\Http\Controllers\QueueController;
 use App\Http\Controllers\UserController;
 
 //login and registration routes
@@ -35,3 +36,8 @@ Route::get('/is-patient-exists', [PatientController::class, 'isPatientExists'])-
 
 //consultation records route
 Route::apiResource('consultation-records', ConsultationRecordController::class)->except(['index'])->middleware('auth:sanctum');
+
+//queue route
+Route::apiResource('queue', QueueController::class)->except(['index', 'update', 'show']);
+Route::post('/increment-queue-total', [QueueController::class, 'incrementQueueTotal']);
+Route::post('/increment-queue-current', [QueueController::class, 'incrementQueueCurrent']);
