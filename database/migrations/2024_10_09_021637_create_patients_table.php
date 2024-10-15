@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('religion')->nullable();
             $table->string('phone_number', 30)->nullable();
             $table->date('last_visit')->nullable();
+            $table->date('follow_up_date')->nullable();
             $table->timestamps();
         });
 

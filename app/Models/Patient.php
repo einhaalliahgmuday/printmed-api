@@ -22,7 +22,8 @@ class Patient extends Model
         'civil_status',
         'religion',
         'phone_number',
-        'last_visit'
+        'last_visit',
+        'follow_up_date'
     ];
 
     public static function generatePatientNumber()
@@ -36,5 +37,10 @@ class Patient extends Model
         $increment = $lastPatient ? (int) substr($lastPatient->patient_id,5) + 1 : 1;
 
         return sprintf('%s-%05d', $year, $increment);
+    }
+
+    public function physicians()
+    {
+        return $this->belongsToMany(User::class, 'physician_patients', 'patient_id', 'physician_id');
     }
 }
