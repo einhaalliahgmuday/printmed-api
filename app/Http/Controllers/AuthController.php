@@ -17,6 +17,13 @@ class AuthController extends Controller
 
     public function register(Request $request) 
     {
+        if (in_array($request->role, ['secretary', 'physician'])) 
+        {
+            $request->validate([
+                'department' => 'required|string|max:100'
+            ]);
+        }
+
         $fields = $request->validate([
             'role' => 'required|string|max:10',
             'personnel_number' => 'required|string|size:8|unique:users',
