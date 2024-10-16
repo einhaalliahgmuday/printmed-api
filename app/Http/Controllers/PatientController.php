@@ -16,6 +16,11 @@ class PatientController extends Controller
     {        
         $user = $request->user();
 
+        $request->validate([
+            'search' => 'string',
+            'sex' => 'string'
+        ]);
+
         //only physician and secretary can only access patient records
         if (in_array($user->role, ['physician', 'secretary'])) 
         {
@@ -44,15 +49,17 @@ class PatientController extends Controller
                 }
 
                 //sort the query by either last_name, patient_id, or birthday
-                if($request->filled('sort_by') &&
-                    in_array($request->sort_by, ['last_name', 'patient_id', 'birthdate'])) 
+                if($request->filled('sort_by') && in_array($request->sort_by, ['last_name', 'patient_id', 'birthdate', 'follow_up_date'])) 
                 {
                     $direction = $request->input('sort_direction', 'asc');
 
                     $query->orderBy($request->input('sort_by'), $direction);
+                } 
+                else {
+                    $query->orderBy('updated_at');
                 }
 
-                $patients = $query->select('patients.id', 'patients.patient_id', 'patients.full_name', 'patients.suffix', 'patients.birthday', 'patients.sex', 'patients.last_visit')->paginate(5);
+                $patients = $query->select('patients.id', 'patients.patient_id', 'patients.full_name', 'patients.suffix', 'patients.birthday', 'patients.sex', 'patients.last_visit')->paginate(15);
                 $patients->appends($request->all()); //appends the request parameters to paginate URLs
 
                 return $patients;
