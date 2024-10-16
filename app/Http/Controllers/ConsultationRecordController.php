@@ -27,14 +27,14 @@ class ConsultationRecordController extends Controller
             'prescription' => 'required',
             'follow_up_date' => 'date',
             'payment_amount' => 'required|integer',
-            'payment_method' => 'required|string|in:Cash,HMO',
+            'payment_method' => 'required|string|in:Cash,cash,HMO,hmo',
             'payment_hmo' => 'string'
         ]);
 
         $fields['physician_id'] = $user->id;
         $fields['physician_name'] = $user->full_name;
         $fields['department'] = $user->department;
-        $patientName = Patient::findOrFail('patient_id')->select('full_name');
+        $patientName = Patient::select('full_name')->where('id', $request->patient_id)->first()->full_name;
         $date = Carbon::now('Asia/Manila');
 
         $paymentFields = [
@@ -44,7 +44,6 @@ class ConsultationRecordController extends Controller
             'patient_name' => $patientName,
             'amount' => $request->payment_amount,
             'method' => $request->payment_method,
-            'hmo' => $request->payment_hmo,
             'physician_id' => $fields['physician_id'],
             'physician_name' => $fields['physician_name'],
             'department' => $fields['department']

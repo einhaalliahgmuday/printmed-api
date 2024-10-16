@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('physician_name');
             $table->string('department');
             $table->integer('update_count')->nullable();
-            $table->foreignId('updated_by_id')->constrained('users', 'id')->nullable();
+            $table->foreignId('updated_by_id')->nullable()->constrained('users', 'id');
             $table->string('updated_by_name')->nullable();
             $table->timestamps();
         });

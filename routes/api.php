@@ -5,12 +5,13 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsultationRecordController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\PatientController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PhysicianPatientController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\UserController;
 
 //login and registration routes
-Route::post('/register', [AuthController::class, 'register']);
+Route::post('/register', [UserController::class, 'register']);
 // ->middleware('auth:sanctum');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
@@ -37,8 +38,8 @@ Route::get('/is-patient-exists', [PatientController::class, 'isPatientExists'])-
 //consultation records route
 Route::apiResource('consultation-records', ConsultationRecordController::class)->except(['index'])->middleware('auth:sanctum');
 
-//consultation records route
-Route::apiResource('payments', ConsultationRecordController::class)->except(['store'])->middleware('auth:sanctum');
+//payment records route
+Route::apiResource('payments', PaymentController::class)->except(['store']);
 
 //queue routes
 Route::apiResource('queue', QueueController::class)->except(['index', 'update', 'show']);
