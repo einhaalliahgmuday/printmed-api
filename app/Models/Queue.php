@@ -16,4 +16,9 @@ class Queue extends Model
         'waiting',
         'completed'
     ];
+
+    protected $hidden = [
+        'created_at',
+        'updated_at'
+    ];
 }
