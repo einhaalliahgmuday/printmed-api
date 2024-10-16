@@ -37,6 +37,9 @@ Route::get('/is-patient-exists', [PatientController::class, 'isPatientExists'])-
 //consultation records route
 Route::apiResource('consultation-records', ConsultationRecordController::class)->except(['index'])->middleware('auth:sanctum');
 
+//consultation records route
+Route::apiResource('payments', ConsultationRecordController::class)->except(['store'])->middleware('auth:sanctum');
+
 //queue routes
 Route::apiResource('queue', QueueController::class)->except(['index', 'update', 'show']);
 Route::post('/queue/increment-total', [QueueController::class, 'incrementQueueTotal']);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ConsultationRecord;
 use App\Models\Patient;
+use App\Models\Payment;
 use App\Models\PhysicianPatient;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -24,25 +25,47 @@ class ConsultationRecordController extends Controller
             'primary_diagnosis' => 'string',
             'diagnosis' => 'required',
             'prescription' => 'required',
-            'follow_up_date' => 'date'
+            'follow_up_date' => 'date',
+            'payment_amount' => 'required|integer',
+            'payment_method' => 'required|string|in:Cash,HMO',
+            'payment_hmo' => 'string'
         ]);
 
         $fields['physician_id'] = $user->id;
         $fields['physician_name'] = $user->full_name;
         $fields['department'] = $user->department;
+        $patientName = Patient::findOrFail('patient_id')->select('full_name');
+        $date = Carbon::now('Asia/Manila');
 
-        //creates the consultation record
+        $paymentFields = [
+            'date' => $date->toDateString(),
+            'time' => $date->format('H:i'),
+            'patient_id' => $request->patient_id,
+            'patient_name' => $patientName,
+            'amount' => $request->payment_amount,
+            'method' => $request->payment_method,
+            'hmo' => $request->payment_hmo,
+            'physician_id' => $fields['physician_id'],
+            'physician_name' => $fields['physician_name'],
+            'department' => $fields['department']
+        ];
+        $paymentFields['hmo'] = $request->payment_hmo ? $request->payment_hmo : null;
+
+        //creates the consultation and payment record
         $consultationRecord = ConsultationRecord::create($fields);
+        $payment = Payment::create($paymentFields);
         
         //updates last visit and follow-up dates of patient
-        $date = Carbon::now('Asia/Manila')->toDateString();
         $followUpDate = $request->filled('follow_up_date') ? $request->follow_up_date : null;
-        Patient::find($request->patient_id)->update([ 'last_visit' => $date, 'follow_up_date' => $followUpDate ]);
+        Patient::find($request->patient_id)->update([ 'last_visit' => $date->toDateString(), 'follow_up_date' => $followUpDate ]);
 
         //assign physician to patient
         Patient::find($request->patient_id)->physicians()->syncWithoutDetaching([$user->id]);
 
-        return $consultationRecord;
+        return response()->json([
+            'consultation_record' => $consultationRecord,
+            'payment' => $payment
+        ]);
     }
 
     public function show(Request $request, ConsultationRecord $consultationRecord)
