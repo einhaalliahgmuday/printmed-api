@@ -26,6 +26,11 @@ class Patient extends Model
         'follow_up_date'
     ];
 
+    protected $hidden = [
+        'created_at',
+        'updated_at'
+    ];
+
     public static function generatePatientNumber()
     {
         $year = date('Y');

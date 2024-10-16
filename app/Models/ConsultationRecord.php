@@ -37,4 +37,9 @@ class ConsultationRecord extends Model
     {
         return Carbon::parse($value)->format('Y-m-d');
     }
+
+    protected $hidden = [
+        'created_at',
+        'updated_at'
+    ];
 }
