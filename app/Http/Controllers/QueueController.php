@@ -130,6 +130,8 @@ class QueueController extends Controller
         $queue->waiting = null;
         $queue->save();
 
+        event(new QueueUpdated($queue));
+
         return response()->json([
             'success' => true,
             'message' => 'Queue is cleared.',

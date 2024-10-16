@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\PaymentNew;
 use App\Models\ConsultationRecord;
 use App\Models\Patient;
 use App\Models\Payment;
@@ -53,12 +54,14 @@ class ConsultationRecordController extends Controller
         //creates the consultation and payment record
         $consultationRecord = ConsultationRecord::create($fields);
         $payment = Payment::create($paymentFields);
+
+        event(new PaymentNew($payment));
         
         //updates last visit and follow-up dates of patient
         $followUpDate = $request->filled('follow_up_date') ? $request->follow_up_date : null;
         Patient::find($request->patient_id)->update([ 'last_visit' => $date->toDateString(), 'follow_up_date' => $followUpDate ]);
 
-        //assign physician to patient
+        //assign physician to the patient
         Patient::find($request->patient_id)->physicians()->syncWithoutDetaching([$user->id]);
 
         return response()->json([

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\PaymentUpdated;
 use App\Models\Payment;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -86,6 +87,8 @@ class PaymentController extends Controller
             $payment->update_count++;
 
             $payment->save();
+
+            event(new PaymentUpdated($payment));
 
             return $payment;
         }
