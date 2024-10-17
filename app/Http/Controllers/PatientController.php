@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ConsultationRecord;
 use App\Models\Patient;
+use App\Models\Payment;
 use App\Models\PhysicianPatient;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -70,6 +71,40 @@ class PatientController extends Controller
             'success' => false,
             'message' => 'Unauthorized request.'
         ], 401);
+    }
+
+    public function getPatientsCount(Request $request)
+    {
+        $request->validate([
+            'department' => 'string|max:100',
+            'date_from' => 'date',
+            'date_until' => 'date|after:date_from',
+        ]);
+
+        //uses Payment model to get the number of patients visited
+        $query = Payment::query();
+
+        if($request->filled('department'))
+        {
+            $query->where('department', $request->department);
+        }
+
+        if($request->filled('date_from'))
+        {
+            $query->where('date', '>=', $request->date_from);
+        }
+
+        if($request->filled('date_until'))
+        {
+            $query->where('date', '<=', $request->date_until);
+        }
+
+        $query->distinct('patient_id');
+        $patientsCount = $query->count();
+        
+        return response()->json([
+            'patients_count' => $patientsCount
+        ]);
     }
 
     public function isPatientExists(Request $request) 

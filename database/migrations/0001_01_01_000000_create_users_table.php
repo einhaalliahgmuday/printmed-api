@@ -22,6 +22,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->boolean('is_locked')->default(false);
+            $table->integer('failed_login_attempt')->default(0);
             $table->rememberToken();
             $table->timestamps();
         });

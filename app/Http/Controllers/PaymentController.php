@@ -64,6 +64,38 @@ class PaymentController extends Controller
         return $payments;
     }
 
+    public function getPaymentsTotal(Request $request)
+    {
+        $request->validate([
+            'department' => 'string|max:100',
+            'date_from' => 'date',
+            'date_until' => 'date|after:date_from',
+        ]);
+
+        $query = Payment::query();
+
+        if($request->filled('department'))
+        {
+            $query->where('department', $request->department);
+        }
+
+        if($request->filled('date_from'))
+        {
+            $query->where('date', '>=', $request->date_from);
+        }
+
+        if($request->filled('date_until'))
+        {
+            $query->where('date', '<=', $request->date_until);
+        }
+
+        $totalPayments = $query->sum('amount');
+        
+        return response()->json([
+            'total_payments' => $totalPayments
+        ]);
+    }
+
     public function show(Payment $payment)
     {
         return $payment;
