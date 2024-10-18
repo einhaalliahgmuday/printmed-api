@@ -73,12 +73,38 @@ class PatientController extends Controller
         ], 401);
     }
 
+    public function isPatientExists(Request $request) 
+    {
+        $request->validate([
+            'first_name' => 'required|string|max:100',
+            'last_name'=> 'required|string|max:100',
+            'birthday' => 'date',
+            'sex' => 'string|max:20'
+        ]);
+
+        $patients = Patient::select('id', 'patient_id', 'full_name', 'suffix', 'birthday', 'sex', 'last_visit')
+                            ->where('first_name', 'LIKE', "%$request->first_name%")
+                            ->where('last_name', $request->last_name)
+                            ->where('birthday', $request->birthday)
+                            ->where('sex', $request->sex)
+                            ->get();
+
+        if ($patients->count() <= 0) 
+        {
+            return response()->json([
+                'exists' => false
+            ]);
+        }
+
+        return $patients;
+    }
+
     public function getPatientsCount(Request $request)
     {
         $request->validate([
             'department' => 'string|max:100',
             'date_from' => 'date',
-            'date_until' => 'date|after:date_from',
+            'date_until' => 'date|after_or_equal:date_from',
         ]);
 
         //uses Payment model to get the number of patients visited
@@ -105,32 +131,6 @@ class PatientController extends Controller
         return response()->json([
             'patients_count' => $patientsCount
         ]);
-    }
-
-    public function isPatientExists(Request $request) 
-    {
-        $request->validate([
-            'first_name' => 'required|string|max:100',
-            'last_name'=> 'required|string|max:100',
-            'birthday' => 'date',
-            'sex' => 'string|max:20'
-        ]);
-
-        $patients = Patient::select('id', 'patient_id', 'full_name', 'suffix', 'birthday', 'sex', 'last_visit')
-                            ->where('first_name', 'LIKE', "%$request->first_name%")
-                            ->where('last_name', $request->last_name)
-                            ->where('birthday', $request->birthday)
-                            ->where('sex', $request->sex)
-                            ->get();
-
-        if ($patients->count() <= 0) 
-        {
-            return response()->json([
-                'exists' => false
-            ]);
-        }
-
-        return $patients;
     }
 
     public function store(Request $request)

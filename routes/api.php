@@ -22,9 +22,13 @@ Route::post('/change-password', [PasswordController::class, 'changePassword'])->
 Route::post('/send-reset-link', [PasswordController::class, 'sendResetLink'])->middleware('throttle:3,60');
 Route::post('/reset-password', [PasswordController::class, 'resetPassword']);
 
-//updating user information routes
+//users route
+Route::get('/users', [UserController::class, 'index']);
+Route::get('/users/toggle-lock', [UserController::class, 'toggleLockUserAccount']);
+// Route::get('/users/change-password', [UserController::class, 'reset']);
 Route::put('/update-email', [UserController::class, 'updateEmail'])->middleware('auth:sanctum');
 Route::put('/edit-user-information', [UserController::class, 'updateInformation'])->middleware('auth:sanctum');
+Route::get('/users/count', [UserController::class, 'getUsersCount']);
 
 //get physicians
 Route::get('/physicians', [UserController::class, 'getPhysicians'])->middleware('auth:sanctum')->middleware('auth:sanctum');
@@ -33,13 +37,15 @@ Route::post('/assign-patient-physician', [PhysicianPatientController::class, 'as
 
 //patient route
 Route::apiResource('patients', PatientController::class)->middleware('auth:sanctum');
-Route::get('/is-patient-exists', [PatientController::class, 'isPatientExists'])->middleware('auth:sanctum');
+Route::get('/patients/is-exists', [PatientController::class, 'isPatientExists'])->middleware('auth:sanctum');
+Route::get('/patients/count', [PatientController::class, 'getPatientsCount']);  
 
 //consultation records route
 Route::apiResource('consultation-records', ConsultationRecordController::class)->except(['index'])->middleware('auth:sanctum');
 
 //payment records route
 Route::apiResource('payments', PaymentController::class)->except(['store']);
+Route::get('/payments/total', [PaymentController::class, 'getPaymentsTotal']);  
 
 //queue routes
 Route::apiResource('queue', QueueController::class)->except(['index', 'update', 'show']);

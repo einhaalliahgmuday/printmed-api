@@ -69,7 +69,7 @@ class PaymentController extends Controller
         $request->validate([
             'department' => 'string|max:100',
             'date_from' => 'date',
-            'date_until' => 'date|after:date_from',
+            'date_until' => 'date|after_or_equal:date_from',
         ]);
 
         $query = Payment::query();
