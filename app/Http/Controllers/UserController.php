@@ -84,11 +84,11 @@ class UserController extends Controller
         return $user;
     }
 
-    public function updateInformation(Request $request, User $userToUpdate) 
+    public function updateInformation(Request $request) 
     {
         $fields = $request->validate([
-            // 'user_id' => 'required|integer|exists:users,id',
-            'personnel_number' => 'string|size:8',
+            'user_id' => 'required|integer',
+            'personnel_number' => 'string|size:8|unique:users',
             'first_name' => 'string|max:100',
             'middle_name' => 'string|max:100',
             'last_name' => 'string|max:100',
@@ -96,42 +96,42 @@ class UserController extends Controller
             'sex' => 'string|max:6',
             'birthdate' => 'date',
             'license_number' => 'string|max:50',
-            'department' => 'string|max:100',
+            'department_id' => 'integer',
             'email' => 'email|unique:users|max:255',
         ]);
 
-        // $userToUpdate = User::findOrFail($request->user_id);
+        $userToUpdate = User::find($request->user_id);
 
         if (!$userToUpdate)
         {
             return response()->json([
-                'success' => true,
+                'success' => false,
                 'message' => 'User not found.'
             ], 404);   
         }
 
         if (!in_array($userToUpdate->role, ['physician', 'secretary']))
         {
-            $fields['license'] = "";
-            $fields["department"] = "";
+            $fields['license'] = null;
+            $fields["department_id"] = null;
         }
 
         $userToUpdate->update($fields);
 
         return response()->json([
             'success' => true,
+            'message' => 'User information successfully updated.',
             'user' => $userToUpdate,
-            'message' => 'User information successfully updated.'
         ], 200);
     }
 
-    public function toggleLockUserAccount(User $userToUpdate)
+    public function toggleLockUserAccount(Request $request)
     {
-        // $request->validate([
-        //     'user_id' => 'required|integer|exists:users,id'
-        // ]);
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id'
+        ]);
 
-        // $user = User::findOrFail($request->user_id);
+        $userToUpdate = User::find($request->user_id);
 
         $userToUpdate->is_locked = !$userToUpdate->is_locked;
         $userToUpdate->save();
@@ -139,13 +139,13 @@ class UserController extends Controller
         return $userToUpdate;
     }
 
-    public function unrestrictAccount(User $userToUpdate)
+    public function unrestrictAccount(Request $request)
     {
-        // $request->validate([
-        //     'user_id' => 'required|integer|exists:users,id'
-        // ]);
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id'
+        ]);
 
-        // $user = User::findOrFail($request->user_id);
+        $userToUpdate = User::findOrFail($request->user_id);
 
         $userToUpdate->failed_login_attempts = 0;
         $userToUpdate->save();

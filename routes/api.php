@@ -23,9 +23,9 @@ Route::get('/users', [UserController::class, 'getUsers']);
 Route::get('/users/physicians', [UserController::class, 'getPhysicians']);
 Route::get('/users/count', [UserController::class, 'getUsersCount']);
 Route::put('/users/update-email', [UserController::class, 'updateEmail'])->middleware('auth:sanctum');
-Route::put('/users/update-information/{id}', [UserController::class, 'updateInformation'])->middleware('auth:sanctum');
-Route::put('/users/unrestrict-account/{id}', [UserController::class, 'unrestrictAccount']);
-Route::put('/users/toggle-lock/{id}', [UserController::class,'toggleLockUserAccount']);
+Route::put('/users/update-information', [UserController::class, 'updateInformation'])->middleware('auth:sanctum');
+Route::put('/users/unrestrict-account', [UserController::class, 'unrestrictAccount']);
+Route::put('/users/toggle-lock', [UserController::class,'toggleLockUserAccount']);
 
 //assign physician
 Route::post('/assign-patient-physician', [PhysicianPatientController::class, 'assignPatientPhysician'])->middleware('auth:sanctum');

@@ -25,7 +25,7 @@ class User extends Authenticatable
         'license_number',
         'email',
         'password',
-        'is_lock',
+        'is_locked',
         'failed_login_attempts',
     ];
 

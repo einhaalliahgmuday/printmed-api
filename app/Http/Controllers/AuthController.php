@@ -100,6 +100,7 @@ class AuthController extends Controller
                     'email_verified_at' => now()
                 ])->save();
 
+                //all access tokens will be deleted after password reset
                 $user->tokens()->delete();
 
                 event(new PasswordReset($user));
@@ -119,14 +120,26 @@ class AuthController extends Controller
         $request->validate([
             'role' => 'required|string|exists:users',
             'personnel_number' => 'required|string|size:8|exists:users',
+            'email' => 'required|email|exists:users',
             'password' => 'required',
         ]);
 
-        $user = User::select('email', 'password')
+        $user = User::select('id', 'password', 'failed_login_attempts')
                     ->where('role', $request->role)
                     ->where('personnel_number', $request->personnel_number)
+                    ->where('email', $request->email)
                     ->first();
 
+        //if account is not found or locked
+        if (!$user || ($user && ($user->is_locked === true))) 
+        {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found.'
+            ], 401);
+        }
+        
+        //if account is restricted due to failed login attempts
         if ($user->failed_login_attempts >= 3)
         {
             return response()->json([
@@ -135,9 +148,11 @@ class AuthController extends Controller
             ], 401);
         }
 
-        if (!$user || $user && ($user->is_locked === true) || !Hash::check($request->password, $user->password)) 
+        //if wrong password is provided
+        if (!Hash::check($request->password, $user->password)) 
         {
             $user->failed_login_attempts++;
+            $user->save();
 
             return response()->json([
                 'success' => false,
@@ -145,15 +160,14 @@ class AuthController extends Controller
             ], 401);
         }
 
+        //sends otp to user's email as another authentication
         $token = Str::random(60);
         $otp = Otp::create([
             'token' => Hash::make($token),
-            'email' => $user->email,
+            'email' => $request->email,
             'code' => rand(100000, 999999),
             'expires_at' => now()->addMinutes(5)
         ]);
-
-        //sends otp to user's email as another authentication
         $user->notify(new OtpVerificationNotification($otp->code));
 
         //resets failed login attempts to 0
@@ -162,7 +176,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success'=> true,
-            'email' => $user->email,
+            'email' => $request->email,
             'token' => $token
         ], 200);
     }
@@ -191,6 +205,8 @@ class AuthController extends Controller
         //if otp is expired
         if (now()->isAfter($otp->expires_at))
         {
+            $otp->delete();
+            
             return response()->json([
                 'success' => false,
                 'message' => 'OTP is expired.'
