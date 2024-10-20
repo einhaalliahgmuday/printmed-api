@@ -2,9 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Models\Otp;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -27,6 +25,7 @@ class OtpVerificationNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
+            ->subject("Let's log you in")
             ->view('emails.verify_otp', [
                 'code' => $this->code
             ]);

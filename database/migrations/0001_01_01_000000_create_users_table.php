@@ -10,20 +10,21 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('role', 10);
+            $table->string('role');
             $table->string('personnel_number',8)->unique();
-            $table->string('full_name');
             $table->string('first_name', 100);
             $table->string('middle_name', 100)->nullable();
             $table->string('last_name', 100);
             $table->string('suffix', 20)->nullable();
-            $table->string('department', 100)->nullable();
+            $table->string('sex', 6);
+            $table->date('birthdate');
+            $table->foreignId('department_id')->onDelete('restrict')->nullable();
             $table->string('license_number', 50)->nullable();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('password')->nullable();
             $table->boolean('is_locked')->default(false);
-            $table->integer('failed_login_attempt')->default(0);
+            $table->integer('failed_login_attempts')->default(0);
             $table->rememberToken();
             $table->timestamps();
         });

@@ -10,27 +10,6 @@ class UserController extends Controller
 {
     use CommonMethodsTrait;
 
-    public function register(Request $request) 
-    {
-        $fields = $request->validate([
-            'role' => 'required|string|max:10|in:admin,physician,secretary,queue manager',
-            'personnel_number' => 'required|string|size:8|unique:users',
-            'first_name' => 'required|string|max:100',
-            'middle_name' => 'string|max:100',
-            'last_name' => 'required|string|max:100',
-            'suffix' => 'string|max:20',
-            'department' => 'string|max:100|required_if:role,physician|required_if:role,secretary',
-            'license_number' => 'string|max:50',
-            'email' => 'required|email|unique:users|max:255',
-            'password' => 'required|string|min:8|max:255',
-        ]);
-
-        $fields['full_name'] = $this->getFullName($request);
-        $user = User::create($fields);
-
-        return $user;
-    }
-
     public function getUsers(Request $request)
     {
         $request->validate([
@@ -44,7 +23,7 @@ class UserController extends Controller
         {
             $query->where('role',$request->role);
 
-            if (in_array('role', ['physician', 'secretary']) && $request->filled('department')) 
+            if (in_array($request->role, ['physician', 'secretary']) && $request->filled('department')) 
             {
                 $query->where('department',$request->department);
             }
@@ -80,8 +59,8 @@ class UserController extends Controller
             $secretariesCount->where('department', $request->department);
         }
 
-        $physiciansCount->count();
-        $secretariesCount->count();
+        $physiciansCount = $physiciansCount->count();
+        $secretariesCount = $secretariesCount->count();
         
         return response()->json([
             'admins_count' => $adminsCount,
@@ -96,75 +75,81 @@ class UserController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'email' => 'required|email|unique:users|max:255',
+            'new_email' => 'required|email|unique:users,email|max:255',
         ]);
 
-        $user->email = $request->email;
+        $user->email = $request->new_email;
         $user->save();
 
         return $user;
     }
 
-    public function updateInformation(Request $request) 
+    public function updateInformation(Request $request, User $userToUpdate) 
     {
-        $user = $request->user();
-        
         $fields = $request->validate([
+            // 'user_id' => 'required|integer|exists:users,id',
             'personnel_number' => 'string|size:8',
             'first_name' => 'string|max:100',
             'middle_name' => 'string|max:100',
             'last_name' => 'string|max:100',
             'suffix' => 'string|max:20',
-            'department' => 'string|max:100',
+            'sex' => 'string|max:6',
+            'birthdate' => 'date',
             'license_number' => 'string|max:50',
+            'department' => 'string|max:100',
             'email' => 'email|unique:users|max:255',
         ]);
 
-        if ($user->role === 'admin') {
-            $fields['full_name'] = $this->getFullName($request);
-            $user->update($fields);
+        // $userToUpdate = User::findOrFail($request->user_id);
 
+        if (!$userToUpdate)
+        {
             return response()->json([
                 'success' => true,
-                'message' => 'User information successfully updated.'
-            ], 200);
+                'message' => 'User not found.'
+            ], 404);   
         }
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Unauthorized Request'
-        ], 401);
-    }
+        if (!in_array($userToUpdate->role, ['physician', 'secretary']))
+        {
+            $fields['license'] = "";
+            $fields["department"] = "";
+        }
 
-    public function toggleLockUserAccount(Request $request)
-    {
-        $request->validate([
-            'user_id' => 'required|integer|exists:users,id'
-        ]);
-
-        $user = User::findOrFail($request->user_id);
-
-        $user->is_lock = !$user->is_lock;
-        $user->save();
-
-        return $user;
-    }
-
-    public function resetUserPassword(Request $request) 
-    {
-        $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
-            'new_password' => 'required|string'
-        ]);
-
-        $user = User::findOrFail('user_id');
-
-        $user->password = Hash::make($request->new_password);
-        $user->save();
+        $userToUpdate->update($fields);
 
         return response()->json([
             'success' => true,
-            'message' => 'Password changed successfully.'
-        ]);
+            'user' => $userToUpdate,
+            'message' => 'User information successfully updated.'
+        ], 200);
+    }
+
+    public function toggleLockUserAccount(User $userToUpdate)
+    {
+        // $request->validate([
+        //     'user_id' => 'required|integer|exists:users,id'
+        // ]);
+
+        // $user = User::findOrFail($request->user_id);
+
+        $userToUpdate->is_locked = !$userToUpdate->is_locked;
+        $userToUpdate->save();
+
+        return $userToUpdate;
+    }
+
+    public function unrestrictAccount(User $userToUpdate)
+    {
+        // $request->validate([
+        //     'user_id' => 'required|integer|exists:users,id'
+        // ]);
+
+        // $user = User::findOrFail($request->user_id);
+
+        $userToUpdate->failed_login_attempts = 0;
+        $userToUpdate->save();
+
+        return $userToUpdate;
     }
 }

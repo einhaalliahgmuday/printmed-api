@@ -14,31 +14,56 @@ class User extends Authenticatable
 
     protected $fillable = [
         'role',
-        'full_name',
         'personnel_number',
         'first_name',
         'middle_name',
         'last_name',
         'suffix',
-        'department',
+        'sex',
+        'birthdate',
+        'department_id',
         'license_number',
         'email',
         'password',
-        'is_locked',
-        'failed_login_attempts'
+        'is_lock',
+        'failed_login_attempts',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
         'created_at',
-        'updated_at'
+        'updated_at',
+        'email_verified_at'
     ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function sendPasswordResetNotification($token)
+    {
+        $isNewAccount = $this->password ? true : false;
+        $url = url("http://127.0.0.1/reset-password?token={$token}&email={$this->email}");
+
+        $this->notify(new ResetPasswordNotification($isNewAccount, $url, $this->first_name));
+    }
+
+    // public function role() 
+    // {
+    //     return $this->belongsTo(Role::class);
+    // }
+
+    // public function hasRole($role)
+    // {
+    //     return $this->role->name === $role;
+    // }
+
+    public function department() 
+    {
+        return $this->belongsTo(Department::class);
+    }
 
     public function setRoleAttribute($value)
     {
@@ -53,12 +78,5 @@ class User extends Authenticatable
         }
 
         return $this->belongsToMany(Patient::class)->whereRaw('1 = 0'); 
-    }
-
-    public function sendPasswordResetNotification($token)
-    {
-        $url = url("http://127.0.0.1/reset-password?token={$token}&email={$this->email}");
-
-        $this->notify(new ResetPasswordNotification($url, $this->first_name));
     }
 }

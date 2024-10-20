@@ -3,35 +3,30 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsultationRecordController;
-use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PhysicianPatientController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\UserController;
 
-//login and registration routes
-Route::post('/register', [UserController::class, 'register']);
-// ->middleware('auth:sanctum');
+//authentication and password-related routes
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
-
-//password-related routes
-Route::post('/change-password', [PasswordController::class, 'changePassword'])->middleware('auth:sanctum');
-Route::post('/send-reset-link', [PasswordController::class, 'sendResetLink'])->middleware('throttle:3,60');
-Route::post('/reset-password', [PasswordController::class, 'resetPassword']);
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::put('/change-password', [AuthController::class,'changePassword'])->middleware('auth:sanctum');
 
 //users route
-Route::get('/users', [UserController::class, 'index']);
-Route::get('/users/toggle-lock', [UserController::class, 'toggleLockUserAccount']);
-// Route::get('/users/change-password', [UserController::class, 'reset']);
-Route::put('/update-email', [UserController::class, 'updateEmail'])->middleware('auth:sanctum');
-Route::put('/edit-user-information', [UserController::class, 'updateInformation'])->middleware('auth:sanctum');
+Route::get('/users', [UserController::class, 'getUsers']);
+Route::get('/users/physicians', [UserController::class, 'getPhysicians']);
 Route::get('/users/count', [UserController::class, 'getUsersCount']);
+Route::put('/users/update-email', [UserController::class, 'updateEmail'])->middleware('auth:sanctum');
+Route::put('/users/update-information/{id}', [UserController::class, 'updateInformation'])->middleware('auth:sanctum');
+Route::put('/users/unrestrict-account/{id}', [UserController::class, 'unrestrictAccount']);
+Route::put('/users/toggle-lock/{id}', [UserController::class,'toggleLockUserAccount']);
 
-//get physicians
-Route::get('/physicians', [UserController::class, 'getPhysicians'])->middleware('auth:sanctum')->middleware('auth:sanctum');
 //assign physician
 Route::post('/assign-patient-physician', [PhysicianPatientController::class, 'assignPatientPhysician'])->middleware('auth:sanctum');
 
