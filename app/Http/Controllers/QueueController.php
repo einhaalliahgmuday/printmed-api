@@ -6,6 +6,8 @@ use App\Events\QueueUpdated;
 use App\Models\Queue;
 use Illuminate\Http\Request;
 
+use function PHPUnit\Framework\isNull;
+
 class QueueController extends Controller
 {
     public function index(Request $request)
@@ -14,21 +16,22 @@ class QueueController extends Controller
 
         if (in_array($user->role, ['secretary', 'physician']))
         {
-            return Queue::select('department', 'total', 'current', 'waiting', 'completed')->where('department', $user->department)->first();
+            return Queue::where('department_id', $user->department_id)->first() ?: response()->json([]);
         }
 
-        return Queue::select('department', 'total')->all();
+        // if user is queue manager
+        return Queue::select('department_id', 'total')->all() ?: response()->json([]);
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'department' => 'required|string|max:50'
+            'department_id' => 'required|integer|exists:departments,id'
         ]);
 
-        if (!Queue::where('department', $request->department)->first())
+        if (!Queue::where('department_id', $request->department_id)->first())
         {
-            return Queue::create(['department' => $request->department]);
+            return Queue::create(['department_id' => $request->department_id]);
         }
 
         return response()->json([
@@ -37,33 +40,60 @@ class QueueController extends Controller
         ], 409);
     }
 
-    public function incrementQueueTotal(Request $request) 
+    // must clear queue before deleting
+    public function destroy(Queue $queue)
     {
-        $request->validate([
-            'department' => 'required|string|exists:queues'
-        ]);
+        if ($queue->total !== null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Queue  cannot be deleted. Clear the queue first.'
+            ], 403);
+        }
 
-        $queue = Queue::where('department', $request->department)->first();
-        //current increments to 1 when queue is new or first number is added to queue total, the current becomes 1 too
+        $queue->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Queue successfully deleted.'
+        ], 200);
+    }
+
+    public function clearQueue(Queue $queue) 
+    {
+        $queue->total = null;
+        $queue->current = null;
+        $queue->completed = null;
+        $queue->waiting = null;
+        $queue->save();
+
+        event(new QueueUpdated($queue));
+
+        return $queue;
+    }
+
+    public function incrementQueueTotal(Queue $queue) 
+    {
+        //current increments to 1 when queue is NEW; when FIRST NUMBER is added to queue total, the current becomes 1 too
         if ($queue->total == 0) {
             $queue->current++;
         } 
-        //queue current returns to null when all queue is completed
+
+        //queue current returns to null once all queue is completed
         //thus, when new number is added to queue after completed, that is,
         //queue total is greater than 0 (has started) and current is null (as completed),
-        //current becomes the same number as queue total++
+        //current jumps to the same number as queue total+1
         if ($queue->total > 0 && $queue->current == null) {
             $total = $queue->total;
-            $queue->current = $total+1;
+            $queue->current = $total+1; 
         }
-        //if queue total is greater than 0 (has started) and queue total is NOT 
-        //yet completed, queue waiting increments;
-        //therefore, if queue total has just started or will increment from completed,
-        //queue waiting will not increment, but the current will in the same number as total
+        
+        // if queue total HAS STARTED BUT NOT YET COMPLETED, queue waiting increments;
+        // if queue total has JUST started or will increment from completed,
+        //queue waiting will not increment, the current will in the same number as total
         if ($queue->total > 0 && $queue->total != $queue->completed) {
             $queue->waiting++;
         }
-        //where total increments
+        
         $queue->total++;
 
         $queue->save();
@@ -73,14 +103,9 @@ class QueueController extends Controller
         return $queue;
     }
 
-    public function incrementQueueCurrent(Request $request) 
+    public function incrementQueueCurrent(Queue $queue) 
     {
-        $request->validate([
-            'department' => 'required|string|exists:queues'
-        ]);
-
-        $queue = Queue::where('department', $request->department)->first();
-        //queue current will not increment if already completed
+        //queue current will not increment if no number in queue or already completed
         if ($queue->completed < $queue->total)
         {
             //queue completed increments as current increments, 
@@ -88,6 +113,7 @@ class QueueController extends Controller
             if ($queue->current != $queue->completed) {
                 $queue->completed++;
             }
+
             //if queue current is equal to total, that is, the current is the last number
             //queue current returns to null
             if ($queue->current == $queue->total) {
@@ -97,11 +123,13 @@ class QueueController extends Controller
             else if ($queue->current < $queue->total) {
                 $queue->current++;
             }
+
             //as queue current increments, waiting decrements
             //given that waiting is not 0
             if ($queue->waiting > 0) {
                 $queue->waiting--;
             }
+
             $queue->save();
 
             event(new QueueUpdated($queue));
@@ -114,38 +142,5 @@ class QueueController extends Controller
             'message' => 'Queue is completed or there is no number in queue, cannot increment current.',
             'queue' => $queue
         ]);
-    }
-
-    public function clearQueue(Request $request) 
-    {
-        $request->validate([
-            'department' => 'required|string|exists:queues'
-        ]);
-
-        $queue = Queue::where('department', $request->department)->first();
-        
-        $queue->total = null;
-        $queue->current = null;
-        $queue->completed = null;
-        $queue->waiting = null;
-        $queue->save();
-
-        event(new QueueUpdated($queue));
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Queue is cleared.',
-            'queue' => $queue
-        ], 200);
-    }
-
-    public function destroy(Queue $queue)
-    {
-        $queue->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Queue department successfully deleted.'
-        ], 200);
     }
 }
