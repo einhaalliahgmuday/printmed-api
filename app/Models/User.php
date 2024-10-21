@@ -7,10 +7,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Notifications\ResetPasswordNotification;
+use App\Traits\CommonMethodsTrait;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasFactory, Notifiable, HasApiTokens, CommonMethodsTrait;
 
     protected $fillable = [
         'role',
@@ -42,32 +43,9 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    public function sendPasswordResetNotification($token)
+    public function getFullNameAttribute()
     {
-        $isNewAccount = $this->password ? true : false;
-        $url = url("http://127.0.0.1/reset-password?token={$token}&email={$this->email}");
-
-        $this->notify(new ResetPasswordNotification($isNewAccount, $url, $this->first_name));
-    }
-
-    // public function role() 
-    // {
-    //     return $this->belongsTo(Role::class);
-    // }
-
-    // public function hasRole($role)
-    // {
-    //     return $this->role->name === $role;
-    // }
-
-    public function department() 
-    {
-        return $this->belongsTo(Department::class);
-    }
-
-    public function setRoleAttribute($value)
-    {
-        $this->attributes['role'] = strtolower($value);
+        return $this->getFullName($this->first_name, $this->middle_name, $this->last_name, $this->suffix);
     }
 
     public function patients()
@@ -78,5 +56,13 @@ class User extends Authenticatable
         }
 
         return $this->belongsToMany(Patient::class)->whereRaw('1 = 0'); 
+    }
+
+    public function sendPasswordResetNotification($token)
+    {
+        $isNewAccount = $this->password ? true : false;
+        $url = url("http://127.0.0.1/reset-password?token={$token}&email={$this->email}");
+
+        $this->notify(new ResetPasswordNotification($isNewAccount, $url, $this->first_name));
     }
 }

@@ -124,7 +124,7 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        $user = User::select('id', 'password', 'failed_login_attempts')
+        $user = User::select('id', 'email', 'password', 'failed_login_attempts')
                     ->where('role', $request->role)
                     ->where('personnel_number', $request->personnel_number)
                     ->where('email', $request->email)
@@ -136,7 +136,7 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'User not found.'
-            ], 401);
+            ], 403);
         }
         
         //if account is restricted due to failed login attempts

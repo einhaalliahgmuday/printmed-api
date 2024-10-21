@@ -4,11 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    use CommonMethodsTrait;
 
     public function getUsers(Request $request)
     {
@@ -125,7 +123,7 @@ class UserController extends Controller
         ], 200);
     }
 
-    public function toggleLockUserAccount(Request $request)
+    public function toggleLockUser(Request $request)
     {
         $request->validate([
             'user_id' => 'required|integer|exists:users,id'
