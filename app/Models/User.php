@@ -55,7 +55,17 @@ class User extends Authenticatable
             return $this->belongsToMany(Patient::class, 'physician_patients', 'physician_id', 'patient_id');
         }
 
-        return $this->belongsToMany(Patient::class)->whereRaw('1 = 0'); 
+        return collect(); 
+    }
+
+    public function payments()
+    {
+        if($this->role === 'physician')
+        {
+            return $this->hasMany(Payment::class, 'physician_id', 'id');
+        }
+
+        return collect(); 
     }
 
     public function sendPasswordResetNotification($token)

@@ -11,124 +11,82 @@ class PaymentController extends Controller
 {
     public function index(Request $request)
     {
-        //must indicate whether you're fetching all payment records or just today
         $request->validate([
-            'filter' => 'required|in:all,today',
             'date_from' => 'date',
-            'date_until' => 'date|after:date_from',
-            'method' => 'string',
-            'status' => 'string',
-            'department' => 'string'
+            'date_until' => 'date|after_or_equal:date_from',
+            'order_by_is_paid' => 'boolean',
+            'method' => 'string|in:cash,hmo',
+            'is_paid' => 'boolean',
+            'department_id' => 'integer|exists:departments,id',
         ]);
 
-        $query = $request->filter == 'all' ? Payment::query() : Payment::query()->where('date', Carbon::now()->toDateString());
+        $user = $request->user();
 
-        if ($request->filter == 'all') 
+        $query = $user->role == 'physician' 
+            ? $user->payments()
+            : ($user->role == 'secretary'
+                ? Payment::query()->where('department_id', $user->department_id)
+                : Payment::query());
+
+        if ($user->role == 'admin' && $request->filled('department_id'))
         {
-            //narrows the query with date_from and date_until
-            if($request->filled('date_from'))
-            {
-                $query->where('date', '>=', $request->date_from);
-            }
-
-            if($request->filled('date_until'))
-            {
-                $query->where('date', '<=', $request->date_until);
-            }
+            $query->where('department_id', $request->department_id);
         }
 
-        //narrows the query with payment method
+        if($request->filled('date_from'))
+        {
+            $query->where('created_at', '>=', $request->date_from);
+        }
+
+        if($request->filled('date_until'))
+        {
+            $query->where('created_at', '<=', $request->date_until);
+        }
+
         if ($request->filled('method'))
         {
             $query->where('method', $request->input('method'));
         }
 
-        //narrows the query with payment status
-        if ($request->filled('status'))
+        if ($request->filled('is_paid'))
         {
-            $query->where('status', $request->status);
+            $query->where('is_paid', $request->is_paid);
         }
 
-        //narrows the query with department
-        if ($request->filled('department'))
+        $query->orderBy('updated_at', 'desc');
+
+        if ($request->filled('order_by_is_filled') && $request->order_by_is_filled === true)
         {
-            $query->where('department', $request->input('department'));
+            $query->orderBy('is_paid', 'desc');
         }
 
-        //prder the query by date and time
-        $query->orderBy('date')->orderBy('time');
+        $paidTotalQuery = clone $query;
+        $paidTotal = $paidTotalQuery->where('is_paid', true)->sum('amount');
 
         $payments = $query->paginate(30);
         $payments->appends($request->all());
 
-        return $payments;
-    }
-
-    public function getPaymentsTotal(Request $request)
-    {
-        $request->validate([
-            'department' => 'string|max:100',
-            'date_from' => 'date',
-            'date_until' => 'date|after_or_equal:date_from',
-        ]);
-
-        $query = Payment::query();
-
-        if($request->filled('department'))
-        {
-            $query->where('department', $request->department);
-        }
-
-        if($request->filled('date_from'))
-        {
-            $query->where('date', '>=', $request->date_from);
-        }
-
-        if($request->filled('date_until'))
-        {
-            $query->where('date', '<=', $request->date_until);
-        }
-
-        $totalPayments = $query->sum('amount');
-        
         return response()->json([
-            'total_payments' => $totalPayments
+            'paid_total' => $paidTotal,
+            'payments' => $payments
         ]);
-    }
-
-    public function show(Payment $payment)
-    {
-        return $payment;
     }
 
     public function update(Request $request, Payment $payment)
     {
-        $user = $request->user();
+        $fields = $request->validate([
+            'amount' => 'integer',
+            'method' => 'string|in:cash,hmo',
+            'hmo' => 'string',
+            'is_paid' => 'boolean'
+        ]);
 
-        //can only update 3 times - from 'Not yet paid' to 'Paid' to 'Not yet paid' to 'Paid'
-        if ($payment->update_count < 3)
-        {
-            if ($payment->status == 'Not yet paid') {
-                $payment->status = 'Paid';
-            } else if ($payment->status == 'Paid') {
-                $payment->status = 'Not yet paid';
-            }
+        $payment->update($fields);
 
-            $payment->approved_by_id = $user->id;
-            $payment->approved_by_name = $user->full_name;
-            $payment->update_count++;
+        // web socket for updated payment
+        event(new PaymentUpdated($payment));
 
-            $payment->save();
-
-            event(new PaymentUpdated($payment));
-
-            return $payment;
-        }
-
-        return response()->json([
-            'success' => false,
-            'message' => 'You can only update the payment status three times.'
-        ], 403);
+        return $payment;
     }
 
     public function destroy(Payment $payment)
@@ -139,5 +97,40 @@ class PaymentController extends Controller
             'success' => true,
             'message' => 'Payment record deleted'
         ], 200);
+    }
+
+    // returns total amount of paid payment records
+    public function getPaymentsTotal(Request $request)
+    {
+        $request->validate([
+            'department_id' => 'integer|exists:departments,id',
+            'date_from' => 'date',
+            'date_until' => 'date|after_or_equal:date_from',
+        ]);
+
+        $query = Payment::query();
+
+        $query->where('is_paid', true);
+
+        if($request->filled('department_id'))
+        {
+            $query->where('department_id', $request->department_id);
+        }
+
+        if($request->filled('date_from'))
+        {
+            $query->where('created_at', '>=', $request->date_from);
+        }
+
+        if($request->filled('date_until'))
+        {
+            $query->where('created_at', '<=', $request->date_until);
+        }
+
+        $paidTotal = $query->sum('amount');
+        
+        return response()->json([
+            'paid_total' => $paidTotal
+        ]);
     }
 }
