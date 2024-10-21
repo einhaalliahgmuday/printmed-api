@@ -11,7 +11,6 @@ return new class extends Migration
     {
         Schema::create('consultation_records', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('patient_id')->constrained('patients', 'id')->cascadeOnDelete();
             $table->decimal('height', 5, 2)->nullable();
             $table->decimal('weight', 5, 2)->nullable();
             $table->string('blood_pressure', 7)->nullable();
@@ -28,9 +27,9 @@ return new class extends Migration
             $table->text('diagnosis');
             $table->text('prescription')->nullable();
             $table->date('follow_up_date')->nullable();
-            $table->foreignId('physician_id')->nullable()->constrained('users', 'id');
-            $table->string('physician_name');
-            $table->string('department')->nullable();
+            $table->foreignId('patient_id')->constrained('patients', 'id')->cascadeOnDelete();
+            $table->foreignId('physician_id')->constrained('users', 'id')->onDelete('restrict');
+            $table->foreignId('department_id')->constrained()->onDelete('restrict');
             $table->timestamps();
         });
     }
