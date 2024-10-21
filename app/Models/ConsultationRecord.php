@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -11,7 +10,6 @@ class ConsultationRecord extends Model
     use HasFactory;
 
     protected $fillable = [
-        'patient_id',
         'height',
         'weight',
         'blood_pressure',
@@ -28,18 +26,28 @@ class ConsultationRecord extends Model
         'diagnosis',
         'prescription',
         'follow_up_date',
+        'patient_id',
         'physician_id',
-        'physician_name',
-        'department'
+        'department_id'
     ];
-
-    public function getCreatedAtAttribute($value)
-    {
-        return Carbon::parse($value)->format('Y-m-d');
-    }
 
     protected $hidden = [
         'created_at',
         'updated_at'
     ];
+
+    public function patient()
+    {
+        return $this->belongsTo(Patient::class);
+    }
+
+    public function physician()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function payment()
+    {
+        return $this->hasOne(Payment::class);
+    }
 }

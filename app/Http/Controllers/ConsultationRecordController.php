@@ -4,18 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Events\PaymentNew;
 use App\Models\ConsultationRecord;
-use App\Models\Patient;
 use App\Models\Payment;
-use App\Models\PhysicianPatient;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class ConsultationRecordController extends Controller
 {
+    //store and update has policy implemented
+    //only physicians of the patient can create a record
+    //only the physician of a record can update the record
+    
     public function store(Request $request)
     {
-        $user = $request->user();   //if user is doctor
-
         $fields = $request->validate([
             'patient_id' => 'required|integer|exists:patients,id',
             'height' => 'decimal:0,2',
@@ -28,71 +29,54 @@ class ConsultationRecordController extends Controller
             'prescription' => 'required',
             'follow_up_date' => 'date',
             'payment_amount' => 'required|integer',
-            'payment_method' => 'required|string|in:Cash,cash,HMO,hmo',
+            'payment_method' => 'required|string|in:cash,hmo',
             'payment_hmo' => 'string'
         ]);
 
+        Gate::authorize('create', $request);
+
+        $user = $request->user();
+
         $fields['physician_id'] = $user->id;
-        $fields['physician_name'] = $user->full_name;
-        $fields['department'] = $user->department;
-        $patientName = Patient::select('full_name')->where('id', $request->patient_id)->first()->full_name;
-        $date = Carbon::now('Asia/Manila');
+        $fields['department_id'] = $user->department_id;
+
+        $consultationRecord = ConsultationRecord::create($fields);
 
         $paymentFields = [
-            'date' => $date->toDateString(),
-            'time' => $date->format('H:i'),
-            'patient_id' => $request->patient_id,
-            'patient_name' => $patientName,
             'amount' => $request->payment_amount,
             'method' => $request->payment_method,
+            'hmo' => $request->payment_hmo ?: null,
+            'consultation_record_id' => $consultationRecord->id,
+            'patient_id' => $request->patient_id,
             'physician_id' => $fields['physician_id'],
-            'physician_name' => $fields['physician_name'],
-            'department' => $fields['department']
+            'department_id' => $fields['department_id'],
         ];
-        $paymentFields['hmo'] = $request->payment_hmo ? $request->payment_hmo : null;
 
-        //creates the consultation and payment record
-        $consultationRecord = ConsultationRecord::create($fields);
         $payment = Payment::create($paymentFields);
 
         event(new PaymentNew($payment));
-        
-        //updates last visit and follow-up dates of patient
-        $followUpDate = $request->filled('follow_up_date') ? $request->follow_up_date : null;
-        Patient::find($request->patient_id)->update([ 'last_visit' => $date->toDateString(), 'follow_up_date' => $followUpDate ]);
-
-        //assign physician to the patient
-        Patient::find($request->patient_id)->physicians()->syncWithoutDetaching([$user->id]);
-
+    
         return response()->json([
             'consultation_record' => $consultationRecord,
             'payment' => $payment
         ]);
     }
 
-    public function show(Request $request, ConsultationRecord $consultationRecord)
+    public function show(ConsultationRecord $consultationRecord)
     {
-        $user = $request->user();
-
-        if (in_array($user->role, ['physician', 'secretary']))
-        {
-            return $consultationRecord;
-        }
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Unauthorized request.'
-        ]);
+        return $consultationRecord;
     }
 
     public function update(Request $request, ConsultationRecord $consultationRecord)
     {
+        Gate::authorize('update', $consultationRecord);
+
         $fields = $request->validate([
             'height' => 'decimal:0,2',
             'weight' => 'decimal:0,2',
             'blood_pressure' => 'string|max:7',
             'temperature' => 'decimal:0,2',
-            'chief_complaint' => 'required|text',
+            'chief_complaint' => 'text',
             'history_of_present_illness' => 'text',
             'family_hx' => 'text',
             'medical_hx' => 'text',
@@ -100,8 +84,8 @@ class ConsultationRecordController extends Controller
             'pediatrics_e' => 'text',
             'pediatrics_a' => 'text',
             'pediatrics_d' => 'text',
-            'diagnosis' => 'required|text',
-            'prescription' => 'required|text',
+            'diagnosis' => 'text',
+            'prescription' => 'text',
         ]);
 
         $consultationRecord->update($fields);
@@ -113,12 +97,12 @@ class ConsultationRecordController extends Controller
     {
         $dateThreshold = Carbon::now()->subYears(10);
 
-        //if consultation record is not past 10 years, record cannot be deleted
-        if ($consultationRecord->created_at >= $dateThreshold) 
+        //if patient or patient's last consultation date is not past 10 years, patient cannot be deleted
+        if ($consultationRecord->updated_at >= $dateThreshold) 
         {
             return response()->json([
                 'success' => false,
-                'message' => 'Consultation record cannot be deleted.'
+                'message' => 'Consultation record cannot be deleted 10 years before.'
             ], 403);
         }
 
