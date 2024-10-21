@@ -8,42 +8,76 @@ use Illuminate\Http\Request;
 class UserController extends Controller
 {
 
-    public function getUsers(Request $request)
+    public function index(Request $request)
     {
         $request->validate([
+            'search' => 'string',
             'role' => 'string|in:admin,physician,secretary,queue manager',
-            'department' => 'string|max:100'
+            'department_id' => 'integer|exists:departments,id',
+            'is_locked' => 'boolean',
+            'is_restricted' => 'boolean'
         ]);
 
         $query = User::query();
 
+        if ($request->filled('search'))
+        {
+            $query->where(function($q) use ($request)
+            {
+                $q->where('personnel_number', 'LIKE', "%$request->search%")
+                ->orWhere('first_name', 'LIKE', "%$request->search%")
+                ->orWhere('middle_name', 'LIKE', "%$request->search%")
+                ->orWhere('last_name', 'LIKE', "%$request->search%")
+                ->orWhere('suffix', 'LIKE', "%$request->search%");
+            });
+        }
+
         if ($request->filled('role')) 
         {
             $query->where('role',$request->role);
+        }
 
-            if (in_array($request->role, ['physician', 'secretary']) && $request->filled('department')) 
-            {
-                $query->where('department',$request->department);
-            }
+        if ($request->filled('department_id') && (!$request->filled('role') || in_array($request->role, ['physician', 'secretary']))) 
+        {
+            $query->where('department_id',$request->department_id);
+        }
+
+        if ($request->filled('is_locked'))
+        {
+            $query->where('is_locked',$request->is_locked);
+        } else if ($request->filled('is_restricted'))
+        {
+            $request->is_restricted ? $query->where('failed_login_attempts', '>=', 3) : $query->where('failed_login_attempts', '<', 3);
         }
 
         $query->orderBy('updated_at');
         
-        $users = $query->select('id', 'role', 'personnel_number', 'full_name', 'department', 'license_number', 'email')->paginate(20);
+        $users = $query->paginate(20);
         $users->appends($request->all());
 
         return $users;
     }
 
-    public function getPhysicians() 
+    public function getPhysicians(Request $request) 
     {
-        return User::select('id', 'full_name', 'department')->where('role','physician')->get();
+        $request->validate([
+            'department_id' => 'integer|exists:departments,id'
+        ]);
+
+        $query = User::query()->where('role','physician');
+
+        if ($request->filled('department_id'))
+        {
+            $query->where('department_id',$request->department_id);
+        }
+
+        return $query->select('id', 'full_name', 'department')->get();
     }
 
     public function getUsersCount(Request $request)
     {
         $request->validate([
-            'department' => 'string|max:100'
+            'department_id' => 'integer|exists:departments,id'
         ]);
 
         $adminsCount = User::where('role', 'admin')->count();
@@ -51,10 +85,10 @@ class UserController extends Controller
         $secretariesCount = User::where('role', 'secretary');
         $queueManagersCount = User::where('role', 'queue manager')->count();
 
-        if ($request->filled('department'))
+        if ($request->filled('department_id'))
         {
-            $physiciansCount->where('department', $request->department);
-            $secretariesCount->where('department', $request->department);
+            $physiciansCount->where('department_id', $request->department_id);
+            $secretariesCount->where('department_id', $request->department_id);
         }
 
         $physiciansCount = $physiciansCount->count();
@@ -132,6 +166,7 @@ class UserController extends Controller
         $userToUpdate = User::find($request->user_id);
 
         $userToUpdate->is_locked = !$userToUpdate->is_locked;
+        $userToUpdate->failed_login_attempts = 0;
         $userToUpdate->save();
 
         return $userToUpdate;

@@ -20,9 +20,9 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::put('/change-password', [AuthController::class,'changePassword'])->middleware('auth:sanctum');
 
 // users
-// Route::get('/users', [UserController::class, 'getUsers']);
-// Route::get('/users/physicians', [UserController::class, 'getPhysicians']);
-// Route::get('/users/count', [UserController::class, 'getUsersCount']);
+Route::get('/users', [UserController::class, 'index'])->middleware(['auth:sanctum', 'role:admin']);
+Route::get('/users/physicians', [UserController::class, 'getPhysicians'])->middleware(['auth:sanctum', 'role:secretary']);
+Route::get('/users/count', [UserController::class, 'getUsersCount'])->middleware(['auth:sanctum', 'role:admin']);
 Route::put('/users/update-email', [UserController::class, 'updateEmail'])->middleware('auth:sanctum');
 Route::put('/users/update-information', [UserController::class, 'updateInformation'])->middleware(['auth:sanctum', 'role:admin']);
 Route::put('/users/unrestrict-account', [UserController::class, 'unrestrictAccount'])->middleware(['auth:sanctum', 'role:admin']);
