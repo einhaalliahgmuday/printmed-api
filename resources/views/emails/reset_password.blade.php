@@ -14,7 +14,7 @@
             max-width: 600px;
             margin: 0 auto;
             background: #fff;
-            padding: 1.5rem;
+            padding: 1.5rem 2.5rem;
             border-radius: 5px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }

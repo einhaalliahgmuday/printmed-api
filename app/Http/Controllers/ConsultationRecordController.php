@@ -54,6 +54,7 @@ class ConsultationRecordController extends Controller
 
         $payment = Payment::create($paymentFields);
 
+        // web socket for new payment
         event(new PaymentNew($payment));
     
         return response()->json([
