@@ -24,9 +24,9 @@ Route::get('/users', [UserController::class, 'index'])->middleware(['auth:sanctu
 Route::get('/users/physicians', [UserController::class, 'getPhysicians'])->middleware(['auth:sanctum', 'role:secretary']);
 Route::get('/users/count', [UserController::class, 'getUsersCount'])->middleware(['auth:sanctum', 'role:admin']);
 Route::put('/users/update-email', [UserController::class, 'updateEmail'])->middleware('auth:sanctum');
-Route::put('/users/update-information', [UserController::class, 'updateInformation'])->middleware(['auth:sanctum', 'role:admin']);
-Route::put('/users/unrestrict-account', [UserController::class, 'unrestrictAccount'])->middleware(['auth:sanctum', 'role:admin']);
-Route::put('/users/toggle-lock', [UserController::class,'toggleLockUser'])->middleware(['auth:sanctum', 'role:admin']);
+Route::put('/users/{user_to_update}/update-information', [UserController::class, 'updateInformation'])->middleware(['auth:sanctum', 'role:admin']);
+Route::put('/users/{user_to_update}/unrestrict', [UserController::class, 'unrestrictAccount'])->middleware(['auth:sanctum', 'role:admin']);
+Route::put('/users/{user_to_update}/toggle-lock', [UserController::class,'toggleLockUser'])->middleware(['auth:sanctum', 'role:admin']);
 
 //departments
 Route::apiResource('departments', DepartmentController::class)->except(['show'])->middleware(['auth:sanctum', 'role:admin']);

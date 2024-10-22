@@ -14,7 +14,7 @@ class UserController extends Controller
             'search' => 'string',
             'role' => 'string|in:admin,physician,secretary,queue manager',
             'department_id' => 'integer|exists:departments,id',
-            'is_locked' => 'boolean',
+            'is_locked' => 'boolean',   //must only choose which to filter: is_locked or is_restricted
             'is_restricted' => 'boolean'
         ]);
 
@@ -64,7 +64,8 @@ class UserController extends Controller
             'department_id' => 'integer|exists:departments,id'
         ]);
 
-        $query = User::query()->where('role','physician');
+        // gets physicians whose accounts are not locked
+        $query = User::query()->where('role','physician')->where('is_locked', false);
 
         if ($request->filled('department_id'))
         {
@@ -80,10 +81,11 @@ class UserController extends Controller
             'department_id' => 'integer|exists:departments,id'
         ]);
 
-        $adminsCount = User::where('role', 'admin')->count();
-        $physiciansCount = User::where('role', 'physician');
-        $secretariesCount = User::where('role', 'secretary');
-        $queueManagersCount = User::where('role', 'queue manager')->count();
+        //gets users count who are not locked
+        $adminsCount = User::where('role', 'admin')->where('is_locked', false)->count();
+        $physiciansCount = User::where('role', 'physician')->where('is_locked', false);
+        $secretariesCount = User::where('role', 'secretary')->where('is_locked', false);
+        $queueManagersCount = User::where('role', 'queue manager')->where('is_locked', false)->count();
 
         if ($request->filled('department_id'))
         {
@@ -104,11 +106,11 @@ class UserController extends Controller
 
     public function updateEmail(Request $request) 
     {
-        $user = $request->user();
-
         $request->validate([
             'new_email' => 'required|email|unique:users,email|max:255',
         ]);
+
+        $user = $request->user();
 
         $user->email = $request->new_email;
         $user->save();
@@ -116,10 +118,9 @@ class UserController extends Controller
         return $user;
     }
 
-    public function updateInformation(Request $request) 
+    public function updateInformation(Request $request, User $userToUpdate) 
     {
         $fields = $request->validate([
-            'user_id' => 'required|integer',
             'personnel_number' => 'string|size:8|unique:users',
             'first_name' => 'string|max:100',
             'middle_name' => 'string|max:100',
@@ -132,16 +133,6 @@ class UserController extends Controller
             'email' => 'email|unique:users|max:255',
         ]);
 
-        $userToUpdate = User::find($request->user_id);
-
-        if (!$userToUpdate)
-        {
-            return response()->json([
-                'success' => false,
-                'message' => 'User not found.'
-            ], 404);   
-        }
-
         if (!in_array($userToUpdate->role, ['physician', 'secretary']))
         {
             $fields['license'] = null;
@@ -150,21 +141,11 @@ class UserController extends Controller
 
         $userToUpdate->update($fields);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User information successfully updated.',
-            'user' => $userToUpdate,
-        ], 200);
+        return $userToUpdate;
     }
 
-    public function toggleLockUser(Request $request)
+    public function toggleLockUser(User $userToUpdate)
     {
-        $request->validate([
-            'user_id' => 'required|integer|exists:users,id'
-        ]);
-
-        $userToUpdate = User::find($request->user_id);
-
         $userToUpdate->is_locked = !$userToUpdate->is_locked;
         $userToUpdate->failed_login_attempts = 0;
         $userToUpdate->save();
@@ -172,14 +153,8 @@ class UserController extends Controller
         return $userToUpdate;
     }
 
-    public function unrestrictAccount(Request $request)
+    public function unrestrictAccount(User $userToUpdate)
     {
-        $request->validate([
-            'user_id' => 'required|integer|exists:users,id'
-        ]);
-
-        $userToUpdate = User::findOrFail($request->user_id);
-
         $userToUpdate->failed_login_attempts = 0;
         $userToUpdate->save();
 

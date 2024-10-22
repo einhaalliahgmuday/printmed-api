@@ -118,32 +118,30 @@ class AuthController extends Controller
     public function login(Request $request) 
     {
         $request->validate([
-            'role' => 'required|string|exists:users',
-            'personnel_number' => 'required|string|size:8|exists:users',
-            'email' => 'required|email|exists:users',
+            'role' => 'required|string',
+            'personnel_number' => 'required|string|size:8',
+            'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        $user = User::select('id', 'email', 'password', 'failed_login_attempts')
+        $user = User::select('id', 'email', 'password', 'failed_login_attempts', 'is_locked')
                     ->where('role', $request->role)
                     ->where('personnel_number', $request->personnel_number)
                     ->where('email', $request->email)
                     ->first();
 
         //if account is not found or locked
-        if (!$user || ($user && ($user->is_locked === true))) 
+        if (!$user || $user->is_locked) 
         {
             return response()->json([
-                'success' => false,
                 'message' => 'User not found.'
             ], 403);
         }
-        
+
         //if account is restricted due to failed login attempts
         if ($user->failed_login_attempts >= 3)
         {
             return response()->json([
-                'success' => false,
                 'message' => 'This account is locked due to multiple failed login attempts. Please contact the admin.'
             ], 401);
         }
@@ -155,7 +153,6 @@ class AuthController extends Controller
             $user->save();
 
             return response()->json([
-                'success' => false,
                 'message' => 'The provided credentials are incorrect.'
             ], 401);
         }
@@ -175,7 +172,6 @@ class AuthController extends Controller
         $user->save();
 
         return response()->json([
-            'success'=> true,
             'email' => $request->email,
             'token' => $token
         ], 200);
@@ -197,8 +193,7 @@ class AuthController extends Controller
         if (!$otp || !Hash::check($request->token, $otp->token)) 
         {
             return response()->json([
-                'success' => false,
-                'message' => 'Invalid request.'
+                'message' => 'Invalid credentials.'
             ], 400);
         }
 
@@ -208,17 +203,16 @@ class AuthController extends Controller
             $otp->delete();
             
             return response()->json([
-                'success' => false,
                 'message' => 'OTP is expired.'
             ], 400);
         } 
 
         $user = User::where('email', $request->email)->first();
+        // $user->setHidden(['is_locked', 'failed_login_attempts']);
     
         //if user is not found
         if (!$user) {
             return response()->json([
-                'success' => false,
                 'message' => 'User not found.'
             ], 404);
         }

@@ -31,8 +31,6 @@ class User extends Authenticatable
     ];
 
     protected $hidden = [
-        'failed_login_attempts',
-        'is_locked',
         'password',
         'remember_token',
         'created_at',
