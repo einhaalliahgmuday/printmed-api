@@ -106,10 +106,10 @@ class AuthController extends Controller
 
         if ($status !== Password::PASSWORD_RESET) 
         {
-            return response()->json(['status' => 'Failed to reset password.'], 400);
+            return response()->json(['message' => 'Failed to reset password.'], 400);
         }
         
-        return response()->json(['status' => 'Password has been reset successfully.'], 200);
+        return response()->json(['message' => 'Password has been reset successfully.'], 200);
     }
 
     public function login(Request $request) 
@@ -245,7 +245,6 @@ class AuthController extends Controller
         if (!Hash::check($request->current_password, $user->password))
         {
             return response()->json([
-                'success' => false,
                 'message' => 'The provided credentials are incorrect.'
             ], 401);
         }

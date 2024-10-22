@@ -12,10 +12,6 @@ class QueueController extends Controller
 {
     public function index(Request $request)
     {
-        $request->validate([
-            'department_id' => 'integer|exists:departments,id'
-        ]);
-        
         $user = $request->user();
 
         if (in_array($user->role, ['secretary', 'physician']))
@@ -140,7 +136,6 @@ class QueueController extends Controller
 
         return response()->json([
             'message' => 'Queue is completed or there is no number in queue, cannot increment current.',
-            'queue' => $queue
         ], 400);
     }
 }
