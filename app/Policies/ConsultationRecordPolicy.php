@@ -11,7 +11,7 @@ class ConsultationRecordPolicy
 {
     public function create(User $user, Request $request): bool
     {
-        return $user->role == 'physician' && $user->patients()->contains('id', $request->patient_id);
+        return $user->role == 'physician' && $user->patients()->where('patients.id', $request->patient_id)->exists();
     }
 
     public function update(User $user, ConsultationRecord $consultationRecord): bool

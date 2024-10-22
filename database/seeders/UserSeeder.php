@@ -58,5 +58,17 @@ class UserSeeder extends Seeder
             'email' => 'nicoampoloquio@gmail.com',
             'password' => 'password',
         ]);
+
+        User::create([
+            'role' => 'physician',
+            'personnel_number' => 'PN000005',
+            'first_name' => 'Mekaila Mae',
+            'last_name' => 'Aguila',
+            'sex' => 'Female',
+            'birthdate' => '2003-11-06',
+            'email' => 'mekailamaeaguila@gmail.com',
+            'password' => 'password',
+            'department_id' => 2
+        ]);
     }
 }

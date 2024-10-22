@@ -24,6 +24,13 @@ class ConsultationRecordController extends Controller
             'blood_pressure' => 'string|max:7',
             'temperature' => 'decimal:0,2',
             'chief_complaint' => 'required',
+            'history_of_present_illness' => 'string',
+            'family_hx' => 'string',
+            'medical_hx' => 'string',
+            'pediatrics_h' => 'string',
+            'pediatrics_e' => 'string',
+            'pediatrics_a' => 'string',
+            'pediatrics_d' => 'string',
             'primary_diagnosis' => 'string',
             'diagnosis' => 'required',
             'prescription' => 'required',
@@ -33,7 +40,7 @@ class ConsultationRecordController extends Controller
             'payment_hmo' => 'string'
         ]);
 
-        Gate::authorize('create', $request);
+        Gate::authorize('create', [ConsultationRecord::class, $request]);
 
         $user = $request->user();
 
@@ -77,16 +84,18 @@ class ConsultationRecordController extends Controller
             'weight' => 'decimal:0,2',
             'blood_pressure' => 'string|max:7',
             'temperature' => 'decimal:0,2',
-            'chief_complaint' => 'text',
-            'history_of_present_illness' => 'text',
-            'family_hx' => 'text',
-            'medical_hx' => 'text',
-            'pediatrics_h' => 'text',
-            'pediatrics_e' => 'text',
-            'pediatrics_a' => 'text',
-            'pediatrics_d' => 'text',
-            'diagnosis' => 'text',
-            'prescription' => 'text',
+            'chief_complaint' => 'string',
+            'history_of_present_illness' => 'string',
+            'family_hx' => 'string',
+            'medical_hx' => 'string',
+            'pediatrics_h' => 'string',
+            'pediatrics_e' => 'string',
+            'pediatrics_a' => 'string',
+            'pediatrics_d' => 'string',
+            'primary_diagnosis' => 'string',
+            'diagnosis' => 'string',
+            'prescription' => 'string',
+            'follow_up_date' => 'date',
         ]);
 
         $consultationRecord->update($fields);
