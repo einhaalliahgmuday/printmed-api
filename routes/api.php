@@ -6,7 +6,7 @@ use App\Http\Controllers\ConsultationRecordController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\PhysicianPatientController;
+use App\Http\Controllers\PatientPhysicianController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\UserController;
 
@@ -20,19 +20,20 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::put('/change-password', [AuthController::class,'changePassword'])->middleware('auth:sanctum');
 
 // users
+Route::put('/update-email', [UserController::class, 'updateEmail'])->middleware('auth:sanctum');
 Route::get('/users', [UserController::class, 'index'])->middleware(['auth:sanctum', 'role:admin']);
 Route::get('/users/physicians', [UserController::class, 'getPhysicians'])->middleware(['auth:sanctum', 'role:secretary']);
 Route::get('/users/count', [UserController::class, 'getUsersCount'])->middleware(['auth:sanctum', 'role:admin']);
-Route::put('/users/update-email', [UserController::class, 'updateEmail'])->middleware('auth:sanctum');
 Route::put('/users/{user_to_update}/update-information', [UserController::class, 'updateInformation'])->middleware(['auth:sanctum', 'role:admin']);
 Route::put('/users/{user_to_update}/unrestrict', [UserController::class, 'unrestrictAccount'])->middleware(['auth:sanctum', 'role:admin']);
 Route::put('/users/{user_to_update}/toggle-lock', [UserController::class,'toggleLockUser'])->middleware(['auth:sanctum', 'role:admin']);
 
-//departments
+// departments
 Route::apiResource('departments', DepartmentController::class)->except(['show'])->middleware(['auth:sanctum', 'role:admin']);
 
-//assign physician
-// Route::post('/assign-patient-physician', [PhysicianPatientController::class, 'assignPatientPhysician'])->middleware('auth:sanctum');
+// patient-physician relationship
+Route::post('/patients/{patient}/assign-physician', [PatientPhysicianController::class, 'store'])->middleware(['auth:sanctum', 'role:secretary']);
+Route::put('/patients/{patient}/remove-physician', [PatientPhysicianController::class, 'update'])->middleware(['auth:sanctum', 'role:secretary']);
 
 // patients
 Route::apiResource('patients', PatientController::class)->except(['destroy'])->middleware(['auth:sanctum', 'role:secretary,physician']);
@@ -44,7 +45,7 @@ Route::apiResource('consultation-records', ConsultationRecordController::class)-
 Route::get('/consultation-records/{consultation_record}', [ConsultationRecordController::class, 'show'])->middleware(['auth:sanctum', 'role:secretary,physician']);
 
 // payments
-Route::apiResource('payments', PaymentController::class)->except(['destroy', 'update', 'store', 'show'])->middleware(['auth:sanctum', 'role:admin,physician,secretary']);
+Route::get('/payments', [PaymentController::class, 'index'])->middleware(['auth:sanctum', 'role:admin,physician,secretary']);
 Route::put('/payments/{payment}', [PaymentController::class, 'update'])->middleware(['auth:sanctum', 'role:physician,secretary']);
 Route::get('/payments-total', [PaymentController::class, 'getPaymentsTotal'])->middleware(['auth:sanctum', 'role:admin']);  
 

@@ -74,6 +74,6 @@ class Patient extends Model
 
     public function physicians()
     {
-        return $this->belongsToMany(User::class, 'physician_patients', 'patient_id', 'physician_id');
+        return $this->belongsToMany(User::class, 'patient_physicians', 'patient_id', 'physician_id');
     }
 }
