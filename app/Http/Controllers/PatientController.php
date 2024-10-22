@@ -131,7 +131,6 @@ class PatientController extends Controller
         if ($patient->updated_at >= $dateThreshold || $lastConsultationRecordDate >= $dateThreshold) 
         {
             return response()->json([
-                'success' => false,
                 'message' => 'Patient record cannot be deleted 10 years before last record.'
             ], 403);
         }
@@ -139,7 +138,6 @@ class PatientController extends Controller
         $patient->delete();
 
         return response()->json([
-            'success' => true,
             'message' => 'Patient successfully deleted.'
         ], 200);
     }

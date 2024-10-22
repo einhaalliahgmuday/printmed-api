@@ -57,13 +57,11 @@ class AuthController extends Controller
         if (!$isResetLinkSent)
         {
             return response()->json([
-                'success' => false,
                 'message' => 'Reset link NOT sent.'
             ], 500);
         }
 
         return response()->json([
-            'success' => true,
             'message' => 'Reset link sent.'
         ], 200);
     }
@@ -87,7 +85,6 @@ class AuthController extends Controller
             && $request->last_name !== $user->last_name && $request->birthdate !== $user->birthdate))
         {
             return response()->json([
-                'success' => false,
                 'message' => 'Invalid credentials.'
             ], 401);
         }
@@ -232,7 +229,6 @@ class AuthController extends Controller
         $request->user()->tokens()->delete();   
 
         return response()->json([
-            'success' => true,
             'message' => 'You are logged out.'
         ], 200);
     }
@@ -251,14 +247,13 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'The provided credentials are incorrect.'
-            ]);
+            ], 401);
         }
 
         $user->password = Hash::make($request->new_password);
         $user->save();
 
         return response()->json([
-            'success' => true,
             'message' => 'Password changed successfully.'
         ]);
     }

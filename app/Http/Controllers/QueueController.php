@@ -35,7 +35,6 @@ class QueueController extends Controller
         }
 
         return response()->json([
-            'success' => false,
             'message' => 'Department already exists in queue.'
         ], 409);
     }
@@ -45,7 +44,6 @@ class QueueController extends Controller
     {
         if ($queue->total !== null) {
             return response()->json([
-                'success' => false,
                 'message' => 'Queue  cannot be deleted. Clear the queue first.'
             ], 403);
         }
@@ -53,7 +51,6 @@ class QueueController extends Controller
         $queue->delete();
 
         return response()->json([
-            'success' => true,
             'message' => 'Queue successfully deleted.'
         ], 200);
     }
@@ -138,9 +135,8 @@ class QueueController extends Controller
         }
 
         return response()->json([
-            'success' => false,
             'message' => 'Queue is completed or there is no number in queue, cannot increment current.',
             'queue' => $queue
-        ]);
+        ], 400);
     }
 }

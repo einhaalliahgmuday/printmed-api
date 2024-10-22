@@ -102,7 +102,6 @@ class ConsultationRecordController extends Controller
         if ($consultationRecord->updated_at >= $dateThreshold) 
         {
             return response()->json([
-                'success' => false,
                 'message' => 'Consultation record cannot be deleted 10 years before.'
             ], 403);
         }
@@ -110,7 +109,6 @@ class ConsultationRecordController extends Controller
         $consultationRecord->delete();
 
         return response()->json([
-            'success' => true,
             'message' => 'Consultation record successfully deleted.'
         ]);
     }
