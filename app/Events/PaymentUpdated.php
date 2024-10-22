@@ -5,13 +5,11 @@ namespace App\Events;
 use App\Models\Payment;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class PaymentUpdated
+class PaymentUpdated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -32,6 +30,6 @@ class PaymentUpdated
 
     public function broadcastAs()
     {
-        return 'payment-updated';
+        return "payment-updated-department-{$this->payment->department_id}"; // ex. payment-updated-department-1 (means a payment record was updated for department id 1)
     }
 }
