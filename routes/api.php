@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuditController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsultationRecordController;
@@ -56,3 +57,5 @@ Route::delete('/queue/{queue}', [QueueController::class, 'destroy'])->middleware
 Route::put('/queue/{queue}/clear', [QueueController::class, 'clearQueue'])->middleware(['auth:sanctum', 'role:queue manager']);
 Route::put('/queue/{queue}/increment-total', [QueueController::class, 'incrementQueueTotal'])->middleware(['auth:sanctum', 'role:queue manager']);;
 Route::put('/queue/{queue}/increment-current', [QueueController::class, 'incrementQueueCurrent'])->middleware(['auth:sanctum', 'role:secretary,physician']);
+
+Route::get('/audits', [AuditController::class, 'index'])->middleware(['auth:sanctum', 'role:admin']);  ;

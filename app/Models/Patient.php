@@ -5,10 +5,26 @@ namespace App\Models;
 use App\Traits\CommonMethodsTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class Patient extends Model
+class Patient extends Model implements Auditable
 {
     use HasFactory, CommonMethodsTrait;
+    use \OwenIt\Auditing\Auditable;
+
+    protected $auditInclude = [
+        'patient_number',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'suffix',
+        'birthday',
+        'sex',
+        'address',
+        'civil_status',
+        'religion',
+        'phone_number'
+    ];
 
     protected $fillable = [
         'patient_number',
@@ -27,8 +43,8 @@ class Patient extends Model
     protected $hidden = [
         'created_at',
         'updated_at',
-        'consultation_records',
-        'physicians'
+        // 'consultation_records',
+        // 'physicians'
     ];
 
     protected $appends = [

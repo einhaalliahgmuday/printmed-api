@@ -8,10 +8,28 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Notifications\ResetPasswordNotification;
 use App\Traits\CommonMethodsTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements Auditable
 {
     use HasFactory, Notifiable, HasApiTokens, CommonMethodsTrait;
+    use \OwenIt\Auditing\Auditable;
+
+    protected $auditInclude = [
+        'role',
+        'personnel_number',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'suffix',
+        'sex',
+        'birthdate',
+        'department_id',
+        'license_number',
+        'email',
+        'is_locked',
+        // 'failed_login_attempts',
+    ];
 
     protected $fillable = [
         'role',
@@ -52,7 +70,7 @@ class User extends Authenticatable
     {
         if($this->role === 'physician')
         {
-            return $this->belongsToMany(Patient::class, 'physician_patients', 'physician_id', 'patient_id');
+            return $this->belongsToMany(Patient::class, 'patient_physicians', 'physician_id', 'patient_id');
         }
 
         return collect(); 
