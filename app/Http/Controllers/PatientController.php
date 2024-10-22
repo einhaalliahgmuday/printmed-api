@@ -163,7 +163,7 @@ class PatientController extends Controller
     public function getPatientsCount(Request $request)
     {
         $request->validate([
-            'department_id' => 'integer',
+            'department_id' => 'integer|exists:departments,id',
             'date_from' => 'date',
             'date_until' => 'date|after_or_equal:date_from',
         ]);

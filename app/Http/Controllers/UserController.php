@@ -129,7 +129,7 @@ class UserController extends Controller
             'sex' => 'string|max:6',
             'birthdate' => 'date',
             'license_number' => 'string|max:50',
-            'department_id' => 'integer',
+            'department_id' => 'integer|exists:departments,id',
             'email' => 'email|unique:users|max:255',
         ]);
 

@@ -12,6 +12,10 @@ class QueueController extends Controller
 {
     public function index(Request $request)
     {
+        $request->validate([
+            'department_id' => 'integer|exists:departments,id'
+        ]);
+        
         $user = $request->user();
 
         if (in_array($user->role, ['secretary', 'physician']))
