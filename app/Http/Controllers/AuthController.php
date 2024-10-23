@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\CreatedUser;
-use App\Events\LockRestrictAccount;
-use App\LockRestrictAction;
+use App\AccountActionEnum;
+use App\Events\AccountAction;
 use App\Models\Otp;
 use App\Models\User;
 use App\Notifications\OtpVerificationNotification;
@@ -16,7 +15,6 @@ use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
-
     public function register(Request $request) 
     {
         $fields = $request->validate([
@@ -50,7 +48,7 @@ class AuthController extends Controller
         return $status === Password::RESET_LINK_SENT ? true : false;
     }
 
-    public function forgotPassword(Request $request)
+    public function sendResetPasswordEmail(Request $request)
     {
         $request->validate([
             'email' => 'required|email|exists:users'
@@ -64,6 +62,10 @@ class AuthController extends Controller
                 'message' => 'Reset link NOT sent.'
             ], 500);
         }
+
+        $user = User::where('email', $request->email)->first();
+        // implements audit of sending reset link, which is executed by Admin
+        event(new AccountAction(AccountActionEnum::SENT_RESET_LINK, $request->user(), $user, $request));
 
         return response()->json([
             'message' => 'Reset link sent.'
@@ -82,36 +84,37 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|regex:/[a-z]/|regex:/[A-Z]/|regex:/[0-9]/|regex:/[@$!%*?&]/|confirmed'
         ]);
 
-        $user = User::select('personnel_number', 'first_name', 'last_name', 'birthdate')
+        $user = User::select('id', 'personnel_number', 'first_name', 'last_name', 'birthdate')
+                    ->where('personnel_number', $request->personnel_number)
+                    ->where('first_name', $request->first_name)
+                    ->where('last_name', $request->last_name)
+                    ->where('birthdate', $request->birthdate)
                     ->where('email', $request->email)->first();
 
-        if (!$user || ($request->personnel_number !== $user->personnel_number && $request->first_name !== $user->first_name 
-            && $request->last_name !== $user->last_name && $request->birthdate !== $user->birthdate))
+        if (!$user)
         {
             return response()->json([
-                'message' => 'Invalid credentials.'
-            ], 401);
+                'message' => 'Invalid credentials'
+            ], 404);
         }
 
-        $status = Password::reset(
-            $request->only('token', 'email', 'password', 'password_confirmation'),
+        $status = Password::reset($request->only('token', 'email', 'password', 'password_confirmation'),
             function ($user) use ($request) {
-                $user->forceFill([
-                    'password' => Hash::make($request->password),
-                    'email_verified_at' => now()
-                ])->save();
+                $user->forceFill(['password' => Hash::make($request->password), 'email_verified_at' => now()])->save();
 
                 //all access tokens will be deleted after password reset
                 $user->tokens()->delete();
 
                 event(new PasswordReset($user));
-            }
-        );
+            });
 
         if ($status !== Password::PASSWORD_RESET) 
         {
             return response()->json(['message' => 'Failed to reset password.'], 400);
         }
+        
+        // implements audit of resetting password, which is executed by Admin
+        event(new AccountAction(AccountActionEnum::RESET_PASSWORD, null, $user, $request));
         
         return response()->json(['message' => 'Password has been reset successfully.'], 200);
     }
@@ -136,7 +139,7 @@ class AuthController extends Controller
         {
             return response()->json([
                 'message' => 'User not found.'
-            ], 403);
+            ], 404);
         }
 
         //if account is restricted due to failed login attempts
@@ -156,7 +159,7 @@ class AuthController extends Controller
             // implemented custom audit event in when account is restricted due to 3 failed login attempts
             if ($user->failed_login_attempts >= 3)
             {
-                event(new LockRestrictAccount(LockRestrictAction::RESTRICT, null, $user, $request));
+                event(new AccountAction(AccountActionEnum::RESTRICT, null, $user, $request));
             }
 
             return response()->json([
@@ -195,38 +198,21 @@ class AuthController extends Controller
         $otp = Otp::where('email', $request->email)
             ->where('code', $request->code)
             ->first();
-        
-        //if otp credentials are incorrect
-        if (!$otp || !Hash::check($request->token, $otp->token)) 
-        {
-            return response()->json([
-                'message' => 'Invalid credentials.'
-            ], 400);
-        }
-
-        //if otp is expired
-        if (now()->isAfter($otp->expires_at))
-        {
-            $otp->delete();
-            
-            return response()->json([
-                'message' => 'OTP is expired.'
-            ], 400);
-        } 
 
         $user = User::where('email', $request->email)->first();
-        // $user->setHidden(['is_locked', 'failed_login_attempts']);
-    
-        //if user is not found
-        if (!$user) {
+        
+        if (!$otp || now()->isAfter($otp->expires_at) || !Hash::check($request->token, $otp->token) || !$user) 
+        {
             return response()->json([
-                'message' => 'User not found.'
+                'message' => 'Invalid request'
             ], 404);
         }
 
         $otp->delete();
-
         $token = $user->createToken($user->email)->plainTextToken;
+
+        // implements audit of login
+        event(new AccountAction(AccountActionEnum::LOGIN, null, $user, $request));
 
         return response()->json([
             'user' => $user,
@@ -237,6 +223,9 @@ class AuthController extends Controller
     public function logout(Request $request) 
     {
         $request->user()->tokens()->delete();   
+
+        // implements audit of logout
+        event(new AccountAction(AccountActionEnum::LOGOUT, $request->user(), $request->user(), $request));
 
         return response()->json([
             'message' => 'You are logged out.'

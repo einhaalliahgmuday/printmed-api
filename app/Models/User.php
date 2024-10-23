@@ -48,6 +48,7 @@ class User extends Authenticatable implements Auditable
         'password',
         'is_locked',
         'failed_login_attempts',
+        'email_verified_at'
     ];
 
     protected $hidden = [

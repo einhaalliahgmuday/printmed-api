@@ -2,27 +2,39 @@
 
 namespace App\Listeners;
 
-use App\Events\LockRestrictAccount;
-use App\LockRestrictAction;
+use App\AccountActionEnum;
+use App\Events\AccountAction;
 use OwenIt\Auditing\Models\Audit;
 
-class AuditLockRestrictAccount
+class AuditAccountAction
 {
-    public function handle(LockRestrictAccount $event): void
+    public function handle(AccountAction $event): void
     {
-        $action = $event->action;   //LockRestrictAction enum
+        $action = $event->action;
         $user = $event->user;
         $auditable = $event->auditable;
         $request = $event->request;
 
         $auditEvent = null;
 
-        if ($action === LockRestrictAction::LOCK) 
+        if ($action === AccountActionEnum::LOCK) 
         {
             $auditEvent = $auditable->is_locked ? 'locked' : 'unlocked';
-        } else if ($action === LockRestrictAction::RESTRICT) 
+        } else if ($action === AccountActionEnum::RESTRICT) 
         {
             $auditEvent = $auditable->failed_login_attempts >= 3 ? 'restricted' : 'unrestricted';
+        } else if ($action === AccountActionEnum::LOGIN) 
+        {
+            $auditEvent = 'login';
+        } else if ($action === AccountActionEnum::LOGOUT) 
+        {
+            $auditEvent = 'logout';
+        } else if ($action === AccountActionEnum::SENT_RESET_LINK) 
+        {
+            $auditEvent = 'sent reset link';
+        } else if ($action === AccountActionEnum::RESET_PASSWORD) 
+        {
+            $auditEvent = 'reset password';
         }
 
         Audit::create([

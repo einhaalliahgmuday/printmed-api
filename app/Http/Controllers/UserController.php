@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\LockRestrictAccount;
+use App\AccountActionEnum;
+use App\Events\AccountAction;
 use App\Events\UpdateUser;
-use App\LockRestrictAction;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -13,7 +13,7 @@ class UserController extends Controller
 
     // implemented custom audit event in: update information of user, lock toggle of account,
     // and unrestricting account from 3 failed login attempts
-    // which are all executed by the Admin
+    // - which are all executed by the Admin
 
     public function index(Request $request)
     {
@@ -161,7 +161,7 @@ class UserController extends Controller
         $userToUpdate->failed_login_attempts = 0;
         $userToUpdate->save();
 
-        event(new LockRestrictAccount(LockRestrictAction::LOCK, $request->user(), $userToUpdate, $request));
+        event(new AccountAction(AccountActionEnum::LOCK, $request->user(), $userToUpdate, $request));
 
         return $userToUpdate;
     }
@@ -171,7 +171,7 @@ class UserController extends Controller
         $userToUpdate->failed_login_attempts = 0;
         $userToUpdate->save();
 
-        event(new LockRestrictAccount(LockRestrictAction::RESTRICT, $request->user(), $userToUpdate, $request));
+        event(new AccountAction(AccountActionEnum::RESTRICT, $request->user(), $userToUpdate, $request));
 
         return $userToUpdate;
     }
