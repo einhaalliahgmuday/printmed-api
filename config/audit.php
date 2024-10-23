@@ -58,7 +58,6 @@ return [
     */
 
     'events' => [
-        // 'retrieved',
         'created',
         'updated',
         'deleted',

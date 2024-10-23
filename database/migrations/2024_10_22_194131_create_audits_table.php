@@ -19,7 +19,11 @@ class CreateAuditsTable extends Migration
             $table->string($morphPrefix . '_type')->nullable();
             $table->unsignedBigInteger($morphPrefix . '_id')->nullable();
             $table->string('event');
-            $table->morphs('auditable');
+            // $table->morphs('auditable');
+            $table->unsignedBigInteger('auditable_id')->nullable();
+            $table->string('auditable_type')->nullable();  
+            $table->integer('retrieved_size')->nullable();
+            $table->text('retrieved_auditable_ids')->nullable();
             $table->text('old_values')->nullable();
             $table->text('new_values')->nullable();
             $table->text('url')->nullable();
@@ -28,7 +32,7 @@ class CreateAuditsTable extends Migration
             $table->string('tags')->nullable();
             $table->timestamps();
 
-            $table->index([$morphPrefix . '_id', $morphPrefix . '_type']);
+            $table->index([$morphPrefix . '_id', $morphPrefix . '_type'])->nullable();
         });
     }
 

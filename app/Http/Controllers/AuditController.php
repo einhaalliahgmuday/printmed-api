@@ -16,11 +16,12 @@ class AuditController extends Controller
 
         $audits = [];
 
-        foreach (Audit::orderBy('created_at', 'asc')->get() as $audit)
+        foreach (Audit::orderBy('created_at', 'desc')->get() as $audit)
         {
             $user = $audit->user;
 
             $audits[] = [
+                'id' => $audit->id,
                 'date' => $audit->created_at->format('Y-m-d'),
                 'time' => $audit->created_at->format('H:m A'),
                 'user_role' => ucfirst($user->role),
@@ -29,7 +30,8 @@ class AuditController extends Controller
                 'action' => strtoupper(substr($audit->event, 0, -1)),
                 'resource' => $this->getResource($audit->auditable_type),
                 'old_values' => $audit->old_values,
-                'new_values' => $audit->new_values
+                'new_values' => $audit->new_values,
+                'size' => $audit->retrieved_size
             ];
         }
 
@@ -44,6 +46,11 @@ class AuditController extends Controller
         );
 
         return $paginator;
+    }
+
+    public function show(Audit $audit)
+    {
+        
     }
 
     public function getResource(string $auditableType)
