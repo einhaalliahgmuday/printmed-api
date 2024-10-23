@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\PaymentNew;
+use App\Events\RetrievedData;
 use App\Models\ConsultationRecord;
 use App\Models\Payment;
 use Carbon\Carbon;
@@ -70,8 +71,11 @@ class ConsultationRecordController extends Controller
         ]);
     }
 
-    public function show(ConsultationRecord $consultationRecord)
+    public function show(Request $request, ConsultationRecord $consultationRecord)
     {
+        // implements audit of retrieval
+        event(new RetrievedData($request->user, $consultationRecord, $request));
+
         return $consultationRecord;
     }
 

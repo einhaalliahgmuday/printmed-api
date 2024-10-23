@@ -150,6 +150,7 @@ class UserController extends Controller
 
         $userToUpdate->update($fields);
 
+        // implements audit of update
         event(new UpdateUser($request->user(), $originalData,$userToUpdate, $request));
 
         return $userToUpdate->getOriginal();

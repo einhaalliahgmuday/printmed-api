@@ -14,11 +14,11 @@ class AccountAction
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public AccountActionEnum $action;
-    public User|null $user;
-    public User $auditable;
+    public User $user;
+    public User|null $auditable;
     public Request $request;
 
-    public function __construct(AccountActionEnum $action, User|null $user, User $auditable, Request $request)
+    public function __construct(AccountActionEnum $action, User $user, User|null $auditable, Request $request)
     {
         $this->action = $action;
         $this->user = $user;

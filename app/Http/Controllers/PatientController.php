@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\RetrievedData;
 use App\Models\Patient;
 use App\Models\Payment;
 use Carbon\Carbon;
@@ -60,6 +61,9 @@ class PatientController extends Controller
             $patients = $query->paginate(15);
             $patients->appends($request->all()); //appends the request parameters to pagination URLs
 
+            // implements audit of retrieval
+            event(new RetrievedData($user, $patients->getCollection(), $request));
+
             return $patients;
         }
 
@@ -88,9 +92,13 @@ class PatientController extends Controller
         return $patient;
     }
 
-    public function show(Patient $patient)
+    public function show(Request $request, Patient $patient)
     {
         $consultationRecords = $patient->consultationRecords()->paginate(10);
+
+        // implements audit of retrieval
+        event(new RetrievedData($request->user, $consultationRecords->getCollection(), $request));
+        event(new RetrievedData($request->user, $patient, $request));
 
         return response()->json([
             'patient' => $patient,

@@ -114,7 +114,7 @@ class AuthController extends Controller
         }
         
         // implements audit of resetting password, which is executed by Admin
-        event(new AccountAction(AccountActionEnum::RESET_PASSWORD, null, $user, $request));
+        event(new AccountAction(AccountActionEnum::RESET_PASSWORD, $user, null, $request));
         
         return response()->json(['message' => 'Password has been reset successfully.'], 200);
     }
@@ -159,7 +159,7 @@ class AuthController extends Controller
             // implemented custom audit event in when account is restricted due to 3 failed login attempts
             if ($user->failed_login_attempts >= 3)
             {
-                event(new AccountAction(AccountActionEnum::RESTRICT, null, $user, $request));
+                event(new AccountAction(AccountActionEnum::RESTRICT, $user, null, $request));
             }
 
             return response()->json([
@@ -212,7 +212,7 @@ class AuthController extends Controller
         $token = $user->createToken($user->email)->plainTextToken;
 
         // implements audit of login
-        event(new AccountAction(AccountActionEnum::LOGIN, null, $user, $request));
+        event(new AccountAction(AccountActionEnum::LOGIN, $user, null, $request));
 
         return response()->json([
             'user' => $user,

@@ -19,10 +19,10 @@ class AuditAccountAction
 
         if ($action === AccountActionEnum::LOCK) 
         {
-            $auditEvent = $auditable->is_locked ? 'locked' : 'unlocked';
+            $auditEvent = $user->is_locked ? 'locked' : 'unlocked';
         } else if ($action === AccountActionEnum::RESTRICT) 
         {
-            $auditEvent = $auditable->failed_login_attempts >= 3 ? 'restricted' : 'unrestricted';
+            $auditEvent = $user->failed_login_attempts >= 3 ? 'restricted' : 'unrestricted';
         } else if ($action === AccountActionEnum::LOGIN) 
         {
             $auditEvent = 'login';
@@ -38,11 +38,11 @@ class AuditAccountAction
         }
 
         Audit::create([
-            'user_type' => $user === null ? null: get_class($user),
-            'user_id' => $user === null ? null : $user->id,
+            'user_type' => get_class($user),
+            'user_id' => $user->id,
             'event' => $auditEvent,
-            'auditable_id' => $auditable->id,
-            'auditable_type' => get_class($auditable),
+            'auditable_id' => $auditable ?-> id,
+            'auditable_type' => $auditable !== null ? get_class($auditable) : null,
             'url' => $request->url(),
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
