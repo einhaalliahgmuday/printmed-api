@@ -11,12 +11,15 @@ use App\Http\Controllers\PatientPhysicianController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\UserController;
 
+// audit
+Route::apiResource('/audits', AuditController::class)->only(['index', 'show'])->middleware(['auth:sanctum', 'role:admin']);
+
 // authentication and password-related
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->middleware(['throttle:3,5']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 Route::post('/register', [AuthController::class, 'register'])->middleware(['auth:sanctum', 'role:admin']);
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware(['auth:sanctum', 'role:admin']);
+Route::post('/forgot-password', [AuthController::class, 'sendResetPasswordEmail'])->middleware(['auth:sanctum', 'role:admin']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::put('/change-password', [AuthController::class,'changePassword'])->middleware('auth:sanctum');
 
@@ -57,5 +60,3 @@ Route::delete('/queue/{queue}', [QueueController::class, 'destroy'])->middleware
 Route::put('/queue/{queue}/clear', [QueueController::class, 'clearQueue'])->middleware(['auth:sanctum', 'role:queue manager']);
 Route::put('/queue/{queue}/increment-total', [QueueController::class, 'incrementQueueTotal'])->middleware(['auth:sanctum', 'role:queue manager']);;
 Route::put('/queue/{queue}/increment-current', [QueueController::class, 'incrementQueueCurrent'])->middleware(['auth:sanctum', 'role:secretary,physician']);
-
-Route::get('/audits', [AuditController::class, 'index'])->middleware(['auth:sanctum', 'role:admin']);  ;
