@@ -15,6 +15,10 @@ class User extends Authenticatable implements Auditable
     use HasFactory, Notifiable, HasApiTokens, CommonMethodsTrait;
     use \OwenIt\Auditing\Auditable;
 
+    protected $auditEvents = [
+        'created',
+    ];
+
     protected $auditInclude = [
         'role',
         'personnel_number',
@@ -26,9 +30,7 @@ class User extends Authenticatable implements Auditable
         'birthdate',
         'department_id',
         'license_number',
-        'email',
-        'is_locked',
-        // 'failed_login_attempts',
+        'email'
     ];
 
     protected $fillable = [

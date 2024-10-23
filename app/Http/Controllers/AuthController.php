@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\CreatedUser;
+use App\Events\LockRestrictAccount;
+use App\LockRestrictAction;
 use App\Models\Otp;
 use App\Models\User;
 use App\Notifications\OtpVerificationNotification;
@@ -13,6 +16,7 @@ use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+
     public function register(Request $request) 
     {
         $fields = $request->validate([
@@ -148,6 +152,12 @@ class AuthController extends Controller
         {
             $user->failed_login_attempts++;
             $user->save();
+
+            // implemented custom audit event in when account is restricted due to 3 failed login attempts
+            if ($user->failed_login_attempts >= 3)
+            {
+                event(new LockRestrictAccount(LockRestrictAction::RESTRICT, null, $user, $request));
+            }
 
             return response()->json([
                 'message' => 'The provided credentials are incorrect.'
