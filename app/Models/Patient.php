@@ -42,9 +42,7 @@ class Patient extends Model implements Auditable
 
     protected $hidden = [
         'created_at',
-        'updated_at',
-        // 'consultation_records',
-        // 'physicians'
+        'updated_at'
     ];
 
     protected $appends = [
