@@ -98,7 +98,7 @@ class PatientController extends Controller
 
         // implements audit of retrieval
         // event(new RetrievedData($request->user, $consultationRecords->getCollection(), $request));
-        event(new RetrievedData($request->user, $patient, $request));
+        event(new RetrievedData($request->user(), $patient, $request));
 
         return response()->json([
             'patient' => $patient,

@@ -5,10 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audits</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
         body {
             box-sizing: border-box;
             font-family: Arial, Helvetica, sans-serif;
             font-size: 1rem;
+            margin: 3rem;
         }
         table {
             width: 100%;
@@ -20,7 +25,9 @@
             padding: .5rem;
             text-align: center;
             word-wrap: break-word;
-            /* overflow-wrap: break-word; */
+        }
+        td p {
+            margin-bottom: .5rem;
         }
         th {
             background-color: #f2f2f2;
@@ -37,19 +44,22 @@
             width: 15%;
             overflow: hidden;
         }
+        .ta-left {
+            text-align: left;
+        }
     </style>
 </head>
 <body>
     <table>
         <thead>
             <tr>
-                <th class="w-10">DATETIME</th>
-                <th class="w-10">USER ID</th>
-                <th class="w-10">ROLE</th>
-                <th class="w-15">DESCRIPTION</th>
-                <th class="w-10">ENTITY</th>
-                <th class="w-15">OLD VALUES</th>
-                <th class="w-15">NEW VALUES</th>
+                <th class="w-10">Timestamp</th>
+                <th class="w-10">User ID</th>
+                <th class="w-10">Role</th>
+                <th class="w-15">Description</th>
+                <th class="w-10">Entity</th>
+                <th class="w-15">Old Values</th>
+                <th class="w-15">New Values</th>
             </tr>
         </thead>
         <tbody>
@@ -60,8 +70,16 @@
                     <td class="w-10">{{$audit['user_role']}}</td>
                     <td class="w-15">{{$audit['message']}}</td>
                     <td class="w-10">{{$audit['resource_entity']}}</td>
-                    <td class="w-15">{{$audit['old_values'] ? json_encode($audit['old_values']) : ""}}</td>
-                    <td class="w-15">{{$audit['new_values'] ? json_encode($audit['new_values']) : ""}}</td>
+                    <td class="w-15 ta-left">
+                        @foreach ($audit['old_values'] as $value)
+                            <p>{{$value}}</p>
+                        @endforeach
+                    </td>
+                    <td class="w-15 ta-left">
+                        @foreach ($audit['new_values'] as $value)
+                            <p>{{$value}}</p>
+                        @endforeach
+                    </td>
                 </tr>
             @endforeach
         </tbody>

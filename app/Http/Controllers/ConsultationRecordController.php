@@ -74,7 +74,7 @@ class ConsultationRecordController extends Controller
     public function show(Request $request, ConsultationRecord $consultationRecord)
     {
         // implements audit of retrieval
-        event(new RetrievedData($request->user, $consultationRecord, $request));
+        event(new RetrievedData($request->user(), $consultationRecord, $request));
 
         return $consultationRecord;
     }

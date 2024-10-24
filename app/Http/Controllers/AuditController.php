@@ -43,13 +43,11 @@ class AuditController extends Controller
             'date_until' => 'date|after_or_equal:date_from'
         ]);
 
-        $auditsQuery = $this->getAudits($request);
-
         $audits = $this->getAudits($request);
 
         $pdf = Pdf::loadView('audits', ['audits' => $audits])->setPaper('a4', 'landscape');
 
-        return $pdf->stream('audits.pdf');
+        return $pdf->download('audits.pdf');
     }
 
     public function getAudits(Request $request)
@@ -80,6 +78,12 @@ class AuditController extends Controller
             $user = $request->user();
             $resourceInformation = $this->getResourceInformation($audit);
 
+            if ($audit->event !== 'updated')
+            {
+                $audit->old_values = null;
+                $audit->new_values = null;
+            }
+
             $audits[] = [
                 'id' => $audit->id,
                 'date' => $audit->created_at->format('Y-m-d'),
@@ -87,17 +91,33 @@ class AuditController extends Controller
                 'user_role' => $user ? ucfirst($user->role) : null,
                 'user_personnel_number' => $user ?-> personnel_number,
                 'user_name' => $user ?-> full_name,
-                'action' => strtoupper($audit->event),
-                'message' => strtoupper($this->getAuditMessage($audit)),
+                'action' => ucfirst($audit->event),
+                'message' => ucfirst($this->getAuditMessage($audit)),
                 'resource_type' => $resourceInformation['resource_type'],
                 'resource_id' => $resourceInformation['resource_id'],
                 'resource_entity' => $resourceInformation['resource_entity'],
-                'old_values' => $audit ?-> old_values,
-                'new_values' => $audit ?-> new_values
+                'old_values' => $this->formatArrayToString($audit->old_values),
+                'new_values' => $this->formatArrayToString($audit->new_values)
             ];
         } 
 
         return $audits;
+    }
+
+    public function formatArrayToString($array)
+    {
+        $formatted = [];
+
+        if (is_array($array))
+        {
+            foreach ($array as $key => $value)
+            {
+                $key = ucwords(str_replace('_', " ", $key));
+                $formatted[] = "{$key}: $value";
+            }
+        }
+    
+        return $formatted;
     }
 
     public function getRequestResourceClass(string $resource)
@@ -139,7 +159,7 @@ class AuditController extends Controller
         {
             if (in_array($resourceType, ['user', 'patient']))
             {
-                $resourceEntity = $resourceType === 'user' ? $auditable->personnel_number : $auditable->patient_id;
+                $resourceEntity = $resourceType === 'user' ? $auditable->personnel_number : $auditable->patient_number;
             }
             else if (in_array($resourceType, ['payment', 'consultationrecord']))
             {

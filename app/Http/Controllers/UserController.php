@@ -140,13 +140,13 @@ class UserController extends Controller
             'email' => 'email|unique:users|max:255',
         ]);
 
+        $originalData = $userToUpdate->toArray();
+
         if (!in_array($userToUpdate->role, ['physician', 'secretary']))
         {
             $fields['license'] = null;
             $fields["department_id"] = null;
         }
-
-        $originalData = $userToUpdate->toArray();
 
         $userToUpdate->update($fields);
 
