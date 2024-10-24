@@ -62,7 +62,7 @@ class PatientController extends Controller
             $patients->appends($request->all()); //appends the request parameters to pagination URLs
 
             // implements audit of retrieval
-            event(new RetrievedData($user, $patients->getCollection(), $request));
+            // event(new RetrievedData($user, $patients->getCollection(), $request));
 
             return $patients;
         }
@@ -97,7 +97,7 @@ class PatientController extends Controller
         $consultationRecords = $patient->consultationRecords()->paginate(10);
 
         // implements audit of retrieval
-        event(new RetrievedData($request->user, $consultationRecords->getCollection(), $request));
+        // event(new RetrievedData($request->user, $consultationRecords->getCollection(), $request));
         event(new RetrievedData($request->user, $patient, $request));
 
         return response()->json([
@@ -150,7 +150,7 @@ class PatientController extends Controller
         ], 200);
     }
 
-    public function getDuplicatePatients(Request $request) 
+    public function getDuplicates(Request $request) 
     {
         $request->validate([
             'first_name' => 'required|string|max:100',
@@ -168,7 +168,7 @@ class PatientController extends Controller
         return $patients;
     }
 
-    public function getPatientsCount(Request $request)
+    public function getCount(Request $request)
     {
         $request->validate([
             'department_id' => 'integer|exists:departments,id',

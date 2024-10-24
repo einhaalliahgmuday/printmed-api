@@ -146,17 +146,17 @@ class UserController extends Controller
             $fields["department_id"] = null;
         }
 
-        $originalData = $userToUpdate->getOriginal();
+        $originalData = $userToUpdate->toArray();
 
         $userToUpdate->update($fields);
 
         // implements audit of update
         event(new UpdateUser($request->user(), $originalData,$userToUpdate, $request));
 
-        return $userToUpdate->getOriginal();
+        return $userToUpdate;
     }
 
-    public function toggleLockUser(Request $request, User $userToUpdate)
+    public function toggleLock(Request $request, User $userToUpdate)
     {
         $userToUpdate->is_locked = !$userToUpdate->is_locked;
         $userToUpdate->failed_login_attempts = 0;
@@ -167,7 +167,7 @@ class UserController extends Controller
         return $userToUpdate;
     }
 
-    public function unrestrictAccount(Request $request, User $userToUpdate)
+    public function unrestrict(Request $request, User $userToUpdate)
     {
         $userToUpdate->failed_login_attempts = 0;
         $userToUpdate->save();

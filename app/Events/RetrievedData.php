@@ -15,10 +15,10 @@ class RetrievedData
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public User $user;
-    public Model|Collection $auditable;
+    public Model $auditable;
     public Request $request;
 
-    public function __construct(User $user, Model|Collection $auditable, Request $request)
+    public function __construct(User $user, Model $auditable, Request $request)
     {
         $this->user = $user;
         $this->auditable = $auditable;

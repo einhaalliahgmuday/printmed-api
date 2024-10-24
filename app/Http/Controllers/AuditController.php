@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use OwenIt\Auditing\Models\Audit;
@@ -17,8 +18,42 @@ class AuditController extends Controller
             'date_until' => 'date|after_or_equal:date_from'
         ]);
 
-        $audits = [];
+        $audits = $this->getAudits($request);
 
+        $page = $request->input('page',1);
+        $data = array_slice($audits, ($page - 1) * 15, 15);
+        $paginator = new LengthAwarePaginator(
+            $data, 
+            count($audits), 
+            15, 
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+        $paginator->appends($request->query());
+
+        return $paginator;
+    }
+
+    public function downloadAudits(Request $request)
+    {
+        $request->validate([
+            'page' => 'integer',
+            'resource' => 'string|in:user,patient,consultation record,payment',
+            'date_from' => 'date',
+            'date_until' => 'date|after_or_equal:date_from'
+        ]);
+
+        $auditsQuery = $this->getAudits($request);
+
+        $audits = $this->getAudits($request);
+
+        $pdf = Pdf::loadView('audits', ['audits' => $audits])->setPaper('a4', 'landscape');
+
+        return $pdf->stream('audits.pdf');
+    }
+
+    public function getAudits(Request $request)
+    {
         $auditsQuery = Audit::query();
 
         if ($request->filled('resource'))
@@ -36,11 +71,14 @@ class AuditController extends Controller
             $auditsQuery = $auditsQuery->where('created_at', '>=', $request->date_until);
         }
 
-        foreach ($auditsQuery->orderBy('created_at', 'desc')->get() as $audit)
+        $auditsQuery = $auditsQuery->orderBy('created_at', 'desc')->get();
+
+        $audits = [];
+
+        foreach ($auditsQuery as $audit)
         {
-            $user = $audit->user;
-            
-            $resource = $audit->auditable_type ? $this->getResource($audit->auditable_type) : null;
+            $user = $request->user();
+            $resourceInformation = $this->getResourceInformation($audit);
 
             $audits[] = [
                 'id' => $audit->id,
@@ -50,35 +88,16 @@ class AuditController extends Controller
                 'user_personnel_number' => $user ?-> personnel_number,
                 'user_name' => $user ?-> full_name,
                 'action' => strtoupper($audit->event),
-                'resource' => $resource,
+                'message' => strtoupper($this->getAuditMessage($audit)),
+                'resource_type' => $resourceInformation['resource_type'],
+                'resource_id' => $resourceInformation['resource_id'],
+                'resource_entity' => $resourceInformation['resource_entity'],
                 'old_values' => $audit ?-> old_values,
-                'new_values' => $audit ?-> new_values,
-                'size' => $audit->retrieved_size,
-                'message' => $this->getAuditMessage($audit)
+                'new_values' => $audit ?-> new_values
             ];
-        }
+        } 
 
-        $page = $request->input('page',1);
-        $data = array_slice($audits, ($page - 1) * 15, 15);
-        $paginator = new LengthAwarePaginator(
-            $data, 
-            count($audits), 
-            15, 
-            $page,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
-
-        return $paginator;
-    }
-
-    public function show(Audit $audit)
-    {
-        
-    }
-
-    public function getResource(string $auditableType)
-    {
-        return preg_replace('/(?<!^)(?=[A-Z])/', ' ', class_basename($auditableType));
+        return $audits;
     }
 
     public function getRequestResourceClass(string $resource)
@@ -103,29 +122,62 @@ class AuditController extends Controller
         return $requestResourceClass;
     }
 
+    public function getResourceType(string $auditableType)
+    {
+        return ucfirst(preg_replace('/(?<!^)(?=[A-Z])/', ' ', class_basename($auditableType)));
+    }
+
+    public function getResourceInformation(Audit $audit): array
+    {
+        $auditable = $audit->auditable;
+
+        $resourceType = $audit->auditable_type ? strtolower($this->getResourceType($audit->auditable_type)) : null;
+        $resourceId = $auditable ?-> id;
+        $resourceEntity = null;
+
+        if ($auditable)
+        {
+            if (in_array($resourceType, ['user', 'patient']))
+            {
+                $resourceEntity = $resourceType === 'user' ? $auditable->personnel_number : $auditable->patient_id;
+            }
+            else if (in_array($resourceType, ['payment', 'consultationrecord']))
+            {
+                $resourceEntity = $auditable->patient->patient_id;
+            }
+        }
+
+        return ['resource_type' => ucfirst($resourceType), 'resource_id' => $resourceId, 'resource_entity' => $resourceEntity];
+    }
+
     public function getAuditMessage(Audit $audit)
     {
         $auditMessage = null;
 
-        $resource = $audit->auditable_type ? $this->getResource($audit->auditable_type) : null;
+        $resource = $audit->auditable_type ? $this->getResourceType($audit->auditable_type) : null;
         $event = $audit->event;
 
-        if (in_array($event, ['created', 'updated'])) {
-            $auditMessage = "{$event} A {$resource}";
-        } else if ($event == 'retrieved') {
-            $retrieved_size = $audit->retrieved_size;
-            $auditMessage = "RETRIEVED {$retrieved_size} {$resource}";
-            if ($retrieved_size > 1) { $auditMessage .= "S"; }
-        } else if (in_array($event, ['unrestricted', 'locked', 'unlocked'])) {
-            $auditMessage = "{$event} USER {$audit->auditable->personnel_number}";
-        } else if ($event == 'restricted') {
-            $auditMessage = "RESTRICTED: 3 FAILED LOGINS";
-        } else if ($event == 'sent reset link') {
-            $auditMessage = "SENT RESET LINK TO USER {$audit->auditable->personnel_number}";
-        } else if (in_array($event, ['login', 'logout', 'reset password'])) {
+        if (in_array($event, ['created', 'updated'])) 
+        {
+            $auditMessage = "{$event} a {$resource}";
+        } 
+        else if ($event == 'retrieved') 
+        {
+            $auditMessage = "viewed a {$resource}";
+        } 
+        else if (in_array($event, ['unrestricted', 'locked', 'unlocked'])) 
+        {
+            $auditMessage = "{$event} a user";
+        }
+        else if ($event == 'sent reset link') 
+        {
+            $auditMessage = "sent reset link to user";
+        } 
+        else if (in_array($event, ['login', 'logout', 'reset password', 'restricted'])) 
+        {
             $auditMessage = $event;
         }
 
-        return strtoupper($auditMessage);
+        return strtolower($auditMessage);
     }
 }
