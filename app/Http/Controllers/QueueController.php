@@ -55,7 +55,7 @@ class QueueController extends Controller
         ], 200);
     }
 
-    public function clearQueue(Queue $queue) 
+    public function clear(Queue $queue) 
     {
         $queue->total = null;
         $queue->current = null;
@@ -68,7 +68,7 @@ class QueueController extends Controller
         return $queue;
     }
 
-    public function incrementQueueTotal(Queue $queue) 
+    public function incrementTotal(Queue $queue) 
     {
         //current increments to 1 when queue is NEW; when FIRST NUMBER is added to queue total, the current becomes 1 too
         if ($queue->total == 0) {
@@ -100,7 +100,7 @@ class QueueController extends Controller
         return $queue;
     }
 
-    public function incrementQueueCurrent(Queue $queue) 
+    public function incrementCurrent(Queue $queue) 
     {
         //queue current will not increment if no number in queue or already completed
         if ($queue->completed < $queue->total)

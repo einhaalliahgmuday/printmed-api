@@ -99,7 +99,7 @@ class PaymentController extends Controller
     }
 
     // returns total amount of paid payment records
-    public function getPaymentsTotal(Request $request)
+    public function getTotal(Request $request)
     {
         $request->validate([
             'department_id' => 'integer|exists:departments,id',
