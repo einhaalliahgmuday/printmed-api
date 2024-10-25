@@ -132,12 +132,12 @@ class UserController extends Controller
             'first_name' => 'string|max:100',
             'middle_name' => 'string|max:100',
             'last_name' => 'string|max:100',
-            'suffix' => 'string|max:20',
+            'suffix' => 'string|max:10',
             'sex' => 'string|max:6',
             'birthdate' => 'date',
             'license_number' => 'string|max:50',
             'department_id' => 'integer|exists:departments,id',
-            'email' => 'email|unique:users|max:255',
+            'email' => 'email|unique:users|max:100',
         ]);
 
         $originalData = $userToUpdate->toArray();

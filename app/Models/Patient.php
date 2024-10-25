@@ -33,6 +33,7 @@ class Patient extends Model implements Auditable
         'last_name',
         'suffix',
         'birthday',
+        'birthplace',
         'sex',
         'address',
         'civil_status',
