@@ -5,11 +5,36 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use OwenIt\Auditing\Contracts\Auditable;
+use ParagonIE\CipherSweet\EncryptedRow;
+use Spatie\LaravelCipherSweet\Concerns\UsesCipherSweet;
+use Spatie\LaravelCipherSweet\Contracts\CipherSweetEncrypted;
 
-class ConsultationRecord extends Model implements Auditable
+class ConsultationRecord extends Model implements Auditable, CipherSweetEncrypted
 {
     use HasFactory;
+    use UsesCipherSweet;
     use \OwenIt\Auditing\Auditable;
+
+    public static function configureCipherSweet(EncryptedRow $encryptedRow): void
+    {
+        $encryptedRow
+            ->addOptionalTextField('height')
+            ->addOptionalTextField('weight')
+            ->addOptionalTextField('blood_pressure')
+            ->addOptionalTextField('temperature')
+            ->addField('chief_complaint')
+            ->addOptionalTextField('present_illness_hx')
+            ->addOptionalTextField('family_hx')
+            ->addOptionalTextField('medical_hx')
+            ->addOptionalTextField('pediatrics_h')
+            ->addOptionalTextField('pediatrics_e')
+            ->addOptionalTextField('pediatrics_a')
+            ->addOptionalTextField('pediatrics_d')
+            ->addOptionalTextField('primary_diagnosis')
+            ->addField('diagnosis')
+            ->addOptionalTextField('prescription')
+            ->addOptionalTextField('follow_up_date');
+    }
 
     protected $auditInclude = [
         'height',
@@ -17,7 +42,7 @@ class ConsultationRecord extends Model implements Auditable
         'blood_pressure',
         'temperature',
         'chief_complaint',
-        'history_of_present_illness',
+        'present_illness_hx',
         'family_hx',
         'medical_hx',
         'pediatrics_h',
@@ -36,7 +61,7 @@ class ConsultationRecord extends Model implements Auditable
         'blood_pressure',
         'temperature',
         'chief_complaint',
-        'history_of_present_illness',
+        'present_illness_hx',
         'family_hx',
         'medical_hx',
         'pediatrics_h',

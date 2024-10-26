@@ -11,16 +11,17 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('role');
-            $table->string('personnel_number',8)->unique();
-            $table->string('first_name', 100);
-            $table->string('middle_name', 100)->nullable();
-            $table->string('last_name', 100);
-            $table->string('suffix', 20)->nullable();
-            $table->string('sex', 6);
-            $table->date('birthdate');
+            $table->string('personnel_number');
+            $table->string('full_name');
+            $table->string('first_name');
+            $table->string('middle_name')->nullable();
+            $table->string('last_name');
+            $table->string('suffix')->nullable();
+            $table->string('sex');
+            $table->string('birthdate');
+            $table->string('license_number')->nullable();
             $table->foreignId('department_id')->onDelete('restrict')->nullable();
-            $table->string('license_number', 50)->nullable();
-            $table->string('email')->unique();
+            $table->string('email');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password')->nullable();
             $table->boolean('is_locked')->default(false);

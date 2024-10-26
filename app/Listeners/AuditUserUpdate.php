@@ -10,19 +10,26 @@ class AuditUserUpdate
     public function handle(UpdateUser $event): void
     {
         $user = $event->user;
-        $originalData = $event->originalData;   //array
-        $updatedData = $event->updatedData;     //User model
+        $originalData = $event->originalData;
+        $updatedData = $event->updatedData;
         $request = $event->request;
 
-        $newValues = $updatedData->getChanges();
-        unset($newValues['updated_at']);
-
         $oldValues = [];
-        foreach (array_keys($newValues) as $key)
-        {
-            if (array_key_exists($key, $originalData))
-            {
-                $oldValues[$key] = $originalData[$key];
+        $newValues = [];
+
+        foreach ($updatedData->toArray() as $key => $updatedValue) {
+            if ($key == 'updated_at') {
+                continue;
+            } 
+            else if (array_key_exists($key, $originalData)) {
+                $originalValue = $originalData[$key];
+                if ($originalValue !== $updatedValue) {
+                    $oldValues[$key] = $originalValue;
+                    $newValues[$key] = $updatedValue;
+                }
+            } 
+            else {
+                $newValues[$key] = $updatedValue;
             }
         }
 

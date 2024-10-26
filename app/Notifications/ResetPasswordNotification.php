@@ -10,13 +10,13 @@ class ResetPasswordNotification extends Notification
 {
     use Queueable;
 
-    public $isNewAccount, $url, $userName;
+    public $isNewAccount, $token, $email;
 
-    public function __construct($isNewAccount, $url, $userName)
+    public function __construct($isNewAccount, $token, $email)
     {
         $this->isNewAccount = $isNewAccount;
-        $this->url = $url;
-        $this->userName = $userName;
+        $this->token = $token;
+        $this->email = $email;
     }
 
 
@@ -27,12 +27,13 @@ class ResetPasswordNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
+        $url = url("http://127.0.0.1/reset-password?token={$this->token}&email={$this->email}");
+
         return (new MailMessage)
                 ->subject('Reset Your Password')
                 ->view('emails.reset_password', [
                     'isNewAccount' => $this->isNewAccount,
-                    'url' => $this->url,
-                    'name' => $this->userName
+                    'url' => $url
                 ]);
     }
 

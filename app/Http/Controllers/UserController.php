@@ -6,10 +6,12 @@ use App\AccountActionEnum;
 use App\Events\AccountAction;
 use App\Events\UpdateUser;
 use App\Models\User;
+use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
+    use CommonMethodsTrait;
 
     // implemented custom audit event in: update information of user, lock toggle of account,
     // and unrestricting account from 3 failed login attempts
@@ -27,21 +29,24 @@ class UserController extends Controller
 
         $query = User::query();
 
-        if ($request->filled('search'))
+        if ($request->filled('search')) 
         {
-            $query->where(function($q) use ($request)
-            {
-                $q->where('personnel_number', 'LIKE', "%$request->search%")
-                ->orWhere('first_name', 'LIKE', "%$request->search%")
-                ->orWhere('middle_name', 'LIKE', "%$request->search%")
-                ->orWhere('last_name', 'LIKE', "%$request->search%")
-                ->orWhere('suffix', 'LIKE', "%$request->search%");
+            $search = $request->search;
+
+            $query->where(function($q) use ($search) {
+                $q->whereBlind('personnel_number', 'personnel_number_index', $search)
+                ->orWhereBlind('full_name', 'full_name_index', $search);
             });
         }
 
+        if ($request->filled('personnel_number')) 
+        {
+            $query->whereBlind('personnel_number', 'personnel_number_index', $request->personnel_number);
+        }
+        
         if ($request->filled('role')) 
         {
-            $query->where('role',$request->role);
+            $query->whereBlind('role', 'role_index', $request->role);
         }
 
         if ($request->filled('department_id') && (!$request->filled('role') || in_array($request->role, ['physician', 'secretary']))) 
@@ -52,7 +57,8 @@ class UserController extends Controller
         if ($request->filled('is_locked'))
         {
             $query->where('is_locked',$request->is_locked);
-        } else if ($request->filled('is_restricted'))
+        } 
+        else if ($request->filled('is_restricted'))
         {
             $request->is_restricted ? $query->where('failed_login_attempts', '>=', 3) : $query->where('failed_login_attempts', '<', 3);
         }
@@ -72,14 +78,16 @@ class UserController extends Controller
         ]);
 
         // gets physicians whose accounts are not locked
-        $query = User::query()->where('role','physician')->where('is_locked', false);
+        $query = User::query()->whereBlind('role','role_index', 'physician')->where('is_locked', false);
 
         if ($request->filled('department_id'))
         {
             $query->where('department_id',$request->department_id);
         }
 
-        return $query->select('id', 'full_name', 'department')->get();
+        $physicians = $query->select('id', 'full_name', 'department')->get();
+
+        return $physicians;
     }
 
     public function getUsersCount(Request $request)
@@ -89,10 +97,10 @@ class UserController extends Controller
         ]);
 
         //gets users count who are not locked
-        $adminsCount = User::where('role', 'admin')->where('is_locked', false)->count();
-        $physiciansCount = User::where('role', 'physician')->where('is_locked', false);
-        $secretariesCount = User::where('role', 'secretary')->where('is_locked', false);
-        $queueManagersCount = User::where('role', 'queue manager')->where('is_locked', false)->count();
+        $adminsCount = User::whereBlind('role', 'role_index', 'admin')->where('is_locked', false)->count();
+        $physiciansCount = User::whereBlind('role', 'role_index', 'physician')->where('is_locked', false);
+        $secretariesCount = User::whereBlind('role', 'role_index', 'secretary')->where('is_locked', false);
+        $queueManagersCount = User::whereBlind('role', 'role_index', 'queue manager')->where('is_locked', false)->count();
 
         if ($request->filled('department_id'))
         {
@@ -114,8 +122,13 @@ class UserController extends Controller
     public function updateEmail(Request $request) 
     {
         $request->validate([
-            'new_email' => 'required|email|unique:users,email|max:255',
+            'new_email' => 'required|email|max:100',
         ]);
+
+        if ($this->isUserEmailExists($request->email)) 
+        {
+            return response()->json(['message' => 'The email provided already exists.'], 422);
+        }
 
         $user = $request->user();
 
@@ -128,7 +141,7 @@ class UserController extends Controller
     public function updateInformation(Request $request, User $userToUpdate) 
     {
         $fields = $request->validate([
-            'personnel_number' => 'string|size:8|unique:users',
+            'personnel_number' => 'string|size:8',
             'first_name' => 'string|max:100',
             'middle_name' => 'string|max:100',
             'last_name' => 'string|max:100',
@@ -137,8 +150,13 @@ class UserController extends Controller
             'birthdate' => 'date',
             'license_number' => 'string|max:50',
             'department_id' => 'integer|exists:departments,id',
-            'email' => 'email|unique:users|max:100',
+            'email' => 'email|max:100',
         ]);
+
+        if ($this->isUserPersonnelNumberExists($request->personnel_number)) 
+        {
+            return response()->json(['message' => 'The personnel number provided already exists.'], 422);
+        }
 
         $originalData = $userToUpdate->toArray();
 
@@ -150,8 +168,13 @@ class UserController extends Controller
 
         $userToUpdate->update($fields);
 
+        if ($request->filled('first_name') || $request->filled('last_name'))
+        {
+            $userToUpdate->update(['full_name' => $this->getFullName($userToUpdate->first_name, $userToUpdate->last_name)]);
+        }
+
         // implements audit of update
-        event(new UpdateUser($request->user(), $originalData,$userToUpdate, $request));
+        event(new UpdateUser($userToUpdate, $originalData,$userToUpdate, $request));
 
         return $userToUpdate;
     }

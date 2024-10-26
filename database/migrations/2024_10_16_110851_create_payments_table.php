@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->integer('amount');
+            $table->string('amount');
             $table->string('method');
             $table->string('hmo')->nullable();
             $table->boolean('is_paid')->default(false);

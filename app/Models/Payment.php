@@ -5,11 +5,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use OwenIt\Auditing\Contracts\Auditable;
+use ParagonIE\CipherSweet\EncryptedRow;
+use Spatie\LaravelCipherSweet\Concerns\UsesCipherSweet;
+use Spatie\LaravelCipherSweet\Contracts\CipherSweetEncrypted;
 
-class Payment extends Model implements Auditable
+class Payment extends Model implements Auditable, CipherSweetEncrypted
 {
     use HasFactory;
+    use UsesCipherSweet;
     use \OwenIt\Auditing\Auditable;
+
+    public static function configureCipherSweet(EncryptedRow $encryptedRow): void
+    {
+        $encryptedRow
+            ->addField('amount')
+            ->addOptionalTextField('hmo');
+    }
 
     protected $auditInclude = [
         'amount',

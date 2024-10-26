@@ -7,63 +7,69 @@ use App\Events\AccountAction;
 use App\Models\Otp;
 use App\Models\User;
 use App\Notifications\OtpVerificationNotification;
-use Illuminate\Auth\Events\PasswordReset;
+use App\Notifications\ResetPasswordNotification;
+use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+    use CommonMethodsTrait;
+
     public function register(Request $request) 
     {
         $fields = $request->validate([
             'role' => 'required|string|in:admin,physician,secretary,queue manager',
-            'personnel_number' => 'required|string|size:8|unique:users',
+            'personnel_number' => 'required|string|size:8',
             'first_name' => 'required|string|max:100',
             'middle_name' => 'string|max:100',
             'last_name' => 'required|string|max:100',
-            'suffix' => 'string|max:20',
-            'sex' => 'string|required|max:6',
+            'suffix' => 'string|max:10',
+            'sex' => 'required|string|max:6',
             'birthdate' => 'required|date',
-            'department_id' => 'integer|exists:departments,id|required_if:role,physician|required_if:role,secretary',
             'license_number' => 'string|max:50',
-            'email' => 'required|email|unique:users|max:255',
+            'department_id' => 'integer|exists:departments,id',
+            'email' => 'required|email|max:100',
         ]);
+
+        $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
+
+        if ($this->isUserPersonnelNumberExists($request->personnel_number)) 
+        {
+            return response()->json(['message' => 'The personnel number provided already exists.'], 422);
+        }
+
+        if ($this->isUserEmailExists($request->email)) 
+        {
+            return response()->json(['message' => 'The email provided already exists.'], 422);
+        }
 
         $user = User::create($fields);
 
-        $isResetLinkSent = $this->sendResetLink($request->email);
+        $this->sendResetLink(true, $user);
 
         return response()->json([
-            'is_reset_link_sent' => $isResetLinkSent,
             'user' => $user
         ]);
-    }
-    
-    public function sendResetLink(string $email) 
-    {
-       $status = Password::sendResetLink(['email' => $email]);
-
-        return $status === Password::RESET_LINK_SENT ? true : false;
     }
 
     public function forgotPassword(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|exists:users'
+            'email' => 'required|email'
         ]);
-        
-        $isResetLinkSent = $this->sendResetLink($request->email);
-        
-        if (!$isResetLinkSent)
+
+        $user = User::whereBlind('email', 'email_index', $request->email)->first();
+
+        if (!$user) 
         {
-            return response()->json([
-                'message' => 'Reset link NOT sent.'
-            ], 500);
+            return response()->json(['message' => 'User not found.'], 404);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $this->sendResetLink(false, $user);
+
         // implements audit of sending reset link, which is executed by Admin
         event(new AccountAction(AccountActionEnum::SENT_RESET_LINK, $request->user(), $user, $request));
 
@@ -75,43 +81,42 @@ class AuthController extends Controller
     public function resetPassword(Request $request) 
     {
         $request->validate([
-            'personnel_number' => 'required|string|size:8',
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'required|string|max:100',
+            'personnel_number' => 'required|string',
+            'first_name' => 'required|string',
+            'last_name' => 'required|string',
             'birthdate' => 'required|date',
             'token' => 'required',
             'email' => 'required|email',
             'password' => 'required|string|min:8|regex:/[a-z]/|regex:/[A-Z]/|regex:/[0-9]/|regex:/[@$!%*?&]/|confirmed'
         ]);
 
-        $user = User::select('id', 'personnel_number', 'first_name', 'last_name', 'birthdate')
-                    ->where('personnel_number', $request->personnel_number)
-                    ->where('first_name', $request->first_name)
-                    ->where('last_name', $request->last_name)
-                    ->where('birthdate', $request->birthdate)
-                    ->where('email', $request->email)->first();
+        
+        $isPasswordResetRequestValid = DB::table('password_reset_tokens')
+                                        ->where('email', $request->email)
+                                        ->where('token', $request->token)->exists();
+        
+        if (!$isPasswordResetRequestValid)
+        {
+            return response()->json(['message'=> 'Invalid request'], 400);
+        }
+
+        $user = User::whereBlind('personnel_number', 'personnel_number_index', $request->personnel_number)
+                    ->whereBlind('first_name', 'first_name_index', $request->first_name)
+                    ->whereBlind('last_name', 'last_name_index', $request->last_name)
+                    ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
+                    ->whereBlind('email', 'email_index', $request->email)->first();
 
         if (!$user)
         {
-            return response()->json([
-                'message' => 'Invalid credentials'
-            ], 404);
+            return response()->json(['message'=> 'Invalid credentials'], 404);
         }
-
-        $status = Password::reset($request->only('token', 'email', 'password', 'password_confirmation'),
-            function ($user) use ($request) {
-                $user->forceFill(['password' => Hash::make($request->password), 'email_verified_at' => now()])->save();
-
-                //all access tokens will be deleted after password reset
-                $user->tokens()->delete();
-
-                event(new PasswordReset($user));
-            });
-
-        if ($status !== Password::PASSWORD_RESET) 
-        {
-            return response()->json(['message' => 'Failed to reset password.'], 400);
-        }
+    
+        
+        $user->forceFill(['password' => Hash::make($request->password), 'email_verified_at' => now()])->save();
+        
+        DB::table('password_reset_tokens')->where('email', $request->email)
+            ->where('token', $request->token)->delete();
+        $user->tokens()->delete();  // delete all login tokens
         
         // implements audit of resetting password, which is executed by Admin
         event(new AccountAction(AccountActionEnum::RESET_PASSWORD, $user, null, $request));
@@ -123,15 +128,14 @@ class AuthController extends Controller
     {
         $request->validate([
             'role' => 'required|string',
-            'personnel_number' => 'required|string|size:8',
+            'personnel_number' => 'required|string',
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        $user = User::select('id', 'email', 'password', 'failed_login_attempts', 'is_locked')
-                    ->where('role', $request->role)
-                    ->where('personnel_number', $request->personnel_number)
-                    ->where('email', $request->email)
+        $user = User::whereBlind('role', 'role_index', $request->role)
+                    ->whereBlind('personnel_number', 'personnel_number_index', $request->personnel_number)
+                    ->whereBlind('email', 'email_index', $request->email)
                     ->first();
 
         //if account is not found or locked
@@ -175,11 +179,10 @@ class AuthController extends Controller
             'code' => rand(100000, 999999),
             'expires_at' => now()->addMinutes(5)
         ]);
+
         $user->notify(new OtpVerificationNotification($otp->code));
 
-        //resets failed login attempts to 0
-        $user->failed_login_attempts = 0;
-        $user->save();
+        $user->update(['failed_login_attempts' => 0]);
 
         return response()->json([
             'email' => $request->email,
@@ -199,7 +202,7 @@ class AuthController extends Controller
             ->where('code', $request->code)
             ->first();
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::whereBlind('email', 'email_index', $request->email)->first();
         
         if (!$otp || now()->isAfter($otp->expires_at) || !Hash::check($request->token, $otp->token) || !$user) 
         {
@@ -225,7 +228,7 @@ class AuthController extends Controller
         $request->user()->tokens()->delete();   
 
         // implements audit of logout
-        event(new AccountAction(AccountActionEnum::LOGOUT, $request->user(), $request->user(), $request));
+        event(new AccountAction(AccountActionEnum::LOGOUT, $request->user(), null, $request));
 
         return response()->json([
             'message' => 'You are logged out.'
@@ -254,5 +257,14 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Password changed successfully.'
         ]);
+    }
+
+    public function sendResetLink(bool $isNewAccount, User $user) 
+    {
+        $token = Str::random(60);
+
+        $user->notify(new ResetPasswordNotification($isNewAccount, $token, $user->email));
+
+        DB::table('password_reset_tokens')->insert(['email' => $user->email,'token'=> $token, 'created_at' => now()]);
     }
 }

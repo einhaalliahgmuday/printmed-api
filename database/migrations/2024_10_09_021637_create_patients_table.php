@@ -10,18 +10,19 @@ return new class extends Migration
     {
         Schema::create('patients', function (Blueprint $table) {
             $table->id();
-            $table->string('patient_number')->unique();
-            $table->string('first_name', 100);
-            $table->string('middle_name', 100)->nullable();
-            $table->string('last_name', 100);
-            $table->string('suffix', 20)->nullable();
-            $table->date('birthdate')->nullable();
-            $table->date('birthplace')->nullable();
-            $table->string('sex', 20)->nullable();
+            $table->string('patient_number');
+            $table->string('full_name');
+            $table->string('first_name');
+            $table->string('middle_name')->nullable();
+            $table->string('last_name');
+            $table->string('suffix')->nullable();
+            $table->string('birthdate')->nullable();
+            $table->text('birthplace')->nullable();
+            $table->string('sex')->nullable();
             $table->string('address')->nullable();
-            $table->string('civil_status', 20)->nullable();
+            $table->string('civil_status')->nullable();
             $table->string('religion')->nullable();
-            $table->string('phone_number', 30)->nullable();
+            $table->string('phone_number')->nullable();
             $table->timestamps();
         });
     }

@@ -6,7 +6,6 @@ use App\Events\PaymentNew;
 use App\Events\RetrievedData;
 use App\Models\ConsultationRecord;
 use App\Models\Payment;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -20,11 +19,11 @@ class ConsultationRecordController extends Controller
     {
         $fields = $request->validate([
             'patient_id' => 'required|integer|exists:patients,id',
-            'height' => 'decimal:0,2',
-            'weight' => 'decimal:0,2',
+            'height' => 'numeric|decimal:0,2',
+            'weight' => 'numeric|decimal:0,2',
             'blood_pressure' => 'string|max:7',
-            'temperature' => 'decimal:0,2',
-            'chief_complaint' => 'required',
+            'temperature' => 'numeric|decimal:0,2',
+            'chief_complaint' => 'required|string',
             'history_of_present_illness' => 'string',
             'family_hx' => 'string',
             'medical_hx' => 'string',
@@ -33,8 +32,8 @@ class ConsultationRecordController extends Controller
             'pediatrics_a' => 'string',
             'pediatrics_d' => 'string',
             'primary_diagnosis' => 'string',
-            'diagnosis' => 'required',
-            'prescription' => 'required',
+            'diagnosis' => 'required|string',
+            'prescription' => 'required|string',
             'follow_up_date' => 'date',
             'payment_amount' => 'required|integer',
             'payment_method' => 'required|string|in:cash,hmo',
@@ -84,10 +83,10 @@ class ConsultationRecordController extends Controller
         Gate::authorize('update', $consultationRecord);
 
         $fields = $request->validate([
-            'height' => 'decimal:0,2',
-            'weight' => 'decimal:0,2',
+            'height' => 'numeric|decimal:0,2',
+            'weight' => 'numeric|decimal:0,2',
             'blood_pressure' => 'string|max:7',
-            'temperature' => 'decimal:0,2',
+            'temperature' => 'numeric|decimal:0,2',
             'chief_complaint' => 'string',
             'history_of_present_illness' => 'string',
             'family_hx' => 'string',
@@ -109,7 +108,7 @@ class ConsultationRecordController extends Controller
 
     public function destroy(ConsultationRecord $consultationRecord)
     {
-        $dateThreshold = Carbon::now()->subYears(10);
+        $dateThreshold = now()->subYears(10);
 
         //if patient or patient's last consultation date is not past 10 years, patient cannot be deleted
         if ($consultationRecord->updated_at >= $dateThreshold) 

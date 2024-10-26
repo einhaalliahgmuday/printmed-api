@@ -6,14 +6,42 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use App\Notifications\ResetPasswordNotification;
 use App\Traits\CommonMethodsTrait;
 use OwenIt\Auditing\Contracts\Auditable;
+use ParagonIE\CipherSweet\BlindIndex;
+use ParagonIE\CipherSweet\EncryptedRow;
+use Spatie\LaravelCipherSweet\Concerns\UsesCipherSweet;
+use Spatie\LaravelCipherSweet\Contracts\CipherSweetEncrypted;
 
-class User extends Authenticatable implements Auditable
+class User extends Authenticatable implements Auditable, CipherSweetEncrypted
 {
-    use HasFactory, Notifiable, HasApiTokens, CommonMethodsTrait;
+    use HasFactory, Notifiable, HasApiTokens;
+    use UsesCipherSweet;
     use \OwenIt\Auditing\Auditable;
+    use CommonMethodsTrait;
+
+    public static function configureCipherSweet(EncryptedRow $encryptedRow): void
+    {
+        $encryptedRow
+            ->addField('role')
+            ->addBlindIndex('role', new BlindIndex('role_index'))
+            ->addField('personnel_number')
+            ->addBlindIndex('personnel_number', new BlindIndex('personnel_number_index'))
+            ->addField('full_name')
+            ->addBlindIndex('full_name', new BlindIndex('full_name_index'))
+            ->addField('first_name')
+            ->addBlindIndex('first_name', new BlindIndex('first_name_index'))
+            ->addOptionalTextField('middle_name')
+            ->addField('last_name')
+            ->addBlindIndex('last_name', new BlindIndex('last_name_index'))
+            ->addOptionalTextField('suffix')
+            ->addField('sex')
+            ->addField('birthdate')
+            ->addBlindIndex('birthdate', new BlindIndex('birthdate_index'))
+            ->addOptionalTextField('license_number')
+            ->addField('email')
+            ->addBlindIndex('email', new BlindIndex('email_index'));
+    }
 
     protected $auditEvents = [
         'created',
@@ -36,6 +64,7 @@ class User extends Authenticatable implements Auditable
     protected $fillable = [
         'role',
         'personnel_number',
+        'full_name',
         'first_name',
         'middle_name',
         'last_name',
@@ -64,16 +93,25 @@ class User extends Authenticatable implements Auditable
         'password' => 'hashed',
     ];
 
-    public function getFullNameAttribute()
+    public function getFullNameAttribute($value)
     {
-        return $this->getFullName($this->first_name, $this->middle_name, $this->last_name, $this->suffix);
+        switch ($this->role) 
+        {
+            case 'physician':
+                return "Doc. {$value}";
+            case 'secretary':
+                return "Sec. {$value}";
+        }
+
+        return $value;
     }
 
     public function patients()
     {
         if($this->role === 'physician')
         {
-            return $this->belongsToMany(Patient::class, 'patient_physicians', 'physician_id', 'patient_id');
+            return $this->belongsToMany(Patient::class, 'patient_physicians', 'physician_id', 'patient_id')
+                        ->select('id', 'patient_number', 'full_name', 'birthdate', 'sex');
         }
 
         return collect(); 
@@ -87,13 +125,5 @@ class User extends Authenticatable implements Auditable
         }
 
         return collect(); 
-    }
-
-    public function sendPasswordResetNotification($token)
-    {
-        $isNewAccount = $this->password ? true : false;
-        $url = url("http://127.0.0.1/reset-password?token={$token}&email={$this->email}");
-
-        $this->notify(new ResetPasswordNotification($isNewAccount, $url, $this->first_name));
     }
 }

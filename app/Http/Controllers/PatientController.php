@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Events\RetrievedData;
 use App\Models\Patient;
 use App\Models\Payment;
-use Carbon\Carbon;
+use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class PatientController extends Controller
 {
+    use CommonMethodsTrait;
+
     public function index(Request $request)
     {        
         $user = $request->user();
@@ -29,42 +32,43 @@ class PatientController extends Controller
         //it can also be sorted by last_name, patient_number, and follow_up_date
         if ($query != null)
         {
-            if($request->filled('search') )
+            if ($request->filled('search')) 
             {
                 $search = $request->search;
 
-                $query->where(function($q) use ($search)
-                {
-                    $q->where('first_name', 'LIKE', "%$search%")
-                    ->orWhere('middle_name', 'LIKE', "%$search%")
-                    ->orWhere('last_name', 'LIKE', "%$search%")
-                    ->orWhere('suffix', 'LIKE', "%$search%")
-                    ->orWhere('patient_number', 'LIKE', "%$search%");
+                $query->where(function($q) use ($search) {
+                    $q->whereBlind('patient_number', 'patient_number_index', $search)
+                    ->orWhereBlind('full_name', 'full_name_index', $search);
                 });
             }
 
             if($request->filled('sex'))
             {
-                $query->where('sex', $request->sex);
+                $query->whereBlind('sex', 'sex_index', $request->sex);
             }
+
+            $query->orderBy('updated_at', 'desc')->select('id', 'patient_number', 'full_name', 'birthdate', 'sex');
+            $patientsQuery = $query->get();
 
             if($request->filled('sort_by') && in_array($request->sort_by, ['last_name', 'patient_number', 'follow_up_date'])) 
             {
-                $direction = $request->input('sort_direction', 'asc');
+                $isDesc = $request->input('sort_direction') == 'desc';
 
-                $query->orderBy($request->input('sort_by'), $direction);
+                $patientsQuery = $patientsQuery->sortBy('patient_number', SORT_REGULAR, $isDesc)->values();
             } 
-            else {
-                $query->orderBy('updated_at');
-            }
 
-            $patients = $query->paginate(15);
-            $patients->appends($request->all()); //appends the request parameters to pagination URLs
+            $page = $request->input('page',1);
+            $data = array_slice($patientsQuery->toArray(), ($page - 1) * 15, 15);
+            $paginator = new LengthAwarePaginator(
+                $data, 
+                count($patientsQuery), 
+                15, 
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+            $paginator->appends($request->query());
 
-            // implements audit of retrieval
-            // event(new RetrievedData($user, $patients->getCollection(), $request));
-
-            return $patients;
+            return $paginator;
         }
 
         return response()->json(['patients' => null]);
@@ -79,14 +83,15 @@ class PatientController extends Controller
             'suffix' => 'string|max:20',
             'birthdate' => 'date',
             'birthplace' => 'string',
-            'sex' => 'string|max:20',
+            'sex' => 'string|max:6',
             'address' => 'string|max:255',
             'civil_status' => 'string|max:20',
-            'religion' => 'string|max:255',
-            'phone_number' => 'string|max:30'
+            'religion' => 'string|max:100',
+            'phone_number' => 'string|max:12'
         ]);
 
         $fields['patient_number'] = Patient::generatePatientNumber();
+        $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
 
         $patient = Patient::create($fields);
 
@@ -98,7 +103,6 @@ class PatientController extends Controller
         $consultationRecords = $patient->consultationRecords()->paginate(10);
 
         // implements audit of retrieval
-        // event(new RetrievedData($request->user, $consultationRecords->getCollection(), $request));
         event(new RetrievedData($request->user(), $patient, $request));
 
         return response()->json([
@@ -116,21 +120,26 @@ class PatientController extends Controller
             'suffix' => 'string|max:20',
             'birthdate' => 'date',
             'birthplace' => 'string',
-            'sex' => 'string|max:20',
+            'sex' => 'string|max:6',
             'address' => 'string|max:255',
             'civil_status' => 'string|max:20',
-            'religion' => 'string|max:255',
-            'phone_number' => 'string|max:30'
+            'religion' => 'string|max:100',
+            'phone_number' => 'string|max:12'
         ]);
 
         $patient->update($fields);
+
+        if ($request->filled('first_name') || $request->filled('last_name'))
+        {
+            $patient->update(['full_name' => $this->getFullName($patient->first_name, $patient->last_name)]);
+        }
 
         return $patient;
     }
 
     public function destroy(Patient $patient)
     {
-        $dateThreshold = Carbon::now()->subYears(10);
+        $dateThreshold = now()->subYears(10);
         $lastConsultationRecordDate = $patient->consultationRecords()
                                             ->select('updated_at')
                                             ->orderBy('updated_at','desc')
@@ -161,15 +170,16 @@ class PatientController extends Controller
             'sex' => 'required|string|max:6'
         ]);
 
-        $patients = Patient::where('first_name', 'LIKE', "%$request->first_name%")
-                            ->where('last_name', $request->last_name)
-                            ->where('birthdate', $request->birthdate)
-                            ->where('sex', $request->sex)
+        $patients = Patient::whereBlind('first_name', 'first_name_index', $request->first_name)
+                            ->whereBlind('last_name', 'last_name_index', $request->last_name)
+                            ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
+                            ->whereBlind('sex', 'sex_index', $request->sex)
                             ->get();
 
         return $patients;
     }
 
+    //gets number of patients
     public function getCount(Request $request)
     {
         $request->validate([
@@ -183,7 +193,7 @@ class PatientController extends Controller
 
         if($request->filled('department_id'))
         {
-            $query->where('department_id', $request->department);
+            $query->where('department_id', $request->department_id);
         }
 
         if($request->filled('date_from'))
