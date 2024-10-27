@@ -26,8 +26,10 @@ class Patient extends Model implements Auditable, CipherSweetEncrypted
             ->addField('full_name')
             ->addBlindIndex('full_name', new BlindIndex('full_name_index'))
             ->addField('first_name')
+            ->addBlindIndex('first_name', new BlindIndex('first_name_index'))
             ->addOptionalTextField('middle_name')
             ->addField('last_name')
+            ->addBlindIndex('last_name', new BlindIndex('last_name_index'))
             ->addOptionalTextField('suffix')
             ->addOptionalTextField('birthdate')
             ->addBlindIndex('birthdate', new BlindIndex('birthdate_index'))
@@ -123,11 +125,13 @@ class Patient extends Model implements Auditable, CipherSweetEncrypted
 
     public function consultationRecords()
     {
-        return $this->hasMany(ConsultationRecord::class, 'patient_id');
+        return $this->hasMany(ConsultationRecord::class, 'patient_id')
+                    ->select('id', 'chief_complaint', 'primary_diagnosis', 'diagnosis', 'follow_up_date', 'updated_at');
     }
 
     public function physicians()
     {
-        return $this->belongsToMany(User::class, 'patient_physicians', 'patient_id', 'physician_id');
+        return $this->belongsToMany(User::class, 'patient_physicians', 'patient_id', 'physician_id')
+                    ->select('users.id', 'role', 'personnel_number', 'users.full_name', 'users.sex', 'department_id', 'license_number');
     }
 }

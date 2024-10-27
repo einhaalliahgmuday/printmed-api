@@ -28,22 +28,28 @@ class AuthController extends Controller
             'last_name' => 'required|string|max:100',
             'suffix' => 'string|max:10',
             'sex' => 'required|string|max:6',
-            'birthdate' => 'required|date',
+            'birthdate' => 'required|date|date_format:Y-m-d',
             'license_number' => 'string|max:50',
             'department_id' => 'integer|exists:departments,id',
             'email' => 'required|email|max:100',
         ]);
 
-        $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
-
         if ($this->isUserPersonnelNumberExists($request->personnel_number)) 
         {
-            return response()->json(['message' => 'The personnel number provided already exists.'], 422);
+            return response()->json(['message' => 'The personnel number is already taken'], 422);
         }
 
         if ($this->isUserEmailExists($request->email)) 
         {
-            return response()->json(['message' => 'The email provided already exists.'], 422);
+            return response()->json(['message' => 'The email is already taken.'], 422);
+        }
+
+        $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
+
+        if (!in_array($request->role, ['physician', 'secretary']))
+        {
+            $fields['license'] = null;
+            $fields["department_id"] = null;
         }
 
         $user = User::create($fields);
@@ -84,8 +90,8 @@ class AuthController extends Controller
             'personnel_number' => 'required|string',
             'first_name' => 'required|string',
             'last_name' => 'required|string',
-            'birthdate' => 'required|date',
-            'token' => 'required',
+            'birthdate' => 'required|date|date_format:Y-m-d',
+            'token' => 'required|string',
             'email' => 'required|email',
             'password' => 'required|string|min:8|regex:/[a-z]/|regex:/[A-Z]/|regex:/[0-9]/|regex:/[@$!%*?&]/|confirmed'
         ]);
@@ -118,7 +124,7 @@ class AuthController extends Controller
             ->where('token', $request->token)->delete();
         $user->tokens()->delete();  // delete all login tokens
         
-        // implements audit of resetting password, which is executed by Admin
+        // implements audit of resetting password
         event(new AccountAction(AccountActionEnum::RESET_PASSWORD, $user, null, $request));
         
         return response()->json(['message' => 'Password has been reset successfully.'], 200);

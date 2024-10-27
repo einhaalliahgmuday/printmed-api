@@ -89,7 +89,8 @@ class ConsultationRecord extends Model implements Auditable, CipherSweetEncrypte
 
     public function physician()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)
+                    ->select('id', 'personnel_number', 'full_name', 'sex', 'department_id', 'license_number');
     }
 
     public function payment()

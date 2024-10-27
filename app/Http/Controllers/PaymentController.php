@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Events\PaymentUpdated;
 use App\Models\Payment;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class PaymentController extends Controller
@@ -12,8 +11,8 @@ class PaymentController extends Controller
     public function index(Request $request)
     {
         $request->validate([
-            'date_from' => 'date',
-            'date_until' => 'date|after_or_equal:date_from',
+            'date_from' => 'date|date_format:Y-m-d',
+            'date_until' => 'date|date_format:Y-m-d|after_or_equal:date_from',
             'order_by_is_paid' => 'boolean',
             'method' => 'string|in:cash,hmo',
             'is_paid' => 'boolean',
@@ -103,8 +102,8 @@ class PaymentController extends Controller
     {
         $request->validate([
             'department_id' => 'integer|exists:departments,id',
-            'date_from' => 'date',
-            'date_until' => 'date|after_or_equal:date_from',
+            'date_from' => 'date|date_format:Y-m-d',
+            'date_until' => 'date|date_format:Y-m-d|after_or_equal:date_from',
         ]);
 
         $query = Payment::query();

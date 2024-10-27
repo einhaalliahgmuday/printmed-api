@@ -34,7 +34,7 @@ class ConsultationRecordController extends Controller
             'primary_diagnosis' => 'string',
             'diagnosis' => 'required|string',
             'prescription' => 'required|string',
-            'follow_up_date' => 'date',
+            'follow_up_date' => 'date|date_format:Y-m-d',
             'payment_amount' => 'required|integer',
             'payment_method' => 'required|string|in:cash,hmo',
             'payment_hmo' => 'string'
@@ -98,7 +98,7 @@ class ConsultationRecordController extends Controller
             'primary_diagnosis' => 'string',
             'diagnosis' => 'string',
             'prescription' => 'string',
-            'follow_up_date' => 'date',
+            'follow_up_date' => 'date|date_format:Y-m-d',
         ]);
 
         $consultationRecord->update($fields);

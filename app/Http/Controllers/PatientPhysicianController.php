@@ -14,7 +14,7 @@ class PatientPhysicianController extends Controller
             'physician_id' => 'required|integer|exists:users,id'
         ]);
 
-        $isPhysicianExists = User::where('id', $request->physician_id)->where('role', 'physician')->exists();
+        $isPhysicianExists = User::where('id', $request->physician_id)->whereBlind('role', 'role_index', 'physician')->exists();
 
         if (!$isPhysicianExists)
         {
@@ -26,7 +26,7 @@ class PatientPhysicianController extends Controller
         $patient->physicians()->syncWithoutDetaching([$request->physician_id]);
 
         return response()->json([
-            'patient_physicians' => $patient->physicians()->select('users.id', 'first_name', 'middle_name', 'last_name', 'suffix', 'sex', 'department_id')->get()
+            'patient_physicians' => $patient->physicians
         ], 200);
     }
 
@@ -39,7 +39,7 @@ class PatientPhysicianController extends Controller
         $patient->physicians()->detach([$request->physician_id]);
 
         return response()->json([
-            'patient_physicians' => $patient->physicians()->select('users.id', 'first_name', 'middle_name', 'last_name', 'suffix', 'sex', 'department_id')->get()
+            'patient_physicians' => $patient->physicians
         ], 200);
     }
 }

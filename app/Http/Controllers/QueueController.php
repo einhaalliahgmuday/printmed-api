@@ -20,7 +20,7 @@ class QueueController extends Controller
         }
 
         // if user is queue manager
-        return Queue::select('department_id', 'total')->all() ?: response()->json([]);
+        return Queue::select('department_id', 'total')->get() ?: response()->json([]);
     }
 
     public function store(Request $request)
@@ -100,8 +100,14 @@ class QueueController extends Controller
         return $queue;
     }
 
-    public function incrementCurrent(Queue $queue) 
+    public function incrementCurrent(Queue $queue, Request $request) 
     {
+        $user = $request->user();
+        if ($queue->department_id !== $user->department_id)
+        {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         //queue current will not increment if no number in queue or already completed
         if ($queue->completed < $queue->total)
         {

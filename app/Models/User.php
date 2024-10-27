@@ -83,7 +83,6 @@ class User extends Authenticatable implements Auditable, CipherSweetEncrypted
     protected $hidden = [
         'password',
         'remember_token',
-        'created_at',
         'updated_at',
         'email_verified_at'
     ];
@@ -98,7 +97,15 @@ class User extends Authenticatable implements Auditable, CipherSweetEncrypted
         switch ($this->role) 
         {
             case 'physician':
-                return "Doc. {$value}";
+                switch (strtolower($this->sex))
+                {
+                    case 'male':
+                        return "Dr. {$value}";
+                    case 'female':
+                        return "Dra. {$value}";
+                    default:
+                        return "Doc. {$value}";
+                }
             case 'secretary':
                 return "Sec. {$value}";
         }
@@ -111,7 +118,7 @@ class User extends Authenticatable implements Auditable, CipherSweetEncrypted
         if($this->role === 'physician')
         {
             return $this->belongsToMany(Patient::class, 'patient_physicians', 'physician_id', 'patient_id')
-                        ->select('id', 'patient_number', 'full_name', 'birthdate', 'sex');
+                        ->select('patients.id', 'patient_number', 'patients.full_name', 'patients.birthdate', 'patients.sex', 'patients.created_at');
         }
 
         return collect(); 

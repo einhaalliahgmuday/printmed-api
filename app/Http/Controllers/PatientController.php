@@ -26,29 +26,31 @@ class PatientController extends Controller
 
         
         //if role is physician, it will only query the patients of the physician
-        $query = $user->role == 'physician' ? $user->patients() : Patient::query();
+        $query = $user->role == 'physician' ? $user->patients() : Patient::query()->select('id', 'patient_number', 'full_name', 'birthdate', 'sex', 'created_at');
 
         //query can be filter based on search (name, patient_number), sex
         //it can also be sorted by last_name, patient_number, and follow_up_date
-        if ($query != null)
+        
+        if ($request->filled('search')) 
         {
-            if ($request->filled('search')) 
-            {
-                $search = $request->search;
+            $search = $request->search;
 
-                $query->where(function($q) use ($search) {
-                    $q->whereBlind('patient_number', 'patient_number_index', $search)
-                    ->orWhereBlind('full_name', 'full_name_index', $search);
-                });
-            }
+            $query->where(function($q) use ($search) {
+                $q->whereBlind('patient_number', 'patient_number_index', $search)
+                ->orWhereBlind('full_name', 'full_name_index', $search);
+            });
+        }
 
-            if($request->filled('sex'))
-            {
-                $query->whereBlind('sex', 'sex_index', $request->sex);
-            }
+        if($request->filled('sex'))
+        {
+            $query->whereBlind('sex', 'sex_index', $request->sex);
+        }
 
-            $query->orderBy('updated_at', 'desc')->select('id', 'patient_number', 'full_name', 'birthdate', 'sex');
-            $patientsQuery = $query->get();
+        $query->orderBy('updated_at', 'desc');
+        $patientsQuery = $query->get();
+
+        if (count($patientsQuery) > 0)
+        {
 
             if($request->filled('sort_by') && in_array($request->sort_by, ['last_name', 'patient_number', 'follow_up_date'])) 
             {
@@ -76,12 +78,14 @@ class PatientController extends Controller
 
     public function store(Request $request)
     {
+        $user = $request->user();
+
         $fields = $request->validate([
             'first_name' => 'required|string|max:100',
             'middle_name' => 'string|max:100',
             'last_name'=> 'required|string|max:100',
             'suffix' => 'string|max:20',
-            'birthdate' => 'date',
+            'birthdate' => 'date|date_format:Y-m-d',
             'birthplace' => 'string',
             'sex' => 'string|max:6',
             'address' => 'string|max:255',
@@ -94,6 +98,11 @@ class PatientController extends Controller
         $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
 
         $patient = Patient::create($fields);
+
+        if ($user->role == 'physician')
+        {
+            $patient->physicians()->syncWithoutDetaching([$request->id]);
+        }
 
         return $patient;
     }
@@ -118,7 +127,7 @@ class PatientController extends Controller
             'middle_name' => 'string|max:100',
             'last_name'=> 'string|max:100',
             'suffix' => 'string|max:20',
-            'birthdate' => 'date',
+            'birthdate' => 'date|date_format:Y-m-d',
             'birthplace' => 'string',
             'sex' => 'string|max:6',
             'address' => 'string|max:255',
@@ -166,11 +175,12 @@ class PatientController extends Controller
         $request->validate([
             'first_name' => 'required|string|max:100',
             'last_name'=> 'required|string|max:100',
-            'birthdate' => 'required|date',
+            'birthdate' => 'required|date|date_format:Y-m-d',
             'sex' => 'required|string|max:6'
         ]);
 
-        $patients = Patient::whereBlind('first_name', 'first_name_index', $request->first_name)
+        $patients = Patient::select('id', 'patient_number', 'full_name', 'birthdate', 'sex')
+                            ->whereBlind('first_name', 'first_name_index', $request->first_name)
                             ->whereBlind('last_name', 'last_name_index', $request->last_name)
                             ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
                             ->whereBlind('sex', 'sex_index', $request->sex)
@@ -184,8 +194,8 @@ class PatientController extends Controller
     {
         $request->validate([
             'department_id' => 'integer|exists:departments,id',
-            'date_from' => 'date',
-            'date_until' => 'date|after_or_equal:date_from',
+            'date_from' => 'date|date_format:Y-m-d',
+            'date_until' => 'date|date_format:Y-m-d|after_or_equal:date_from',
         ]);
 
         //uses Payment model to get the number of patients visited
@@ -198,12 +208,12 @@ class PatientController extends Controller
 
         if($request->filled('date_from'))
         {
-            $query->where('date', '>=', $request->date_from);
+            $query->where('created_at', '>=', $request->date_from);
         }
 
         if($request->filled('date_until'))
         {
-            $query->where('date', '<=', $request->date_until);
+            $query->where('created_at', '<=', $request->date_until);
         }
 
         $query->distinct('patient_id');

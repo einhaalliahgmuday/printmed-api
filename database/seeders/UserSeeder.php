@@ -15,6 +15,7 @@ class UserSeeder extends Seeder
         User::create([
             'role' => 'admin',
             'personnel_number' => 'PN000001',
+            'full_name' => 'Einha Alliah Muday',
             'first_name' => 'Einha Alliah',
             'middle_name' => 'Genciana',
             'last_name' => 'Muday',
@@ -27,6 +28,7 @@ class UserSeeder extends Seeder
         User::create([
             'role' => 'physician',
             'personnel_number' => 'PN000002',
+            'full_name' => 'Salma Fae Lumaoang',
             'first_name' => 'Salma Fae',
             'last_name' => 'Lumaoang',
             'sex' => 'Female',
@@ -39,6 +41,7 @@ class UserSeeder extends Seeder
         User::create([
             'role' => 'secretary',
             'personnel_number' => 'PN000003',
+            'full_name' => 'Michi Legaspino',
             'first_name' => 'Michi',
             'last_name' => 'Legaspino',
             'sex' => 'Female',
@@ -51,6 +54,7 @@ class UserSeeder extends Seeder
         User::create([
             'role' => 'queue manager',
             'personnel_number' => 'PN000004',
+            'full_name' => 'Nico Ampoloquio',
             'first_name' => 'Nico',
             'last_name' => 'Ampoloquio',
             'sex' => 'Male',
@@ -62,6 +66,7 @@ class UserSeeder extends Seeder
         User::create([
             'role' => 'physician',
             'personnel_number' => 'PN000005',
+            'full_name' => 'Mekaila Mae Aguila',
             'first_name' => 'Mekaila Mae',
             'last_name' => 'Aguila',
             'sex' => 'Female',

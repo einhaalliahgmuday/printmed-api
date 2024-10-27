@@ -85,19 +85,16 @@ class Payment extends Model implements Auditable, CipherSweetEncrypted
         return $this->department()->first()->name;
     }
 
-    public function consultationRecord()
-    {
-        return $this->belongsTo(ConsultationRecord::class); 
-    }
-
     public function patient()
     {
-        return $this->belongsTo(Patient::class); 
+        return $this->belongsTo(Patient::class)
+                    ->select('id', 'patient_number', 'full_name', 'birthdate', 'sex');
     }
 
     public function physician()
     {
-        return $this->belongsTo(User::class); 
+        return $this->belongsTo(User::class)
+                    ->select('id', 'personnel_number', 'full_name', 'sex', 'department_id', 'license_number');
     }
 
     public function department()
@@ -107,6 +104,7 @@ class Payment extends Model implements Auditable, CipherSweetEncrypted
 
     public function updatedBy()
     {
-        return $this->hasOne(User::class, 'id', 'updated_by_id'); 
+        return $this->hasOne(User::class, 'id', 'updated_by_id')
+                    ->select('id', 'role', 'personnel_number', 'full_name', 'sex', 'department_id', 'license_number');
     }
 }

@@ -27,7 +27,7 @@ class UserController extends Controller
             'is_restricted' => 'boolean'
         ]);
 
-        $query = User::query();
+        $query = User::query()->select('id', 'role', 'personnel_number', 'full_name', 'sex', 'department_id', 'created_at');
 
         if ($request->filled('search')) 
         {
@@ -63,7 +63,7 @@ class UserController extends Controller
             $request->is_restricted ? $query->where('failed_login_attempts', '>=', 3) : $query->where('failed_login_attempts', '<', 3);
         }
 
-        $query->orderBy('updated_at');
+        $query->orderBy('updated_at', 'desc');
         
         $users = $query->paginate(20);
         $users->appends($request->all());
@@ -85,7 +85,7 @@ class UserController extends Controller
             $query->where('department_id',$request->department_id);
         }
 
-        $physicians = $query->select('id', 'full_name', 'department')->get();
+        $physicians = $query->select('id', 'role', 'personnel_number', 'full_name', 'sex', 'department_id', 'license_number')->get();
 
         return $physicians;
     }
@@ -112,10 +112,10 @@ class UserController extends Controller
         $secretariesCount = $secretariesCount->count();
         
         return response()->json([
-            'admins_count' => $adminsCount,
-            'physicians_count' => $physiciansCount,
-            'secretaries_count' => $secretariesCount,
-            'queue_managers_count' => $queueManagersCount
+            'admins' => $adminsCount,
+            'physicians' => $physiciansCount,
+            'secretaries' => $secretariesCount,
+            'queue_managers' => $queueManagersCount
         ]);
     }
 
@@ -125,7 +125,7 @@ class UserController extends Controller
             'new_email' => 'required|email|max:100',
         ]);
 
-        if ($this->isUserEmailExists($request->email)) 
+        if ($this->isUserEmailExists($request->new_email)) 
         {
             return response()->json(['message' => 'The email provided already exists.'], 422);
         }
@@ -147,7 +147,7 @@ class UserController extends Controller
             'last_name' => 'string|max:100',
             'suffix' => 'string|max:10',
             'sex' => 'string|max:6',
-            'birthdate' => 'date',
+            'birthdate' => 'date|date_format:Y-m-d',
             'license_number' => 'string|max:50',
             'department_id' => 'integer|exists:departments,id',
             'email' => 'email|max:100',
@@ -185,6 +185,12 @@ class UserController extends Controller
         $userToUpdate->failed_login_attempts = 0;
         $userToUpdate->save();
 
+        // if account is locked, all its access tokens will be deleted
+        if($userToUpdate->is_locked)
+        {
+            $userToUpdate->tokens()->delete();
+        }
+
         event(new AccountAction(AccountActionEnum::LOCK, $request->user(), $userToUpdate, $request));
 
         return $userToUpdate;
@@ -198,5 +204,23 @@ class UserController extends Controller
         event(new AccountAction(AccountActionEnum::RESTRICT, $request->user(), $userToUpdate, $request));
 
         return $userToUpdate;
+    }
+
+    public function isEmailExists(Request $request)
+    {
+        $request->validate([
+            'email' => 'email|max:100'
+        ]);
+
+        return $this->isUserEmailExists($request->email);
+    }
+
+    public function isPersonnelNumberExists(Request $request)
+    {
+        $request->validate([
+            'personnel_number' => 'string|max:8'
+        ]);
+        
+        return $this->isUserPersonnelNumberExists($request->personnel_number);
     }
 }
