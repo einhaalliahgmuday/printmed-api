@@ -71,14 +71,18 @@
                     <td class="w-15">{{$audit['message']}}</td>
                     <td class="w-10">{{$audit['resource_entity']}}</td>
                     <td class="w-15 ta-left">
-                        @foreach ($audit['old_values'] as $value)
-                            <p>{{$value}}</p>
-                        @endforeach
+                        @if ($audit['old_values'])
+                            @foreach ($audit['old_values'] as $value)
+                                <p>{{$value}}</p>
+                            @endforeach
+                        @endif
                     </td>
                     <td class="w-15 ta-left">
-                        @foreach ($audit['new_values'] as $value)
-                            <p>{{$value}}</p>
-                        @endforeach
+                        @if ($audit['new_values'])
+                            @foreach ($audit['new_values'] as $value)
+                                <p>{{$value}}</p>
+                            @endforeach
+                        @endif
                     </td>
                 </tr>
             @endforeach
