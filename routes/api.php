@@ -14,7 +14,7 @@ use App\Http\Controllers\UserController;
 // auth and password
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->middleware(['throttle:3,5']);
-Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware(['throttle:3,120']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware(['throttle:3,60']);
 
 //routes that requires authentication to access
 Route::middleware(['auth:sanctum'])->group(function() {

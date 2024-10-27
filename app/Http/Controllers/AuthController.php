@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\AuditAction;
 use App\Events\ModelAction;
 use App\Models\Otp;
+use App\Models\ResetToken;
 use App\Models\User;
 use App\Notifications\OtpVerificationNotification;
 use App\Notifications\ResetPasswordNotification;
@@ -34,9 +35,16 @@ class AuthController extends Controller
             'email' => 'required|email|max:100',
         ]);
 
-        if (in_array($request->role, ['physician', 'secretary']) && !$request->filled('department_id')) 
+        if (in_array($request->role, ['physician', 'secretary'])) 
         {
-            return response()->json(['message' => 'The department field is required.'], 422);
+            if (!$request->filled('department_id'))
+            {
+                return response()->json(['message' => 'The department field is required.'], 422);
+            }
+        }
+        else {
+            $fields['license'] = null;
+            $fields["department_id"] = null;
         }
 
         if ($this->isUserPersonnelNumberExists($request->personnel_number)) 
@@ -50,12 +58,6 @@ class AuthController extends Controller
         }
 
         $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
-
-        if (!in_array($request->role, ['physician', 'secretary']))
-        {
-            $fields['license'] = null;
-            $fields["department_id"] = null;
-        }
 
         $user = User::create($fields);
 
@@ -104,12 +106,9 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|regex:/[a-z]/|regex:/[A-Z]/|regex:/[0-9]/|regex:/[@$!%*?&]/|confirmed'
         ]);
 
+        $resetToken = ResetToken::orderByDesc('expires_at')->whereBlind('email', 'email_index', $request->email)->first();
         
-        $isPasswordResetRequestValid = DB::table('password_reset_tokens')
-                                        ->where('email', $request->email)
-                                        ->where('token', $request->token)->exists();
-        
-        if (!$isPasswordResetRequestValid)
+        if (!$resetToken || !Hash::check($request->input('token'), $resetToken->token) || now()->isAfter($resetToken->expires_at))
         {
             return response()->json(['message'=> 'Invalid request'], 400);
         }
@@ -128,8 +127,7 @@ class AuthController extends Controller
         
         $user->forceFill(['password' => Hash::make($request->password), 'email_verified_at' => now()])->save();
         
-        DB::table('password_reset_tokens')->where('email', $request->email)
-            ->where('token', $request->token)->delete();
+        $resetToken->delete();
         $user->tokens()->delete();  // delete all login tokens
         
         // implements audit of resetting password
@@ -188,9 +186,9 @@ class AuthController extends Controller
         //sends otp to user's email as another authentication
         $token = Str::random(60);
         $otp = Otp::create([
-            'token' => Hash::make($token),
             'email' => $request->email,
             'code' => rand(100000, 999999),
+            'token' => Hash::make($token),
             'expires_at' => now()->addMinutes(5)
         ]);
 
@@ -212,8 +210,8 @@ class AuthController extends Controller
             'code' => 'required|size:6'
         ]);
 
-        $otp = Otp::where('email', $request->email)
-            ->where('code', $request->code)
+        $otp = Otp::whereBlind('email', 'email_index', $request->email)
+            ->whereBlind('code', 'code_index', $request->code)
             ->first();
 
         $user = User::whereBlind('email', 'email_index', $request->email)->first();
@@ -226,7 +224,7 @@ class AuthController extends Controller
         }
 
         $otp->delete();
-        $token = $user->createToken($user->email)->plainTextToken;
+        $token = $user->createToken($user->id)->plainTextToken;
 
         // implements audit of login
         event(new ModelAction(AuditAction::LOGIN, $user, null, null, $request));
@@ -278,7 +276,11 @@ class AuthController extends Controller
     {
         $token = Str::random(60);
 
-        DB::table('password_reset_tokens')->insert(['email' => $user->email,'token'=> $token, 'created_at' => now()]);
+        ResetToken::create([
+            'email' => $user->email,
+            'token' => Hash::make($token),
+            'expires_at' => now()->addHours(24)
+        ]);
         
         $user->notify(new ResetPasswordNotification($isNewAccount, $token, $user->email));
     }

@@ -9,7 +9,6 @@ use Spatie\LaravelCipherSweet\Concerns\UsesCipherSweet;
 use Spatie\LaravelCipherSweet\Contracts\CipherSweetEncrypted;
 use App\Models\User;
 use App\Models\Patient;
-use App\Models\ConsultationRecord;
 use App\Models\Payment;
 use ParagonIE\CipherSweet\BlindIndex;
 

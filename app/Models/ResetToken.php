@@ -9,7 +9,7 @@ use ParagonIE\CipherSweet\EncryptedRow;
 use Spatie\LaravelCipherSweet\Concerns\UsesCipherSweet;
 use Spatie\LaravelCipherSweet\Contracts\CipherSweetEncrypted;
 
-class Otp extends Model implements CipherSweetEncrypted
+class ResetToken extends Model implements CipherSweetEncrypted
 {
     use HasFactory;
     use UsesCipherSweet;
@@ -18,16 +18,13 @@ class Otp extends Model implements CipherSweetEncrypted
     {
         $encryptedRow
             ->addTextField('email')
-            ->addBlindIndex('email', new BlindIndex('email_index'))
-            ->addTextField('code')
-            ->addBlindIndex('code', new BlindIndex('code_index'));
+            ->addBlindIndex('email', new BlindIndex('email_index'));
     }
 
     public $timestamps = false;
 
     protected $fillable = [
         'email',
-        'code',
         'token',
         'expires_at'
     ];
