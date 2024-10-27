@@ -21,6 +21,9 @@ class PaymentController extends Controller
 
         $user = $request->user();
 
+        // if user is physician, it will get all payment records for its consultation records
+        // if user is secretary, it will get all payment records for its department
+        // if user is admin, it get all patient records
         $query = $user->role == 'physician' 
             ? $user->payments()
             : ($user->role == 'secretary'
@@ -47,6 +50,21 @@ class PaymentController extends Controller
             $query->where('method', $request->input('method'));
         }
 
+        $paymentTotalQuery = clone $query;
+        $paymentTotal = $paymentTotalQuery->select('amount', 'is_paid')->get();
+
+        $paidTotal = 0;
+        $unpaidTotal = 0;
+
+        foreach($paymentTotal as $payment)
+        {
+            if ($payment->is_paid){
+                $paidTotal += $payment->amount;
+            } else{
+                $unpaidTotal += $payment->amount;
+            }
+        }
+
         if ($request->filled('is_paid'))
         {
             $query->where('is_paid', $request->is_paid);
@@ -59,14 +77,13 @@ class PaymentController extends Controller
             $query->orderBy('is_paid', 'desc');
         }
 
-        $paidTotalQuery = clone $query;
-        $paidTotal = $paidTotalQuery->where('is_paid', true)->sum('amount');
-
-        $payments = $query->paginate(30);
+        $payments = $query->paginate(20);
         $payments->appends($request->all());
 
         return response()->json([
             'paid_total' => $paidTotal,
+            'unpaid_total' => $unpaidTotal,
+            'total' => $paidTotal + $unpaidTotal,
             'payments' => $payments
         ]);
     }
@@ -97,7 +114,6 @@ class PaymentController extends Controller
         ], 200);
     }
 
-    // returns total amount of paid payment records
     public function getTotal(Request $request)
     {
         $request->validate([
@@ -107,8 +123,6 @@ class PaymentController extends Controller
         ]);
 
         $query = Payment::query();
-
-        $query->where('is_paid', true);
 
         if($request->filled('department_id'))
         {
@@ -125,10 +139,24 @@ class PaymentController extends Controller
             $query->where('created_at', '<=', $request->date_until);
         }
 
-        $paidTotal = $query->sum('amount');
+        $payments = $query->select('amount', 'is_paid')->get();
+
+        $paidTotal = 0;
+        $unpaidTotal = 0;
+
+        foreach($payments as $payment)
+        {
+            if ($payment->is_paid){
+                $paidTotal += $payment->amount;
+            } else{
+                $unpaidTotal += $payment->amount;
+            }
+        }
         
         return response()->json([
-            'paid_total' => $paidTotal
+            'paid_total' => $paidTotal,
+            'unpaid_total' => $unpaidTotal,
+            'total' => $paidTotal + $unpaidTotal
         ]);
     }
 }
