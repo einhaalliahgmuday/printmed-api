@@ -2,38 +2,60 @@
 
 namespace Database\Seeders;
 
-use App\Models\ConsultationRecord;
-use App\Models\Patient;
+use App\Models\Consultation;
 use Illuminate\Database\Seeder;
 
 class ConsultationRecordSeeder extends Seeder
 {
     public function run(): void
     {
-        $patients = Patient::all();
-
-        foreach ($patients as $patient) {
-            ConsultationRecord::create([
-                'height' => 170.5,
-                'weight' => 70.0,
+        $consultations = [
+            [
+                'patient_id' => 1,
+                'height' => 1.75,
+                'weight' => 70.5,
                 'blood_pressure' => '120/80',
-                'temperature' => 98.6,
-                'chief_complaint' => 'Regular check-up',
-                'history_of_present_illness' => 'No significant history',
-                'family_hx' => 'No hereditary diseases',
-                'medical_hx' => 'Allergies to peanuts',
-                'pediatrics_h' => null,
-                'pediatrics_e' => null,
-                'pediatrics_a' => null,
-                'pediatrics_d' => null,
-                'primary_diagnosis' => null,
-                'diagnosis' => 'Healthy',
-                'prescription' => 'Multivitamins',
-                'follow_up_date' => null,
-                'patient_id' => $patient->id,
-                'physician_id' => 2,
+                'temperature' => 37.5,
+                'chief_complaint' => 'Severe headache',
+                'primary_diagnosis' => 'Migraine',
+                'diagnosis' => 'Migraine attack',
+                'prescription' => 'Ibuprofen 400mg',
+                'follow_up_date' => '2024-10-30',
+                'physician_id' => 1,
                 'department_id' => 1
-            ]);
+            ],
+            [
+                'patient_id' => 2,
+                'height' => 1.80,
+                'weight' => 85.0,
+                'blood_pressure' => '130/85',
+                'temperature' => 38.0,
+                'chief_complaint' => 'Fever',
+                'primary_diagnosis' => 'Flu',
+                'diagnosis' => 'Flu infection',
+                'prescription' => 'Paracetamol 500mg',
+                'follow_up_date' => '2024-11-05',
+                'physician_id' => 1,
+                'department_id' => 1
+            ],
+            [
+                'patient_id' => 2,
+                'height' => 1.65,
+                'weight' => 60.0,
+                'blood_pressure' => '115/75',
+                'temperature' => 36.8,
+                'chief_complaint' => 'Nausea',
+                'primary_diagnosis' => 'Gastroenteritis',
+                'diagnosis' => 'Stomach flu',
+                'prescription' => 'Loperamide',
+                'follow_up_date' => '2024-11-10',
+                'physician_id' => 1,
+                'department_id' => 1
+            ]
+        ];
+
+        foreach ($consultations as $consultation) {
+            Consultation::create($consultation);
         }
     }
 }
