@@ -15,6 +15,7 @@ class ConsultationRecordController extends Controller
     //only physicians of the patient can create a record
     //only the physician of a record can update the record
     
+    // cannot add records if not a patient of user
     public function store(Request $request)
     {
         $fields = $request->validate([
@@ -72,6 +73,8 @@ class ConsultationRecordController extends Controller
 
     public function show(Request $request, ConsultationRecord $consultationRecord)
     {
+        Gate::authorize('view', $consultationRecord);
+
         // implements audit of retrieval
         event(new RetrievedData($request->user(), $consultationRecord, $request));
 

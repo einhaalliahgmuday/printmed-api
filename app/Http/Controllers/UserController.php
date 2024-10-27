@@ -82,7 +82,7 @@ class UserController extends Controller
 
         if ($request->filled('department_id'))
         {
-            $query->where('department_id',$request->department_id);
+            $query->where('department_id', $request->department_id);
         }
 
         $physicians = $query->select('id', 'role', 'personnel_number', 'full_name', 'sex', 'department_id', 'license_number')->get();

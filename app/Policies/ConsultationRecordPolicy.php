@@ -9,13 +9,18 @@ use Illuminate\Http\Request;
 
 class ConsultationRecordPolicy
 {
+    public function view(User $user, ConsultationRecord $consultationRecord): bool
+    {
+        return $consultationRecord->physician_id === $user->id;
+    }
+
     public function create(User $user, Request $request): bool
     {
-        return $user->role == 'physician' && $user->patients()->where('patients.id', $request->patient_id)->exists();
+        return $user->patients()->where('patients.id', $request->patient_id)->exists();
     }
 
     public function update(User $user, ConsultationRecord $consultationRecord): bool
     {
-        return $user->role == 'physician' && $consultationRecord->physician_id === $user->id;
+        return $consultationRecord->physician_id === $user->id;
     }
 }
