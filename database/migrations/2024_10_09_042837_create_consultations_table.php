@@ -9,7 +9,7 @@ return new class extends Migration
 
     public function up(): void
     {
-        Schema::create('consultation_records', function (Blueprint $table) {
+        Schema::create('consultations', function (Blueprint $table) {
             $table->id();
             $table->string('height')->nullable();
             $table->string('weight')->nullable();
@@ -36,6 +36,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('consultation_records');
+        Schema::dropIfExists('consultations');
     }
 };

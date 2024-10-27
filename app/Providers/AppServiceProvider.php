@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use App\Models\ConsultationRecord;
-use App\Policies\ConsultationRecordPolicy;
+use App\Models\Consultation;
+use App\Policies\ConsultationPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -16,6 +16,6 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Gate::policy(ConsultationRecord::class, ConsultationRecordPolicy::class);
+        Gate::policy(Consultation::class, ConsultationPolicy::class);
     }
 }

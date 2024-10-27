@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\RetrievedData;
+use App\AuditAction;
+use App\Events\ModelAction;
 use App\Models\Patient;
 use App\Models\Payment;
 use App\Traits\CommonMethodsTrait;
@@ -47,23 +48,22 @@ class PatientController extends Controller
         }
 
         $query->orderBy('updated_at', 'desc');
-        $patientsQuery = $query->get();
+        $patients = $query->get();
 
-        if (count($patientsQuery) > 0)
+        if (count($patients) > 0)
         {
-
             if($request->filled('sort_by') && in_array($request->sort_by, ['last_name', 'patient_number', 'follow_up_date'])) 
             {
                 $isDesc = $request->input('sort_direction') == 'desc';
 
-                $patientsQuery = $patientsQuery->sortBy('patient_number', SORT_REGULAR, $isDesc)->values();
+                $patients = $patients->sortBy('patient_number', SORT_REGULAR, $isDesc)->values();
             } 
 
             $page = $request->input('page',1);
-            $data = array_slice($patientsQuery->toArray(), ($page - 1) * 15, 15);
+            $data = array_slice($patients->toArray(), ($page - 1) * 15, 15);
             $paginator = new LengthAwarePaginator(
                 $data, 
-                count($patientsQuery), 
+                count($patients), 
                 15, 
                 $page,
                 ['path' => $request->url(), 'query' => $request->query()]
@@ -99,9 +99,12 @@ class PatientController extends Controller
 
         $patient = Patient::create($fields);
 
+        // audit creation of patient
+        event(new ModelAction(AuditAction::CREATE, $request->user(), $patient, null, $request));
+
         if ($user->role == 'physician')
         {
-            $patient->physicians()->syncWithoutDetaching([$request->id]);
+            $patient->physicians()->syncWithoutDetaching([$user->id]);
         }
 
         return $patient;
@@ -111,8 +114,8 @@ class PatientController extends Controller
     {
         $consultationRecords = $patient->consultationRecords()->paginate(10);
 
-        // implements audit of retrieval
-        event(new RetrievedData($request->user(), $patient, $request));
+        // implements audit of patient retrieval
+        event(new ModelAction(AuditAction::RETRIEVE, $request->user(), $patient, null, $request));
 
         return response()->json([
             'patient' => $patient,
@@ -136,12 +139,17 @@ class PatientController extends Controller
             'phone_number' => 'string|max:12'
         ]);
 
+        $originalData = $patient->toArray();
+
         $patient->update($fields);
 
         if ($request->filled('first_name') || $request->filled('last_name'))
         {
             $patient->update(['full_name' => $this->getFullName($patient->first_name, $patient->last_name)]);
         }
+
+        // implements audit of update
+        event(new ModelAction(AuditAction::UPDATE, $request->user(), $patient, $originalData, $request));
 
         return $patient;
     }

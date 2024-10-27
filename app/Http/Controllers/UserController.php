@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\AccountActionEnum;
+use App\AuditAction;
 use App\Events\AccountAction;
+use App\Events\ModelAction;
 use App\Events\UpdateUser;
 use App\Models\User;
 use App\Traits\CommonMethodsTrait;
@@ -174,7 +176,7 @@ class UserController extends Controller
         }
 
         // implements audit of update
-        event(new UpdateUser($userToUpdate, $originalData,$userToUpdate, $request));
+        event(new ModelAction(AuditAction::UPDATE, $request->user(), $userToUpdate, $originalData, $request));
 
         return $userToUpdate;
     }
@@ -191,17 +193,20 @@ class UserController extends Controller
             $userToUpdate->tokens()->delete();
         }
 
-        event(new AccountAction(AccountActionEnum::LOCK, $request->user(), $userToUpdate, $request));
+        // audit locking of account
+        event(new ModelAction(AuditAction::LOCK, $request->user(), $userToUpdate, null, $request));
 
         return $userToUpdate;
     }
 
     public function unrestrict(Request $request, User $userToUpdate)
     {
+        $failedLoginAttempts = $userToUpdate->failed_login_attempts;
+        
         $userToUpdate->failed_login_attempts = 0;
         $userToUpdate->save();
 
-        event(new AccountAction(AccountActionEnum::RESTRICT, $request->user(), $userToUpdate, $request));
+        $failedLoginAttempts <= 3 ?: event(new ModelAction(AuditAction::UNRESTRICT, $request->user(), $userToUpdate, null, $request));
 
         return $userToUpdate;
     }

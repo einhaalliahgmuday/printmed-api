@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\AccountActionEnum;
-use App\Events\AccountAction;
+use App\AuditAction;
+use App\Events\ModelAction;
 use App\Models\Otp;
 use App\Models\User;
 use App\Notifications\OtpVerificationNotification;
@@ -34,6 +34,11 @@ class AuthController extends Controller
             'email' => 'required|email|max:100',
         ]);
 
+        if (in_array($request->role, ['physician', 'secretary']) && !$request->filled('department_id')) 
+        {
+            return response()->json(['message' => 'The department field is required.'], 422);
+        }
+
         if ($this->isUserPersonnelNumberExists($request->personnel_number)) 
         {
             return response()->json(['message' => 'The personnel number is already taken'], 422);
@@ -53,6 +58,9 @@ class AuthController extends Controller
         }
 
         $user = User::create($fields);
+
+        // implements audit of user creation
+        event(new ModelAction(AuditAction::CREATE, $request->user(), $user, null, $request));
 
         $this->sendResetLink(true, $user);
 
@@ -77,7 +85,7 @@ class AuthController extends Controller
         $this->sendResetLink(false, $user);
 
         // implements audit of sending reset link, which is executed by Admin
-        event(new AccountAction(AccountActionEnum::SENT_RESET_LINK, $request->user(), $user, $request));
+        event(new ModelAction(AuditAction::SENT_RESET_LINK, $request->user(), $user, null, $request));
 
         return response()->json([
             'message' => 'Reset link sent.'
@@ -125,7 +133,7 @@ class AuthController extends Controller
         $user->tokens()->delete();  // delete all login tokens
         
         // implements audit of resetting password
-        event(new AccountAction(AccountActionEnum::RESET_PASSWORD, $user, null, $request));
+        event(new ModelAction(AuditAction::RESET_PASSWORD, $user, null, null, $request));
         
         return response()->json(['message' => 'Password has been reset successfully.'], 200);
     }
@@ -169,7 +177,7 @@ class AuthController extends Controller
             // implemented custom audit event in when account is restricted due to 3 failed login attempts
             if ($user->failed_login_attempts >= 3)
             {
-                event(new AccountAction(AccountActionEnum::RESTRICT, $user, null, $request));
+                event(new ModelAction(AuditAction::RESTRICT, $user, null, null, $request));
             }
 
             return response()->json([
@@ -221,7 +229,8 @@ class AuthController extends Controller
         $token = $user->createToken($user->email)->plainTextToken;
 
         // implements audit of login
-        event(new AccountAction(AccountActionEnum::LOGIN, $user, null, $request));
+        event(new ModelAction(AuditAction::LOGIN, $user, null, null, $request));
+        
 
         return response()->json([
             'user' => $user,
@@ -234,7 +243,7 @@ class AuthController extends Controller
         $request->user()->tokens()->delete();   
 
         // implements audit of logout
-        event(new AccountAction(AccountActionEnum::LOGOUT, $request->user(), null, $request));
+        event(new ModelAction(AuditAction::LOGOUT, $request->user(), null, null, $request));
 
         return response()->json([
             'message' => 'You are logged out.'
@@ -269,8 +278,8 @@ class AuthController extends Controller
     {
         $token = Str::random(60);
 
-        $user->notify(new ResetPasswordNotification($isNewAccount, $token, $user->email));
-
         DB::table('password_reset_tokens')->insert(['email' => $user->email,'token'=> $token, 'created_at' => now()]);
+        
+        $user->notify(new ResetPasswordNotification($isNewAccount, $token, $user->email));
     }
 }

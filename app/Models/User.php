@@ -7,17 +7,15 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Traits\CommonMethodsTrait;
-use OwenIt\Auditing\Contracts\Auditable;
 use ParagonIE\CipherSweet\BlindIndex;
 use ParagonIE\CipherSweet\EncryptedRow;
 use Spatie\LaravelCipherSweet\Concerns\UsesCipherSweet;
 use Spatie\LaravelCipherSweet\Contracts\CipherSweetEncrypted;
 
-class User extends Authenticatable implements Auditable, CipherSweetEncrypted
+class User extends Authenticatable implements CipherSweetEncrypted
 {
     use HasFactory, Notifiable, HasApiTokens;
     use UsesCipherSweet;
-    use \OwenIt\Auditing\Auditable;
     use CommonMethodsTrait;
 
     public static function configureCipherSweet(EncryptedRow $encryptedRow): void
@@ -42,24 +40,6 @@ class User extends Authenticatable implements Auditable, CipherSweetEncrypted
             ->addField('email')
             ->addBlindIndex('email', new BlindIndex('email_index'));
     }
-
-    protected $auditEvents = [
-        'created',
-    ];
-
-    protected $auditInclude = [
-        'role',
-        'personnel_number',
-        'first_name',
-        'middle_name',
-        'last_name',
-        'suffix',
-        'sex',
-        'birthdate',
-        'department_id',
-        'license_number',
-        'email'
-    ];
 
     protected $fillable = [
         'role',

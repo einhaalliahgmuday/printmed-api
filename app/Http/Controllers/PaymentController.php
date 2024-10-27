@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\AuditAction;
+use App\Events\ModelAction;
 use App\Events\PaymentUpdated;
 use App\Models\Payment;
 use Illuminate\Http\Request;
@@ -97,10 +99,15 @@ class PaymentController extends Controller
             'is_paid' => 'boolean'
         ]);
 
+        $originalData = $payment->toArray();
+
         $payment->update($fields);
 
         // web socket for updated payment
         event(new PaymentUpdated($payment));
+
+        // audit update of payment
+        event(new ModelAction(AuditAction::UPDATE, $request->user(), $payment, $originalData, $request));
 
         return $payment;
     }

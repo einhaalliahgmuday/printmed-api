@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\AuditAction;
+use App\Events\ModelAction;
 use App\Events\PaymentNew;
-use App\Events\RetrievedData;
-use App\Models\ConsultationRecord;
+use App\Models\Consultation;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
-class ConsultationRecordController extends Controller
+class ConsultationController extends Controller
 {
     //store and update has policy implemented
     //only physicians of the patient can create a record
@@ -41,14 +42,14 @@ class ConsultationRecordController extends Controller
             'payment_hmo' => 'string'
         ]);
 
-        Gate::authorize('create', [ConsultationRecord::class, $request]);
+        Gate::authorize('create', [Consultation::class, $request]);
 
         $user = $request->user();
 
         $fields['physician_id'] = $user->id;
         $fields['department_id'] = $user->department_id;
 
-        $consultationRecord = ConsultationRecord::create($fields);
+        $consultationRecord = Consultation::create($fields);
 
         $paymentFields = [
             'amount' => $request->payment_amount,
@@ -64,6 +65,10 @@ class ConsultationRecordController extends Controller
 
         // web socket for new payment
         event(new PaymentNew($payment));
+
+        // audit creation of consultation record and payment record
+        event(new ModelAction(AuditAction::CREATE, $request->user(), $consultationRecord, null, $request));
+        event(new ModelAction(AuditAction::CREATE, $request->user(), $payment, null, $request));
     
         return response()->json([
             'consultation_record' => $consultationRecord,
@@ -71,19 +76,19 @@ class ConsultationRecordController extends Controller
         ]);
     }
 
-    public function show(Request $request, ConsultationRecord $consultationRecord)
+    public function show(Request $request, Consultation $consultation)
     {
-        Gate::authorize('view', $consultationRecord);
+        Gate::authorize('view', $consultation);
 
         // implements audit of retrieval
-        event(new RetrievedData($request->user(), $consultationRecord, $request));
+        event(new ModelAction(AuditAction::RETRIEVE, $request->user(), $consultation, null, $request));
 
-        return $consultationRecord;
+        return $consultation;
     }
 
-    public function update(Request $request, ConsultationRecord $consultationRecord)
+    public function update(Request $request, Consultation $consultation)
     {
-        Gate::authorize('update', $consultationRecord);
+        Gate::authorize('update', $consultation);
 
         $fields = $request->validate([
             'height' => 'numeric|decimal:0,2',
@@ -104,24 +109,28 @@ class ConsultationRecordController extends Controller
             'follow_up_date' => 'date|date_format:Y-m-d',
         ]);
 
-        $consultationRecord->update($fields);
+        $originalData = $consultation->toArray();
 
-        return $consultationRecord;
+        $consultation->update($fields);
+
+        event(new ModelAction(AuditAction::UPDATE, $request->user(), $consultation, $originalData, $request));
+
+        return $consultation;
     }
 
-    public function destroy(ConsultationRecord $consultationRecord)
+    public function destroy(Consultation $consultation)
     {
         $dateThreshold = now()->subYears(10);
 
         //if patient or patient's last consultation date is not past 10 years, patient cannot be deleted
-        if ($consultationRecord->updated_at >= $dateThreshold) 
+        if ($consultation->updated_at >= $dateThreshold) 
         {
             return response()->json([
                 'message' => 'Consultation record cannot be deleted 10 years before.'
             ], 403);
         }
 
-        $consultationRecord->delete();
+        $consultation->delete();
 
         return response()->json([
             'message' => 'Consultation record successfully deleted.'

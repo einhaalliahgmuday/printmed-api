@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use OwenIt\Auditing\Models\Audit;
+use App\Models\Audit;
 
 class AuditController extends Controller
 {
@@ -14,18 +14,20 @@ class AuditController extends Controller
         $request->validate([
             'page' => 'integer',
             'resource' => 'string|in:user,patient,consultation record,payment',
-            'date_from' => 'date',
-            'date_until' => 'date|after_or_equal:date_from'
+            'date_from' => 'date|date_format:Y-m-d',
+            'date_until' => 'date|date_format:Y-m-d|after_or_equal:date_from'
         ]);
 
-        $audits = $this->getAudits($request);
-
         $page = $request->input('page',1);
-        $data = array_slice($audits, ($page - 1) * 15, 15);
+        $limit = 15;
+        $offset = ($page - 1) * $limit;
+
+        $auditsInformation = $this->getAudits($request, $offset, $limit);
+
         $paginator = new LengthAwarePaginator(
-            $data, 
-            count($audits), 
-            15, 
+            $auditsInformation['data'], 
+            $auditsInformation['totalQuery'], 
+            $limit, 
             $page,
             ['path' => $request->url(), 'query' => $request->query()]
         );
@@ -39,24 +41,26 @@ class AuditController extends Controller
         $request->validate([
             'page' => 'integer',
             'resource' => 'string|in:user,patient,consultation record,payment',
-            'date_from' => 'date',
-            'date_until' => 'date|after_or_equal:date_from'
+            'date_from' => 'date|date_format:Y-m-d',
+            'date_until' => 'date|date_format:Y-m-d|after_or_equal:date_from'
         ]);
 
-        $audits = $this->getAudits($request);
+        $auditsInformation = $this->getAudits($request, null, null);
 
-        $pdf = Pdf::loadView('audits', ['audits' => $audits])->setPaper('a4', 'landscape');
+        $date = now()->format('Y-m-d');
 
-        return $pdf->download('audits.pdf');
+        $pdf = Pdf::loadView('audits', ['audits' => $auditsInformation['data']])->setPaper('a4', 'landscape');
+
+        return $pdf->download("printmed_audits_retrieved_at_{$date}.pdf");
     }
 
-    public function getAudits(Request $request)
+    public function getAudits(Request $request, int|null $offset, int|null $limit)
     {
         $auditsQuery = Audit::query();
 
         if ($request->filled('resource'))
         {
-            $auditsQuery = $auditsQuery->where('auditable_type', $this->getRequestResourceClass($request->resource));
+            $auditsQuery = $auditsQuery->whereBlind('auditable_type', 'auditable_type_index', $this->getRequestResourceClass($request->resource));
         }
 
         if ($request->filled('date_from'))
@@ -68,14 +72,27 @@ class AuditController extends Controller
         {
             $auditsQuery = $auditsQuery->where('created_at', '>=', $request->date_until);
         }
+        $auditsQuery->orderBy('created_at', 'desc');
 
-        $auditsQuery = $auditsQuery->orderBy('created_at', 'desc')->get();
+        $totalQuery = 0;
+
+        if ($offset !== null && $limit !== null)
+        {
+            $auditsQueryClone = clone $auditsQuery;
+            $totalQuery = $auditsQueryClone->count();
+
+            $auditsQuery = $auditsQuery->offset($offset)->limit($limit)->get();
+        }
+        else 
+        {
+            $auditsQuery = $auditsQuery->get();
+        }
 
         $audits = [];
 
         foreach ($auditsQuery as $audit)
         {
-            $user = $request->user();
+            $user = $audit->user;
             $resourceInformation = $this->getResourceInformation($audit);
 
             if ($audit->event !== 'updated')
@@ -96,15 +113,20 @@ class AuditController extends Controller
                 'resource_type' => $resourceInformation['resource_type'],
                 'resource_id' => $resourceInformation['resource_id'],
                 'resource_entity' => $resourceInformation['resource_entity'],
-                'old_values' => $this->formatArrayToString($audit->old_values),
-                'new_values' => $this->formatArrayToString($audit->new_values)
+                'old_values' => $audit->old_values == null ? null : $this->formatValues($audit->old_values),
+                'new_values' => $audit->new_values == null ? null : $this->formatValues($audit->new_values)
             ];
         } 
 
-        return $audits;
+        $auditsInformation = [
+            'data' => $audits,
+            'totalQuery' => $totalQuery
+        ];
+
+        return $auditsInformation;
     }
 
-    public function formatArrayToString($array)
+    public function formatValues(array $array)
     {
         $formatted = [];
 
@@ -161,9 +183,9 @@ class AuditController extends Controller
             {
                 $resourceEntity = $resourceType === 'user' ? $auditable->personnel_number : $auditable->patient_number;
             }
-            else if (in_array($resourceType, ['payment', 'consultationrecord']))
+            else if (in_array($resourceType, ['payment', 'consultation']))
             {
-                $resourceEntity = $auditable->patient->patient_id;
+                $resourceEntity = $auditable->patient->patient_number;
             }
         }
 

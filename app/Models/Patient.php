@@ -6,17 +6,15 @@ use App\Traits\CommonMethodsTrait;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use OwenIt\Auditing\Contracts\Auditable;
 use ParagonIE\CipherSweet\BlindIndex;
 use ParagonIE\CipherSweet\EncryptedRow;
 use Spatie\LaravelCipherSweet\Concerns\UsesCipherSweet;
 use Spatie\LaravelCipherSweet\Contracts\CipherSweetEncrypted;
 
-class Patient extends Model implements Auditable, CipherSweetEncrypted
+class Patient extends Model implements CipherSweetEncrypted
 {
     use HasFactory, CommonMethodsTrait;
     use UsesCipherSweet;
-    use \OwenIt\Auditing\Auditable;
 
     public static function configureCipherSweet(EncryptedRow $encryptedRow): void
     {
@@ -41,21 +39,6 @@ class Patient extends Model implements Auditable, CipherSweetEncrypted
             ->addOptionalTextField('religion')
             ->addOptionalTextField('phone_number');
     }
-
-    protected $auditInclude = [
-        'patient_number',
-        'first_name',
-        'middle_name',
-        'last_name',
-        'suffix',
-        'birthdate',
-        'birthplace',
-        'sex',
-        'address',
-        'civil_status',
-        'religion',
-        'phone_number'
-    ];
 
     protected $fillable = [
         'patient_number',
@@ -125,7 +108,7 @@ class Patient extends Model implements Auditable, CipherSweetEncrypted
 
     public function consultationRecords()
     {
-        return $this->hasMany(ConsultationRecord::class, 'patient_id')
+        return $this->hasMany(Consultation::class, 'patient_id')
                     ->select('id', 'chief_complaint', 'primary_diagnosis', 'diagnosis', 'follow_up_date', 'updated_at');
     }
 

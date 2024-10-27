@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('hmo')->nullable();
             $table->boolean('is_paid')->default(false);
             $table->foreignId('updated_by_id')->nullable()->constrained('users', 'id')->onDelete('restrict');
-            $table->foreignId('consultation_record_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('consultation_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('patient_id')->constrained('patients', 'id')->onDelete('restrict');
             $table->foreignId('physician_id')->constrained('users', 'id')->onDelete('restrict');
             $table->foreignId('department_id')->constrained()->onDelete('restrict');

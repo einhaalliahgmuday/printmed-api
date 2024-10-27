@@ -4,16 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use OwenIt\Auditing\Contracts\Auditable;
 use ParagonIE\CipherSweet\EncryptedRow;
 use Spatie\LaravelCipherSweet\Concerns\UsesCipherSweet;
 use Spatie\LaravelCipherSweet\Contracts\CipherSweetEncrypted;
 
-class ConsultationRecord extends Model implements Auditable, CipherSweetEncrypted
+class Consultation extends Model implements CipherSweetEncrypted
 {
     use HasFactory;
     use UsesCipherSweet;
-    use \OwenIt\Auditing\Auditable;
 
     public static function configureCipherSweet(EncryptedRow $encryptedRow): void
     {
@@ -35,25 +33,6 @@ class ConsultationRecord extends Model implements Auditable, CipherSweetEncrypte
             ->addOptionalTextField('prescription')
             ->addOptionalTextField('follow_up_date');
     }
-
-    protected $auditInclude = [
-        'height',
-        'weight',
-        'blood_pressure',
-        'temperature',
-        'chief_complaint',
-        'present_illness_hx',
-        'family_hx',
-        'medical_hx',
-        'pediatrics_h',
-        'pediatrics_e',
-        'pediatrics_a',
-        'pediatrics_d',
-        'primary_diagnosis',
-        'diagnosis',
-        'prescription',
-        'follow_up_date',
-    ];
 
     protected $fillable = [
         'height',

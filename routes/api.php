@@ -3,7 +3,7 @@
 use App\Http\Controllers\AuditController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ConsultationRecordController;
+use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PaymentController;
@@ -53,7 +53,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/patients-count', [PatientController::class, 'getCount'])->middleware(['role:admin']);
 
     // consultation records
-    Route::apiResource('consultation-records', ConsultationRecordController::class)->only(['store', 'update', 'show'])->middleware(['role:physician']);
+    Route::apiResource('consultations', ConsultationController::class)->only(['store', 'update', 'show'])->middleware(['role:physician']);
 
     // payments
     Route::get('/payments', [PaymentController::class, 'index'])->middleware(['role:admin,physician,secretary']);
