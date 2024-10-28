@@ -40,8 +40,8 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/audits/download', [AuditController::class, 'downloadAudits'])->middleware(['role:admin']);
 
     // departments
-    Route::apiResource('departments', DepartmentController::class)->except(['show', 'index'])->middleware(['role:admin']);
     Route::get('/departments', [DepartmentController::class, 'index']);
+    Route::apiResource('departments', DepartmentController::class)->except(['show', 'index'])->middleware(['role:admin']);
 
     // patient-physician relationship
     Route::post('/patients/{patient}/assign-physician', [PatientPhysicianController::class, 'store'])->middleware(['role:secretary']);
