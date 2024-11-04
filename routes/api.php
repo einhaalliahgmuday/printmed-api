@@ -10,14 +10,19 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PatientPhysicianController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\UserController;
+use Illuminate\Http\Request;
 
 // auth and password
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->middleware(['throttle:3,5']);
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware(['throttle:3,60']);
 
 //routes that requires authentication to access
 Route::middleware(['auth:sanctum'])->group(function() {
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+
     // auth, registration, and password
     Route::post('/register', [AuthController::class, 'register'])->middleware(['role:admin']);
     Route::get('/register/is-email-exists', [UserController::class, 'isEmailExists'])->middleware(['role:admin']);
