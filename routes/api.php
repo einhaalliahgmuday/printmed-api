@@ -35,7 +35,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::put('/update-email', [UserController::class, 'updateEmail']);
     Route::get('/users', [UserController::class, 'index'])->middleware(['role:admin']);
     Route::get('/users/physicians', [UserController::class, 'getPhysicians'])->middleware(['role:secretary,physician']);
-    Route::get('/users/count', [UserController::class, 'getUsersCount'])->middleware(['role:admin']);
+    Route::get('/users-count', [UserController::class, 'getUsersCount'])->middleware(['role:admin']);
     Route::put('/users/{user_to_update}/update-information', [UserController::class, 'updateInformation'])->middleware(['role:admin']);
     Route::put('/users/{user_to_update}/unrestrict', [UserController::class, 'unrestrict'])->middleware(['role:admin']);
     Route::put('/users/{user_to_update}/toggle-lock', [UserController::class,'toggleLock'])->middleware(['role:admin']);
