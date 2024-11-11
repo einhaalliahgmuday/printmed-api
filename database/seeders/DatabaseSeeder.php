@@ -14,6 +14,8 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             PatientSeeder::class,
             ConsultationRecordSeeder::class,
+            PaymentSeeder::class,
+            PatientPhysicianSeeder::class
         ]);
     }
 }

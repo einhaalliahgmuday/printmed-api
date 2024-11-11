@@ -6,6 +6,7 @@ use App\AuditAction;
 use App\Events\ModelAction;
 use App\Events\PaymentUpdated;
 use App\Models\Payment;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class PaymentController extends Controller
@@ -25,9 +26,9 @@ class PaymentController extends Controller
 
         // if user is physician, it will get all payment records for its consultation records
         // if user is secretary, it will get all payment records for its department
-        // if user is admin, it get all patient records
+        // if user is admin, it get all payment records
         $query = $user->role == 'physician' 
-            ? $user->payments()
+            ? Payment::query()
             : ($user->role == 'secretary'
                 ? Payment::query()->where('department_id', $user->department_id)
                 : Payment::query());
@@ -37,14 +38,16 @@ class PaymentController extends Controller
             $query->where('department_id', $request->department_id);
         }
 
+        $dateFrom = Carbon::parse($request->date_from)->endOfDay();
         if($request->filled('date_from'))
         {
-            $query->where('created_at', '>=', $request->date_from);
+            $query->where('created_at', '>=', $dateFrom);
         }
 
+        $dateUntil = Carbon::parse($request->date_until)->endOfDay();
         if($request->filled('date_until'))
         {
-            $query->where('created_at', '<=', $request->date_until);
+            $query->where('created_at', '<=', $dateUntil);
         }
 
         if ($request->filled('method'))
@@ -74,9 +77,11 @@ class PaymentController extends Controller
 
         $query->orderBy('updated_at', 'desc');
 
-        if ($request->filled('order_by_is_filled') && $request->order_by_is_filled === true)
+        if ($request->filled('order_by_is_paid'))
         {
-            $query->orderBy('is_paid', 'desc');
+            $order_by_direction = $request->order_by_is_paid === true ? 'desc' : 'asc';
+
+            $query->orderBy('is_paid', $order_by_direction);
         }
 
         $payments = $query->paginate(20);

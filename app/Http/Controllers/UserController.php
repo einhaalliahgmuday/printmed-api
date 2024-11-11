@@ -29,7 +29,7 @@ class UserController extends Controller
             'is_restricted' => 'boolean'
         ]);
 
-        $query = User::query()->select('id', 'role', 'personnel_number', 'full_name', 'sex', 'department_id', 'created_at');
+        $query = User::query();
 
         if ($request->filled('search')) 
         {

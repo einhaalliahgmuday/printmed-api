@@ -6,8 +6,6 @@ use App\Events\QueueUpdated;
 use App\Models\Queue;
 use Illuminate\Http\Request;
 
-use function PHPUnit\Framework\isNull;
-
 class QueueController extends Controller
 {
     public function index(Request $request)
@@ -20,7 +18,7 @@ class QueueController extends Controller
         }
 
         // if user is queue manager
-        return Queue::select('department_id', 'total')->get() ?: response()->json([]);
+        return Queue::select('id', 'department_id', 'total')->get() ?: response()->json([]);
     }
 
     public function store(Request $request)
