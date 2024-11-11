@@ -47,7 +47,7 @@ class PatientController extends Controller
             $query->whereBlind('sex', 'sex_index', $request->sex);
         }
 
-        $query->orderBy('updated_at', 'desc');
+        $query->orderBy('patients.updated_at', 'desc');
         $patients = $query->get();
 
         if (count($patients) > 0)

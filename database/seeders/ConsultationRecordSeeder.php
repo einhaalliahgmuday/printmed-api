@@ -21,7 +21,7 @@ class ConsultationRecordSeeder extends Seeder
                 'diagnosis' => 'Migraine attack',
                 'prescription' => 'Ibuprofen 400mg',
                 'follow_up_date' => '2024-10-30',
-                'physician_id' => 1,
+                'physician_id' => 2,
                 'department_id' => 1
             ],
             [
@@ -35,7 +35,7 @@ class ConsultationRecordSeeder extends Seeder
                 'diagnosis' => 'Flu infection',
                 'prescription' => 'Paracetamol 500mg',
                 'follow_up_date' => '2024-11-05',
-                'physician_id' => 1,
+                'physician_id' => 2,
                 'department_id' => 1
             ],
             [
@@ -49,7 +49,7 @@ class ConsultationRecordSeeder extends Seeder
                 'diagnosis' => 'Stomach flu',
                 'prescription' => 'Loperamide',
                 'follow_up_date' => '2024-11-10',
-                'physician_id' => 1,
+                'physician_id' => 2,
                 'department_id' => 1
             ]
         ];

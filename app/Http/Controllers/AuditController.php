@@ -6,6 +6,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Models\Audit;
+use Carbon\Carbon;
 
 class AuditController extends Controller
 {
@@ -62,14 +63,16 @@ class AuditController extends Controller
             $auditsQuery = $auditsQuery->whereBlind('auditable_type', 'auditable_type_index', $this->getRequestResourceClass($request->resource));
         }
 
+        $dateFrom = Carbon::parse($request->date_until)->startOfDay();
         if ($request->filled('date_from'))
         {
-            $auditsQuery = $auditsQuery->where('created_at', '>=', $request->date_from);
+            $auditsQuery = $auditsQuery->where('created_at', '>=', $dateFrom);
         }
 
+        $dateUntil = Carbon::parse($request->date_until)->endOfDay();
         if ($request->filled('date_until'))
         {
-            $auditsQuery = $auditsQuery->where('created_at', '<=', $request->date_until);
+            $auditsQuery = $auditsQuery->where('created_at', '<=', $dateUntil);
         }
         $auditsQuery->orderBy('created_at', 'desc');
 
@@ -198,9 +201,13 @@ class AuditController extends Controller
         $resource = $audit->auditable_type ? $this->getResourceType($audit->auditable_type) : null;
         $event = $audit->event;
 
-        if (in_array($event, ['created', 'updated'])) 
+        if ($event == 'updated') 
         {
             $auditMessage = "{$event} a {$resource}";
+        }
+        else if ($event == 'created') 
+        {
+            $auditMessage = "added a {$resource}";
         } 
         else if ($event == 'retrieved') 
         {

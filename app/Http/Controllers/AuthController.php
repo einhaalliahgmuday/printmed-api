@@ -224,6 +224,7 @@ class AuthController extends Controller
         }
         
         $token = $user->createToken($user->id)->plainTextToken;
+        $user->update(['email_verified_at' => now()]);
 
         // implements audit of login
         event(new ModelAction(AuditAction::LOGIN, $user, null, null, $request));
