@@ -39,7 +39,6 @@ class AuditController extends Controller
     public function downloadAudits(Request $request)
     {
         $request->validate([
-            'page' => 'integer',
             'resource' => 'string|in:user,patient,consultation record,payment',
             'date_from' => 'date|date_format:Y-m-d',
             'date_until' => 'date|date_format:Y-m-d|after_or_equal:date_from'
@@ -70,7 +69,7 @@ class AuditController extends Controller
 
         if ($request->filled('date_until'))
         {
-            $auditsQuery = $auditsQuery->where('created_at', '>=', $request->date_until);
+            $auditsQuery = $auditsQuery->where('created_at', '<=', $request->date_until);
         }
         $auditsQuery->orderBy('created_at', 'desc');
 
@@ -104,7 +103,7 @@ class AuditController extends Controller
             $audits[] = [
                 'id' => $audit->id,
                 'date' => $audit->created_at->format('Y-m-d'),
-                'time' => $audit->created_at->format('H:m A'),
+                'time' => $audit->created_at->format('h:i A'),
                 'user_role' => $user ? ucfirst($user->role) : null,
                 'user_personnel_number' => $user ?-> personnel_number,
                 'user_name' => $user ?-> full_name,

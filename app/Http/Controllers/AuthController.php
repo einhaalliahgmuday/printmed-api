@@ -222,8 +222,7 @@ class AuthController extends Controller
                 'message' => 'Invalid request'
             ], 404);
         }
-
-        $otp->delete();
+        
         $token = $user->createToken($user->id)->plainTextToken;
 
         // implements audit of login

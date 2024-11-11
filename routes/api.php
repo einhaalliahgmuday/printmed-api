@@ -10,14 +10,19 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PatientPhysicianController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\UserController;
+use Illuminate\Http\Request;
 
 // auth and password
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->middleware(['throttle:3,5']);
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware(['throttle:3,60']);
 
 //routes that requires authentication to access
 Route::middleware(['auth:sanctum'])->group(function() {
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+
     // auth, registration, and password
     Route::post('/register', [AuthController::class, 'register'])->middleware(['role:admin']);
     Route::get('/register/is-email-exists', [UserController::class, 'isEmailExists'])->middleware(['role:admin']);
@@ -30,7 +35,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::put('/update-email', [UserController::class, 'updateEmail']);
     Route::get('/users', [UserController::class, 'index'])->middleware(['role:admin']);
     Route::get('/users/physicians', [UserController::class, 'getPhysicians'])->middleware(['role:secretary,physician']);
-    Route::get('/users/count', [UserController::class, 'getUsersCount'])->middleware(['role:admin']);
+    Route::get('/users-count', [UserController::class, 'getUsersCount'])->middleware(['role:admin']);
     Route::put('/users/{user_to_update}/update-information', [UserController::class, 'updateInformation'])->middleware(['role:admin']);
     Route::put('/users/{user_to_update}/unrestrict', [UserController::class, 'unrestrict'])->middleware(['role:admin']);
     Route::put('/users/{user_to_update}/toggle-lock', [UserController::class,'toggleLock'])->middleware(['role:admin']);

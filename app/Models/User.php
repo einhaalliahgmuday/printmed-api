@@ -60,6 +60,10 @@ class User extends Authenticatable implements CipherSweetEncrypted
         'email_verified_at'
     ];
 
+    protected $appends = [
+        'department_name'
+    ];
+
     protected $hidden = [
         'password',
         'remember_token',
@@ -91,6 +95,25 @@ class User extends Authenticatable implements CipherSweetEncrypted
         }
 
         return $value;
+    }
+
+    public function getDepartmentNameAttribute() {
+        if ($this->department) {
+            return $this->department->name;
+        }
+
+        return null;
+    }
+
+    public function department()
+    {
+        if($this->role === 'physician' || $this->role === 'secretary')
+        {
+            return $this->hasOne(Department::class, 'id', 'department_id')
+                        ->select('name');
+        }
+
+        return $this->hasOne(Department::class, 'id', 'department_id')->whereNull('id');
     }
 
     public function patients()
