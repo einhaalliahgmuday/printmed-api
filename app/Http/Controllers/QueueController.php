@@ -21,38 +21,6 @@ class QueueController extends Controller
         return Queue::select('id', 'department_id', 'total')->get() ?: response()->json([]);
     }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'department_id' => 'required|integer|exists:departments,id'
-        ]);
-
-        if (!Queue::where('department_id', $request->department_id)->first())
-        {
-            return Queue::create(['department_id' => $request->department_id]);
-        }
-
-        return response()->json([
-            'message' => 'Department already exists in queue.'
-        ], 409);
-    }
-
-    // must clear queue before deleting
-    public function destroy(Queue $queue)
-    {
-        if ($queue->total !== null) {
-            return response()->json([
-                'message' => 'Queue  cannot be deleted. Clear the queue first.'
-            ], 403);
-        }
-
-        $queue->delete();
-
-        return response()->json([
-            'message' => 'Queue successfully deleted.'
-        ], 200);
-    }
-
     public function clear(Queue $queue) 
     {
         $queue->total = null;
