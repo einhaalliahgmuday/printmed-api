@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Department;
+use App\Models\Queue;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -14,5 +15,8 @@ class DepartmentSeeder extends Seeder
         Department::create(['name' => 'Pediatrics']);
         Department::create(['name' => 'Opthalmology']);
         Department::create(['name' => 'ENT']);
+        Queue::create(['department_id' => 1]);
+        Queue::create(['department_id' => 2]);
+        Queue::create(['department_id' => 3]);
     }
 }

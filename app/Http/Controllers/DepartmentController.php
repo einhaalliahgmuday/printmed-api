@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Models\Queue;
 use Illuminate\Http\Request;
 
 class DepartmentController extends Controller
@@ -19,6 +20,7 @@ class DepartmentController extends Controller
         ]);
 
         $department = Department::create($fields);
+        Queue::create(['department_id' => $department->id]);
 
         return $department;
     }
