@@ -58,8 +58,9 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/duplicate-patients', [PatientController::class, 'getDuplicates'])->middleware(['role:secretary,physician']);
     Route::get('/patients-count', [PatientController::class, 'getCount'])->middleware(['role:admin']);
 
-    // consultation records
+    // consultations
     Route::apiResource('consultations', ConsultationController::class)->only(['store', 'update', 'show'])->middleware(['role:physician']);
+    Route::get('/patients/{patient}/consultations', [ConsultationController::class, 'index'])->middleware(['role:physician']);
 
     // payments
     Route::get('/payments', [PaymentController::class, 'index'])->middleware(['role:admin,physician,secretary']);

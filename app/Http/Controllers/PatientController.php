@@ -112,15 +112,10 @@ class PatientController extends Controller
 
     public function show(Request $request, Patient $patient)
     {
-        $consultationRecords = $patient->consultationRecords()->paginate(10);
-
         // implements audit of patient retrieval
         event(new ModelAction(AuditAction::RETRIEVE, $request->user(), $patient, null, $request));
 
-        return response()->json([
-            'patient' => $patient,
-            'consultationRecords' => $consultationRecords
-        ]);
+        return $patient;
     }
 
     public function update(Request $request, Patient $patient)

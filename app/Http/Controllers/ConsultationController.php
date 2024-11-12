@@ -6,6 +6,7 @@ use App\AuditAction;
 use App\Events\ModelAction;
 use App\Events\PaymentNew;
 use App\Models\Consultation;
+use App\Models\Patient;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -15,6 +16,16 @@ class ConsultationController extends Controller
     //store and update has policy implemented
     //only physicians of the patient can create a record
     //only the physician of a record can update the record
+
+    // cannot get records if not a patient of user
+    public function index(Request $request, Patient $patient) {
+        // Gate::authorize('view', [$request->user(), $patient]);
+
+        return Consultation::where('patient_id', $patient->id)
+                            ->orderBy('created_at')
+                            ->select('id', 'chief_complaint', 'primary_diagnosis')
+                            ->paginate(10);
+    }
     
     // cannot add records if not a patient of user
     public function store(Request $request)

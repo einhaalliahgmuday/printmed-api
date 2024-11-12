@@ -27,7 +27,7 @@ class Queue extends Model
     ];
 
     public function getDepartmentNameAttribute() {
-        return $this->department->name;
+        return $this->department()->first()->name;
     }
 
     public function department()

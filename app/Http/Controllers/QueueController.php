@@ -23,10 +23,10 @@ class QueueController extends Controller
 
     public function clear(Queue $queue) 
     {
-        $queue->total = null;
-        $queue->current = null;
-        $queue->completed = null;
-        $queue->waiting = null;
+        $queue->total = 0;
+        $queue->current = 0;
+        $queue->completed = 0;
+        $queue->waiting = 0;
         $queue->save();
 
         event(new QueueUpdated($queue));

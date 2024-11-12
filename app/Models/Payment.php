@@ -41,6 +41,7 @@ class Payment extends Model implements CipherSweetEncrypted
         'date',
         'time',
         'patient_name',
+        'patient_number',
         'physician_name',
         'updated_by_name',
         'department_name'
@@ -59,6 +60,11 @@ class Payment extends Model implements CipherSweetEncrypted
     public function getPatientNameAttribute()
     {
         return $this->patient()->first()->full_name; 
+    }
+
+    public function getPatientNumberAttribute()
+    {
+        return $this->patient()->first()->patient_number; 
     }
 
     public function getPhysicianNameAttribute()

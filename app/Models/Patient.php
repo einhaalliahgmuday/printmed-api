@@ -109,7 +109,7 @@ class Patient extends Model implements CipherSweetEncrypted
     public function consultationRecords()
     {
         return $this->hasMany(Consultation::class, 'patient_id')
-                    ->select('id', 'chief_complaint', 'primary_diagnosis', 'diagnosis', 'follow_up_date', 'updated_at');
+                    ->select('id', 'chief_complaint', 'primary_diagnosis', 'created_at', 'updated_at');
     }
 
     public function physicians()
