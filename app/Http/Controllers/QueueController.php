@@ -66,6 +66,24 @@ class QueueController extends Controller
         return $queue;
     }
 
+    public function decrementTotal(Queue $queue) 
+    {
+        if ($queue->total !== 0 && ($queue->current !== $queue->total) && ($queue->total !== $queue->completed)) {
+            $queue->total--;
+            $queue->waiting--;
+
+            $queue->save();
+
+            event(new QueueUpdated($queue));
+
+            return $queue;
+        }
+
+        return response()->json([
+            'message' => 'Queue cannot be decremented.'
+        ], 400);
+    }
+
     public function incrementCurrent(Queue $queue, Request $request) 
     {
         $user = $request->user();
@@ -108,6 +126,24 @@ class QueueController extends Controller
 
         return response()->json([
             'message' => 'Queue is completed or there is no number in queue, cannot increment current.',
+        ], 400);
+    }
+
+    public function decrementCurrent(Queue $queue) 
+    {
+        if ($queue->current > 1) {
+            $queue->current--;
+            $queue->waiting++;
+
+            $queue->save();
+
+            event(new QueueUpdated($queue));
+
+            return $queue;
+        }
+
+        return response()->json([
+            'message' => 'Queue cannot be decremented.'
         ], 400);
     }
 }

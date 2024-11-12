@@ -72,5 +72,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::put('/queue/{queue}/clear', [QueueController::class, 'clear'])->middleware(['role:queue manager']);
     Route::delete('/queue/{queue}', [QueueController::class, 'destroy'])->middleware(['role:queue manager']);
     Route::put('/queue/{queue}/increment-total', [QueueController::class, 'incrementTotal'])->middleware(['role:queue manager']);
+    Route::put('/queue/{queue}/decrement-total', [QueueController::class, 'decrementTotal'])->middleware(['role:queue manager']);
     Route::put('/queue/{queue}/increment-current', [QueueController::class, 'incrementCurrent'])->middleware(['role:secretary,physician']);
+    Route::put('/queue/{queue}/decrement-current', [QueueController::class, 'decrementCurrent'])->middleware(['role:secretary,physician']);
 });
