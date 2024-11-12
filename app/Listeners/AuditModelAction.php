@@ -19,7 +19,7 @@ class AuditModelAction
         $auditEvent = $action->value;
 
         if ($action === AuditAction::LOCK) {
-            $auditEvent = $user->is_locked ? 'locked' : 'unlocked';
+            $auditEvent = $auditable->is_locked == true ? 'locked' : 'unlocked';
         }
 
         $oldValues = null;

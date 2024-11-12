@@ -25,8 +25,7 @@ class UserController extends Controller
             'search' => 'string',
             'role' => 'string|in:admin,physician,secretary,queue manager',
             'department_id' => 'integer|exists:departments,id',
-            'is_locked' => 'boolean',   //must only choose which to filter: is_locked or is_restricted
-            'is_restricted' => 'boolean'
+            'status' => 'string|in:new,active,locked,restricted'
         ]);
 
         $query = User::query();
@@ -56,13 +55,22 @@ class UserController extends Controller
             $query->where('department_id',$request->department_id);
         }
 
-        if ($request->filled('is_locked'))
+        if ($request->filled('status'))
         {
-            $query->where('is_locked',$request->is_locked);
-        } 
-        else if ($request->filled('is_restricted'))
-        {
-            $request->is_restricted ? $query->where('failed_login_attempts', '>=', 3) : $query->where('failed_login_attempts', '<', 3);
+            switch($request->staus) {
+                case 'new':
+                    $query->whereColumn('created_at','updated_at');
+                    break;
+                case 'active':
+                    $query->whereColumn('created_at','!=', 'updated_at');
+                    break;
+                case 'locked':
+                    $query->where('is_locked', 1);
+                    break;
+                case 'restricted':
+                    $query->where('failed_login_attempts', '>', 2);
+                    break;
+            }
         }
 
         $query->orderBy('updated_at', 'desc');
@@ -71,6 +79,10 @@ class UserController extends Controller
         $users->appends($request->all());
 
         return $users;
+    }
+
+    public function show(User $user) {
+        return $user;
     }
 
     public function getPhysicians(Request $request) 
@@ -155,7 +167,12 @@ class UserController extends Controller
             'email' => 'email|max:100',
         ]);
 
-        if ($this->isUserPersonnelNumberExists($request->personnel_number)) 
+        if ($request->email !== $userToUpdate->email && $this->isUserEmailExists($request->email)) 
+        {
+            return response()->json(['message' => 'The email provided already exists.'], 422);
+        }
+
+        if ($request->personnel_number !== $userToUpdate->personnel_number && $this->isUserPersonnelNumberExists($request->personnel_number)) 
         {
             return response()->json(['message' => 'The personnel number provided already exists.'], 422);
         }
