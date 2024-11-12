@@ -16,9 +16,22 @@ class Queue extends Model
         'waiting',
         'completed'
     ];
+    
+    protected $appends = [
+        'department_name'
+    ];
 
     protected $hidden = [
         'created_at',
         'updated_at'
     ];
+
+    public function getDepartmentNameAttribute() {
+        return $this->department->name;
+    }
+
+    public function department()
+    {
+        return $this->hasOne(Department::class, 'id', 'department_id')->select('name');
+    }
 }

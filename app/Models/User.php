@@ -66,8 +66,7 @@ class User extends Authenticatable implements CipherSweetEncrypted
 
     protected $hidden = [
         'password',
-        'remember_token',
-        'updated_at'
+        'remember_token'
     ];
 
     protected $casts = [

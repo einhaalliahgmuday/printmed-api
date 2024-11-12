@@ -131,7 +131,7 @@ class AuthController extends Controller
         $user->tokens()->delete();  // delete all login tokens
         
         // implements audit of resetting password
-        event(new ModelAction(AuditAction::RESET_PASSWORD, $user, null, null, $request));
+        event(new ModelAction(AuditAction::RESET_PASSWORD, $user, $user, null, $request));
         
         return response()->json(['message' => 'Password has been reset successfully.'], 200);
     }
@@ -175,7 +175,7 @@ class AuthController extends Controller
             // implemented custom audit event in when account is restricted due to 3 failed login attempts
             if ($user->failed_login_attempts >= 3)
             {
-                event(new ModelAction(AuditAction::RESTRICT, $user, null, null, $request));
+                event(new ModelAction(AuditAction::RESTRICT, $user, $user, null, $request));
             }
 
             return response()->json([
@@ -227,7 +227,7 @@ class AuthController extends Controller
         $user->update(['email_verified_at' => now()]);
 
         // implements audit of login
-        event(new ModelAction(AuditAction::LOGIN, $user, null, null, $request));
+        event(new ModelAction(AuditAction::LOGIN, $user, $user, null, $request));
         
 
         return response()->json([
@@ -241,7 +241,7 @@ class AuthController extends Controller
         $request->user()->tokens()->delete();   
 
         // implements audit of logout
-        event(new ModelAction(AuditAction::LOGOUT, $request->user(), null, null, $request));
+        event(new ModelAction(AuditAction::LOGOUT, $request->user(), $request->user(), null, $request));
 
         return response()->json([
             'message' => 'You are logged out.'

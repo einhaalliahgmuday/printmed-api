@@ -26,7 +26,7 @@ class PaymentSeeder extends Seeder
             'consultation_id' => 2,
             'patient_id' => 2,
             'physician_id' => 2,
-            'department_id' => 3,
+            'department_id' => 1,
         ]);
     }
 }
