@@ -91,10 +91,15 @@ class ConsultationController extends Controller
     {
         Gate::authorize('view', $consultation);
 
+        $payment = $consultation->payment()->first();
+
         // implements audit of retrieval
         event(new ModelAction(AuditAction::RETRIEVE, $request->user(), $consultation, null, $request));
 
-        return $consultation;
+        return response()->json([
+            'consultation' => $consultation,
+            'payment' => $payment
+        ]);
     }
 
     public function update(Request $request, Consultation $consultation)
