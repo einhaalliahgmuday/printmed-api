@@ -9,6 +9,8 @@ use App\Models\Payment;
 use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class PatientController extends Controller
 {
@@ -87,17 +89,28 @@ class PatientController extends Controller
             'suffix' => 'string|max:20',
             'birthdate' => 'date|date_format:Y-m-d',
             'birthplace' => 'string',
-            'sex' => 'string|max:6',
+            'sex' => 'string|max:6|nullable',
             'address' => 'string|max:255',
             'civil_status' => 'string|max:20',
             'religion' => 'string|max:100',
-            'phone_number' => 'string|max:12'
+            'phone_number' => 'string|max:12',
+            'email' => 'email|max:100',
+        ]);
+
+        $request->validate([
+            'photo' => 'image|mimes:png|max:2048|dimensions:min_width=200,min_height=200'
         ]);
 
         $fields['patient_number'] = Patient::generatePatientNumber();
         $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
+        $fields['uuid'] = (string) Str::uuid();
 
         $patient = Patient::create($fields);
+
+        if ($request->filled('photo')) {
+            $path = $request->file('photo')->store('images/patients', ['local', 'private']);
+            $patient->update(['photo' => $path]);
+        }
 
         // audit creation of patient
         event(new ModelAction(AuditAction::CREATE, $request->user(), $patient, null, $request));
@@ -118,6 +131,35 @@ class PatientController extends Controller
         return $patient;
     }
 
+    public function getUsingUuid(Request $request) {
+        $request->validate([
+            'uuid' => 'required|string'
+        ]);
+
+        return Patient::whereBlind('uuid', 'uuid_index', $request->uuid)->get();
+    }
+
+    public function getPhoto(Patient $patient)
+    {
+        $path = $patient->photo;
+
+        if ($path != null) {
+            if (!Storage::exists($path)) {
+                return response()->json(['error' => 'Photo not found'], 404);
+            }
+    
+            $mimeType = Storage::mimeType($path);
+    
+            return response()->file(Storage::get($path), [
+                'Content-Type' => $mimeType
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Patient has no photo.'
+        ], 400);
+    }
+
     public function update(Request $request, Patient $patient)
     {
         $fields = $request->validate([
@@ -131,7 +173,8 @@ class PatientController extends Controller
             'address' => 'string|max:255',
             'civil_status' => 'string|max:20',
             'religion' => 'string|max:100',
-            'phone_number' => 'string|max:12'
+            'phone_number' => 'string|max:12',
+            'email' => 'email|max:100',
         ]);
 
         $originalData = $patient->toArray();
@@ -147,6 +190,25 @@ class PatientController extends Controller
         event(new ModelAction(AuditAction::UPDATE, $request->user(), $patient, $originalData, $request));
 
         return $patient;
+    }
+
+    public function updatePhoto(Request $request, Patient $patient) {
+        $request->validate([
+            'photo' => 'required|image|mimes:png|max:2048|dimensions:min_width=200,min_height=200'
+        ]);
+        
+        if($patient->photo != null) {
+            Storage::delete($patient->photo);;
+        }
+
+        $path = $request->file('photo')->store('images/patients', ['local', 'private']);
+        $patient->update(['photo' => $path]);
+
+        $mimeType = Storage::mimeType($path);
+    
+        return response()->file(Storage::get($path), [
+            'Content-Type' => $mimeType
+        ]);
     }
 
     public function destroy(Patient $patient)

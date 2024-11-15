@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('patients', function (Blueprint $table) {
             $table->id();
+            $table->string('uuid');
             $table->string('patient_number');
             $table->string('full_name');
             $table->string('first_name');
@@ -23,6 +24,8 @@ return new class extends Migration
             $table->string('civil_status')->nullable();
             $table->string('religion')->nullable();
             $table->string('phone_number')->nullable();
+            $table->string('email')->nullable();
+            $table->string('photo')->nullable();
             $table->timestamps();
         });
     }

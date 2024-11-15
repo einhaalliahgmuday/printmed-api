@@ -55,6 +55,9 @@ Route::middleware(['auth:sanctum'])->group(function() {
 
     // patients
     Route::apiResource('patients', PatientController::class)->except(['destroy'])->middleware(['role:secretary,physician']);
+    Route::post('/get-patient/{uuid}', [PatientController::class, 'getUsingUuid'])->middleware(['role:secretary,physician']);
+    Route::get('/get-patient-photo/{patient}', [PatientController::class, 'getPhoto'])->middleware(['role:secretary,physician']);
+    Route::get('/update-patient-photo/{patient}', [PatientController::class, 'updatePhoto'])->middleware(['role:secretary,physician']);
     Route::get('/duplicate-patients', [PatientController::class, 'getDuplicates'])->middleware(['role:secretary,physician']);
     Route::get('/patients-count', [PatientController::class, 'getCount'])->middleware(['role:admin']);
 

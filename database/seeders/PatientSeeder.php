@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Patient;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class PatientSeeder extends Seeder
 {
@@ -11,6 +12,7 @@ class PatientSeeder extends Seeder
     {
         $patients = [
             [
+                'uuid' => (string) Str::uuid(),
                 'patient_number' => 'PN000001',
                 'full_name' => 'Samantha Joy',
                 'first_name' => 'Samantha',
@@ -23,6 +25,7 @@ class PatientSeeder extends Seeder
                 'phone_number' => '123-456-7890',
             ],
             [
+                'uuid' => (string) Str::uuid(),
                 'patient_number' => 'PN000002',
                 'full_name' => 'James Smith',
                 'first_name' => 'James',
@@ -35,6 +38,7 @@ class PatientSeeder extends Seeder
                 'phone_number' => '987-654-3210'
             ],
             [
+                'uuid' => (string) Str::uuid(),
                 'patient_number' => 'PN000003',
                 'full_name' => 'Emily Johnson',
                 'first_name' => 'Emily',

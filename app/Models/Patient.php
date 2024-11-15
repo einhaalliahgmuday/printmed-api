@@ -19,6 +19,8 @@ class Patient extends Model implements CipherSweetEncrypted
     public static function configureCipherSweet(EncryptedRow $encryptedRow): void
     {
         $encryptedRow
+            ->addField('uuid')
+            ->addBlindIndex('uuid', new BlindIndex('uuid_index'))
             ->addField('patient_number')
             ->addBlindIndex('patient_number', new BlindIndex('patient_number_index'))
             ->addField('full_name')
@@ -37,10 +39,13 @@ class Patient extends Model implements CipherSweetEncrypted
             ->addOptionalTextField('address')
             ->addOptionalTextField('civil_status')
             ->addOptionalTextField('religion')
-            ->addOptionalTextField('phone_number');
+            ->addOptionalTextField('phone_number')
+            ->addOptionalTextField('email')
+            ->addOptionalTextField('photo');
     }
 
     protected $fillable = [
+        'uuid',
         'patient_number',
         'full_name',
         'first_name',
@@ -53,12 +58,9 @@ class Patient extends Model implements CipherSweetEncrypted
         'address',
         'civil_status',
         'religion',
-        'phone_number'
-    ];
-
-    protected $hidden = [
-        'created_at',
-        'updated_at'
+        'phone_number',
+        'email',
+        'photo'
     ];
 
     protected $appends = [
