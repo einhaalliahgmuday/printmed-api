@@ -95,7 +95,19 @@ class User extends Authenticatable implements CipherSweetEncrypted
     {
         if($this->role === 'physician')
         {
-            return $this->belongsToMany(Patient::class, 'patient_physicians', 'physician_id', 'patient_id')
+            return $this->belongsToMany(Patient::class, 'patient_physician', 'physician_id', 'patient_id')
+                        ->select('patients.id', 'patient_number', 'patients.full_name', 'patients.birthdate', 'patients.sex', 'patients.created_at');
+        }
+
+        return collect(); 
+    }
+
+    // returns patients with provided access
+    public function patientAccesses()
+    {
+        if($this->role === 'physician')
+        {
+            return $this->belongsToMany(Patient::class, 'physician_accesses', 'physician_id', 'patient_id')
                         ->select('patients.id', 'patient_number', 'patients.full_name', 'patients.birthdate', 'patients.sex', 'patients.created_at');
         }
 
