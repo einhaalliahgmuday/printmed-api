@@ -46,7 +46,7 @@
 <body>
     <div class="container">
         <div class="logo-container">
-            <img src="{{asset('images/carmona_hospital_logo.png')}}" class="logo">
+            <img src="{{asset('images/carmona_hospital_logo_1.png')}}" class="logo">
         </div>
         @if (!$isNewAccount)
             <p>We received a request to reset your password.</p>

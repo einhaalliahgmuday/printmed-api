@@ -19,8 +19,6 @@ class Patient extends Model implements CipherSweetEncrypted
     public static function configureCipherSweet(EncryptedRow $encryptedRow): void
     {
         $encryptedRow
-            ->addField('uuid')
-            ->addBlindIndex('uuid', new BlindIndex('uuid_index'))
             ->addField('patient_number')
             ->addBlindIndex('patient_number', new BlindIndex('patient_number_index'))
             ->addField('full_name')
@@ -36,7 +34,12 @@ class Patient extends Model implements CipherSweetEncrypted
             ->addOptionalTextField('birthplace')
             ->addOptionalTextField('sex')
             ->addBlindIndex('sex', new BlindIndex('sex_index'))
-            ->addOptionalTextField('address')
+            ->addOptionalTextField('house_number')
+            ->addOptionalTextField('street')
+            ->addOptionalTextField('barangay')
+            ->addOptionalTextField('city')
+            ->addOptionalTextField('province')
+            ->addOptionalTextField('postal_code')
             ->addOptionalTextField('civil_status')
             ->addOptionalTextField('religion')
             ->addOptionalTextField('phone_number')
@@ -45,7 +48,6 @@ class Patient extends Model implements CipherSweetEncrypted
     }
 
     protected $fillable = [
-        'uuid',
         'patient_number',
         'full_name',
         'first_name',
@@ -55,7 +57,12 @@ class Patient extends Model implements CipherSweetEncrypted
         'birthdate',
         'birthplace',
         'sex',
-        'address',
+        'house_number',
+        'street',
+        'barangay',
+        'city',
+        'province',
+        'postal_code',
         'civil_status',
         'religion',
         'phone_number',
@@ -64,9 +71,12 @@ class Patient extends Model implements CipherSweetEncrypted
     ];
 
     protected $appends = [
+        'address',
         'age',
         'last_visit',
-        'follow_up_date'
+        'follow_up_date',
+        'latest_prescription',
+        'physicians'
     ];
 
     // generates unique patient number
@@ -90,6 +100,34 @@ class Patient extends Model implements CipherSweetEncrypted
         return sprintf('%s-%05d', $year, $increment);
     }
 
+    public function getAddressAttribute()
+    {
+        $address = "";
+
+        if ($this->house_number) {
+            $address .= "{$this->house_number} ";
+        }
+        if ($this->street) {
+            $address .= "{$this->street} ";
+        }
+        if ($this->barangay) {
+            $address .= "{$this->barangay} ";
+        }
+        if ($this->city) {
+            $address .= "{$this->city} ";
+        }
+        if ($this->province) {
+            $address .= "{$this->province} ";
+        }
+        if ($this->postal_code) {
+            $address .= $this->postal_code;
+        }
+
+        $address = trim($address);
+
+        return $address;
+    }
+
     public function getAgeAttribute()
     {
         $birthdate = Carbon::parse($this->birthdate)->age;
@@ -105,7 +143,18 @@ class Patient extends Model implements CipherSweetEncrypted
 
     public function getFollowUpDateAttribute()
     {
-        return $this->consultationRecords()->where('patient_id', $this->id)->latest('updated_at')->first() ?-> follow_up_date;
+        return $this->consultationRecords()->latest('created_at')->first() ?-> follow_up_date;
+    }
+
+    public function getLatestPrescriptionAttribute()
+    {
+        $latestConsultationRecord = $this->consultationRecords()->latest('created_at')->first();
+
+        if ($latestConsultationRecord && (Carbon::parse($latestConsultationRecord->created_at)->format('Y-m-d') === now()->format('Y-m-d'))) {
+            return $latestConsultationRecord->prescription;
+        }
+
+        return null;
     }
 
     public function consultationRecords()
@@ -114,9 +163,20 @@ class Patient extends Model implements CipherSweetEncrypted
                     ->select('id', 'chief_complaint', 'primary_diagnosis', 'created_at', 'updated_at');
     }
 
+    public function vitalSigns()
+    {
+        return $this->hasMany(VitalSigns::class, 'patient_id');
+    }
+
     public function physicians()
     {
         return $this->belongsToMany(User::class, 'patient_physicians', 'patient_id', 'physician_id')
                     ->select('users.id', 'role', 'personnel_number', 'users.full_name', 'users.sex', 'department_id', 'license_number');
     }
+
+    // public function qr()
+    // {
+    //     return $this->hasOne(Consultation::class, 'patient_id')
+    //                 ->select('id', 'chief_complaint', 'primary_diagnosis', 'created_at', 'updated_at');
+    // }
 }
