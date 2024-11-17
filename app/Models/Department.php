@@ -18,4 +18,13 @@ class Department extends Model
         'created_at',
         'updated_at'
     ];
+
+    protected $appends = [
+        'users_count'
+    ];
+
+    public function getUsersCountAttribute() 
+    {
+        return $this->hasMany(User::class, 'department_id', 'id')->count();
+    }
 }
