@@ -103,14 +103,4 @@ class User extends Authenticatable implements CipherSweetEncrypted
 
         return collect(); 
     }
-
-    public function payments()
-    {
-        if($this->role === 'physician')
-        {
-            return $this->hasMany(Payment::class, 'physician_id', 'id');
-        }
-
-        return collect(); 
-    }
 }

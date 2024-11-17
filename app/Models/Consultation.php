@@ -77,11 +77,6 @@ class Consultation extends Model implements CipherSweetEncrypted
                     ->select('id', 'personnel_number', 'full_name', 'sex', 'department_id', 'license_number');
     }
 
-    public function payment()
-    {
-        return $this->hasOne(Payment::class);
-    }
-
     public function prescriptions()
     {
         return $this->hasMany(Prescription::class);

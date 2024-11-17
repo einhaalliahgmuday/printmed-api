@@ -20,7 +20,6 @@ class DepartmentController extends Controller
         ]);
 
         $department = Department::create($fields);
-        Queue::create(['department_id' => $department->id]);
 
         return $department;
     }

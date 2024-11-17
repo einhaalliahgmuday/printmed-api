@@ -50,10 +50,7 @@ class ConsultationController extends Controller
             'pediatrics_d' => 'string',
             'primary_diagnosis' => 'string',
             'diagnosis' => 'required|string',
-            'follow_up_date' => 'date|date_format:Y-m-d',
-            'payment_amount' => 'required|integer',
-            'payment_method' => 'required|string|in:cash,hmo',
-            'payment_hmo' => 'string',
+            'follow_up_date' => 'date|date_format:Y-m-d'
         ]);
 
         $request->validate([
@@ -87,28 +84,12 @@ class ConsultationController extends Controller
             }
         }
 
-        $paymentFields = [
-            'amount' => $request->payment_amount,
-            'method' => $request->payment_method,
-            'hmo' => $request->payment_hmo ?: null,
-            'consultation_record_id' => $consultation->id,
-            'patient_id' => $request->patient_id,
-            'physician_id' => $fields['physician_id'],
-            'department_id' => $fields['department_id'],
-        ];
-
-        $payment = Payment::create($paymentFields);
-
-        // web socket for new payment
-        event(new PaymentNew($payment));
-
         // audit creation of consultation record and payment record
         event(new ModelAction(AuditAction::CREATE, $request->user(), $consultation, null, $request));
-        event(new ModelAction(AuditAction::CREATE, $request->user(), $payment, null, $request));
     
         return response()->json([
             'consultation_record' => $consultation,
-            'payment' => $payment
+            'prescriptions' => $prescriptions
         ]);
     }
 
