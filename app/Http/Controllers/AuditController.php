@@ -14,7 +14,7 @@ class AuditController extends Controller
     {
         $request->validate([
             'page' => 'integer',
-            'resource' => 'string|in:user,patient,consultation record,payment',
+            'resource' => 'string|in:user,patient,consultation,payment',
             'date_from' => 'date|date_format:Y-m-d',
             'date_until' => 'date|date_format:Y-m-d|after_or_equal:date_from'
         ]);
@@ -155,8 +155,8 @@ class AuditController extends Controller
             case 'patient':
                 $requestResourceClass = 'App\Models\Patient';
                 break;
-            case 'consultation record':
-                $requestResourceClass = 'App\Models\ConsultationRecord';
+            case 'consultation':
+                $requestResourceClass = 'App\Models\Consultation';
                 break;
             case 'payment':
                 $requestResourceClass = 'App\Models\Payment';
