@@ -6,11 +6,13 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\PatientController;
-use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PatientPhysicianController;
-use App\Http\Controllers\QueueController;
+use App\Http\Controllers\PatientQrIdController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 // auth and password
 Route::post('/login', [AuthController::class, 'login']);
@@ -33,6 +35,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
 
     // users
     Route::put('/update-email', [UserController::class, 'updateEmail']);
+    Route::put('/update-email/verify-otp', [UserController::class, 'verifyEmailOtp']);
     Route::get('/users', [UserController::class, 'index'])->middleware(['role:admin']);
     Route::get('/users/{user}', [UserController::class, 'show'])->middleware(['role:admin']);
     Route::get('/physicians', [UserController::class, 'getPhysicians'])->middleware(['role:secretary,physician']);
@@ -51,7 +54,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
 
     // patient-physician relationship
     Route::post('/patients/{patient}/assign-physician', [PatientPhysicianController::class, 'store'])->middleware(['role:secretary']);
-    Route::put('/patients/{patient}/remove-physician', [PatientPhysicianController::class, 'update'])->middleware(['role:secretary']);
+    Route::put('/patients/{patient}/remove-physician', [PatientPhysicianController::class, 'destroy'])->middleware(['role:secretary']);
 
     // patients
     Route::apiResource('patients', PatientController::class)->except(['destroy'])->middleware(['role:secretary,physician']);
@@ -64,19 +67,4 @@ Route::middleware(['auth:sanctum'])->group(function() {
     // consultations
     Route::apiResource('consultations', ConsultationController::class)->only(['store', 'update', 'show'])->middleware(['role:physician']);
     Route::get('/patients/{patient}/consultations', [ConsultationController::class, 'index'])->middleware(['role:physician']);
-
-    // payments
-    Route::get('/payments', [PaymentController::class, 'index'])->middleware(['role:admin,physician,secretary']);
-    Route::put('/payments/{payment}', [PaymentController::class, 'update'])->middleware(['role:physician,secretary']);
-    Route::get('/payments-total', [PaymentController::class, 'getTotal'])->middleware(['role:admin']);
-
-    // queue
-    Route::get('/queue', [QueueController::class, 'index'])->middleware(['role:queue manager,secretary,physician']);
-    Route::post('/queue', [QueueController::class, 'store'])->middleware(['role:queue manager']);
-    Route::put('/queue/{queue}/clear', [QueueController::class, 'clear'])->middleware(['role:queue manager']);
-    Route::delete('/queue/{queue}', [QueueController::class, 'destroy'])->middleware(['role:queue manager']);
-    Route::put('/queue/{queue}/increment-total', [QueueController::class, 'incrementTotal'])->middleware(['role:queue manager']);
-    Route::put('/queue/{queue}/decrement-total', [QueueController::class, 'decrementTotal'])->middleware(['role:queue manager']);
-    Route::put('/queue/{queue}/increment-current', [QueueController::class, 'incrementCurrent'])->middleware(['role:secretary,physician']);
-    Route::put('/queue/{queue}/decrement-current', [QueueController::class, 'decrementCurrent'])->middleware(['role:secretary,physician']);
 });
