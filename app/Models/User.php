@@ -74,27 +74,6 @@ class User extends Authenticatable implements CipherSweetEncrypted
         'password' => 'hashed',
     ];
 
-    public function getFullNameAttribute($value)
-    {
-        switch ($this->role) 
-        {
-            case 'physician':
-                switch (strtolower($this->sex))
-                {
-                    case 'male':
-                        return "Dr. {$value}";
-                    case 'female':
-                        return "Dra. {$value}";
-                    default:
-                        return "Doc. {$value}";
-                }
-            case 'secretary':
-                return "Sec. {$value}";
-        }
-
-        return $value;
-    }
-
     public function getDepartmentNameAttribute() {
         if ($this->department) {
             return $this->department->name;

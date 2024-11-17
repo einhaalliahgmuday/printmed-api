@@ -97,7 +97,6 @@ class AuthController extends Controller
     public function resetPassword(Request $request) 
     {
         $request->validate([
-            'personnel_number' => 'required|string',
             'first_name' => 'required|string',
             'last_name' => 'required|string',
             'birthdate' => 'required|date|date_format:Y-m-d',
@@ -113,8 +112,7 @@ class AuthController extends Controller
             return response()->json(['message'=> 'Invalid request'], 400);
         }
 
-        $user = User::whereBlind('personnel_number', 'personnel_number_index', $request->personnel_number)
-                    ->whereBlind('first_name', 'first_name_index', $request->first_name)
+        $user = User::whereBlind('first_name', 'first_name_index', $request->first_name)
                     ->whereBlind('last_name', 'last_name_index', $request->last_name)
                     ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
                     ->whereBlind('email', 'email_index', $request->email)->first();
@@ -140,13 +138,11 @@ class AuthController extends Controller
     {
         $request->validate([
             'role' => 'required|string',
-            'personnel_number' => 'required|string',
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
         $user = User::whereBlind('role', 'role_index', $request->role)
-                    ->whereBlind('personnel_number', 'personnel_number_index', $request->personnel_number)
                     ->whereBlind('email', 'email_index', $request->email)
                     ->first();
 
@@ -162,7 +158,7 @@ class AuthController extends Controller
         if ($user->failed_login_attempts >= 3)
         {
             return response()->json([
-                'message' => 'This account is locked due to multiple failed login attempts. Please contact the admin.'
+                'message' => 'This account is restricted due to multiple failed login attempts. Please contact the admin.'
             ], 401);
         }
 
