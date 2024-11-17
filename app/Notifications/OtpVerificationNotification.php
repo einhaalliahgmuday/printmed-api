@@ -27,6 +27,7 @@ class OtpVerificationNotification extends Notification
         return (new MailMessage)
             ->subject("Let's log you in")
             ->view('emails.verify_otp', [
+                'isVerifyEmail' => false,
                 'code' => $this->code
             ]);
     }

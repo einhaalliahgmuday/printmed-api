@@ -18,7 +18,6 @@ class PatientSeeder extends Seeder
                 'last_name' => 'Joy',
                 'birthdate' => '1990-01-01',
                 'sex' => 'Female',
-                'address' => '123 Main St, Anytown, USA',
                 'civil_status' => 'Single',
                 'religion' => 'Christianity',
                 'phone_number' => '123-456-7890',
@@ -30,7 +29,6 @@ class PatientSeeder extends Seeder
                 'last_name' => 'Smith',
                 'birthdate' => '1985-05-15',
                 'sex' => 'Male',
-                'address' => '456 Elm St, Othertown, USA',
                 'civil_status' => 'Married',
                 'religion' => 'Judaism',
                 'phone_number' => '987-654-3210'
@@ -42,7 +40,6 @@ class PatientSeeder extends Seeder
                 'last_name' => 'Johnson',
                 'birthdate' => '1992-11-30',
                 'sex' => 'Female',
-                'address' => '789 Oak St, Sometown, USA',
                 'civil_status' => 'Divorced',
                 'religion' => 'Islam',
                 'phone_number' => '555-123-4567'
