@@ -12,13 +12,13 @@ class VitalSignsController extends Controller
     {
         $fields = $request->validate([
             'patient_id' => 'required|int|exists:patients,id',
-            'height' => 'int',
-            'height_unit' => 'string|in:cm,m',
-            'weight' => 'int',
-            'weight_unit' => 'string|in:kg,lb',
-            'temperature' => 'int',
-            'temperature_unit' => 'string|in:K,C',
-            'blood_pressure' => 'string'
+            'height' => 'numeric|decimal:0,2',
+            'height_unit' => 'string|in:cm,m|required_if:height',
+            'weight' => 'numeric|decimal:0,2',
+            'weight_unit' => 'string|in:kg,lb|require_if:weight',
+            'temperature' => 'numeric|decimal:0,2',
+            'temperature_unit' => 'string|in:K,C|required_if:temperature',
+            'blood_pressure' => 'string|max:7',
         ]);
 
         $patient = Patient::find($request->patient_id);
@@ -31,6 +31,10 @@ class VitalSignsController extends Controller
             $patient->vitalSigns->each->delete();
         }
 
+        if (!$fields['height'] && !$fields['weight'] && !$fields['temperature'] && !$fields['blood_pressure']) {
+            return response(['message' => 'All fields for vital signs are empty.'], 400);
+        }
+
         $vitalSigns = VitalSigns::create($fields);
 
         return $vitalSigns;
@@ -39,13 +43,13 @@ class VitalSignsController extends Controller
     public function update(Request $request, VitalSigns $vitalSigns) 
     {
         $fields = $request->validate([
-            'height' => 'int',
-            'height_unit' => 'string|in:cm,m',
-            'weight' => 'int',
-            'weight_unit' => 'string|in:kg,lb',
-            'temperature' => 'int',
-            'temperature_unit' => 'string|in:K,C',
-            'blood_pressure' => 'string'
+            'height' => 'numeric|decimal:0,2',
+            'height_unit' => 'string|in:cm,m|required_if:height',
+            'weight' => 'numeric|decimal:0,2',
+            'weight_unit' => 'string|in:kg,lb|require_if:weight',
+            'temperature' => 'numeric|decimal:0,2',
+            'temperature_unit' => 'string|in:K,C|required_if:temperature',
+            'blood_pressure' => 'string|max:7',
         ]);
 
         $vitalSigns->update($fields);

@@ -8,6 +8,7 @@ use App\Events\PaymentNew;
 use App\Models\Consultation;
 use App\Models\Patient;
 use App\Models\Payment;
+use App\Models\Prescription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -33,9 +34,12 @@ class ConsultationController extends Controller
         $fields = $request->validate([
             'patient_id' => 'required|integer|exists:patients,id',
             'height' => 'numeric|decimal:0,2',
+            'height_unit' => 'string|in:cm,m|required_if:height',
             'weight' => 'numeric|decimal:0,2',
-            'blood_pressure' => 'string|max:7',
+            'weight_unit' => 'string|in:kg,lb|require_if:weight',
             'temperature' => 'numeric|decimal:0,2',
+            'temperature_unit' => 'string|in:K,C|required_if:temperature',
+            'blood_pressure' => 'string|max:7',
             'chief_complaint' => 'required|string',
             'history_of_present_illness' => 'string',
             'family_hx' => 'string',
@@ -46,12 +50,20 @@ class ConsultationController extends Controller
             'pediatrics_d' => 'string',
             'primary_diagnosis' => 'string',
             'diagnosis' => 'required|string',
-            'prescription' => 'required|string',
             'follow_up_date' => 'date|date_format:Y-m-d',
             'payment_amount' => 'required|integer',
             'payment_method' => 'required|string|in:cash,hmo',
-            'payment_hmo' => 'string'
+            'payment_hmo' => 'string',
         ]);
+
+        $request->validate([
+            'prescriptions' => 'array',
+            'prescriptions.*.name' => 'required_if:prescriptions|string|max:100',
+            'prescriptions.*.dosage' => 'required_if:prescriptions|string:max|255',
+            'prescriptions.*.instruction' => 'required_if:prescriptions|string|max:255',
+        ]);
+
+        $prescriptions = $request->prescriptions;
 
         Gate::authorize('create', [Consultation::class, $request]);
 
@@ -60,13 +72,26 @@ class ConsultationController extends Controller
         $fields['physician_id'] = $user->id;
         $fields['department_id'] = $user->department_id;
 
-        $consultationRecord = Consultation::create($fields);
+        $consultation = Consultation::create($fields);
+
+        if ($prescriptions && count($prescriptions) > 0) 
+        {
+            foreach($prescriptions as $prescription) 
+            {
+                Prescription::create([
+                    'name' => $prescription->name,
+                    'dosage' => $prescription->dosage,
+                    'instruction' => $prescription->instruction,
+                    'consultation_id' => $consultation->id
+                ]);
+            }
+        }
 
         $paymentFields = [
             'amount' => $request->payment_amount,
             'method' => $request->payment_method,
             'hmo' => $request->payment_hmo ?: null,
-            'consultation_record_id' => $consultationRecord->id,
+            'consultation_record_id' => $consultation->id,
             'patient_id' => $request->patient_id,
             'physician_id' => $fields['physician_id'],
             'department_id' => $fields['department_id'],
@@ -78,11 +103,11 @@ class ConsultationController extends Controller
         event(new PaymentNew($payment));
 
         // audit creation of consultation record and payment record
-        event(new ModelAction(AuditAction::CREATE, $request->user(), $consultationRecord, null, $request));
+        event(new ModelAction(AuditAction::CREATE, $request->user(), $consultation, null, $request));
         event(new ModelAction(AuditAction::CREATE, $request->user(), $payment, null, $request));
     
         return response()->json([
-            'consultation_record' => $consultationRecord,
+            'consultation_record' => $consultation,
             'payment' => $payment
         ]);
     }
@@ -108,9 +133,12 @@ class ConsultationController extends Controller
 
         $fields = $request->validate([
             'height' => 'numeric|decimal:0,2',
+            'height_unit' => 'string|in:cm,m|required_if:height',
             'weight' => 'numeric|decimal:0,2',
-            'blood_pressure' => 'string|max:7',
+            'weight_unit' => 'string|in:kg,lb|require_if:weight',
             'temperature' => 'numeric|decimal:0,2',
+            'temperature_unit' => 'string|in:K,C|required_if:temperature',
+            'blood_pressure' => 'string|max:7',
             'chief_complaint' => 'string',
             'history_of_present_illness' => 'string',
             'family_hx' => 'string',
@@ -121,9 +149,30 @@ class ConsultationController extends Controller
             'pediatrics_d' => 'string',
             'primary_diagnosis' => 'string',
             'diagnosis' => 'string',
-            'prescription' => 'string',
             'follow_up_date' => 'date|date_format:Y-m-d',
         ]);
+
+        $request->validate([
+            'prescriptions' => 'array',
+            'prescriptions.*.name' => 'required_if:prescriptions|string|max:100',
+            'prescriptions.*.dosage' => 'required_if:prescriptions|string:max|255',
+            'prescriptions.*.instruction' => 'required_if:prescriptions|string|max:255',
+        ]);
+
+        $prescriptions = $request->prescriptions;
+
+        if ($prescriptions && count($prescriptions) > 0) 
+        {
+            Prescription::where('consultation_id', $consultation->id)->delete();
+            foreach($prescriptions as $prescription) 
+            {
+                Prescription::create([
+                    'name' => $prescription->name,
+                    'dosage' => $prescription->dosage,
+                    'instruction' => $prescription->instruction
+                ]);
+            }
+        }
 
         $originalData = $consultation->toArray();
 

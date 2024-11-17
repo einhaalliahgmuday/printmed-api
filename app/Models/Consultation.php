@@ -30,15 +30,17 @@ class Consultation extends Model implements CipherSweetEncrypted
             ->addOptionalTextField('pediatrics_d')
             ->addOptionalTextField('primary_diagnosis')
             ->addField('diagnosis')
-            ->addOptionalTextField('prescription')
             ->addOptionalTextField('follow_up_date');
     }
 
     protected $fillable = [
         'height',
+        'height_unit',
         'weight',
-        'blood_pressure',
+        'weight_unit',
         'temperature',
+        'temperature_unit',
+        'blood_pressure',
         'chief_complaint',
         'present_illness_hx',
         'family_hx',
@@ -49,7 +51,6 @@ class Consultation extends Model implements CipherSweetEncrypted
         'pediatrics_d',
         'primary_diagnosis',
         'diagnosis',
-        'prescription',
         'follow_up_date',
         'patient_id',
         'physician_id',
@@ -59,6 +60,10 @@ class Consultation extends Model implements CipherSweetEncrypted
     protected $hidden = [
         'created_at',
         'updated_at'
+    ];
+
+    protected $appends = [
+        'prescriptions'
     ];
 
     public function patient()
@@ -75,5 +80,10 @@ class Consultation extends Model implements CipherSweetEncrypted
     public function payment()
     {
         return $this->hasOne(Payment::class);
+    }
+
+    public function prescriptions()
+    {
+        return $this->hasMany(Prescription::class);
     }
 }
