@@ -30,7 +30,6 @@ class AuthController extends Controller
             'suffix' => 'string|max:10',
             'sex' => 'required|string|max:6',
             'birthdate' => 'required|date|date_format:Y-m-d',
-            'license_number' => 'string|max:50',
             'department_id' => 'integer|exists:departments,id',
             'email' => 'required|email|max:100',
         ]);

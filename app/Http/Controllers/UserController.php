@@ -45,11 +45,6 @@ class UserController extends Controller
                 ->orWhereBlind('full_name', 'full_name_index', $search);
             });
         }
-
-        if ($request->filled('personnel_number')) 
-        {
-            $query->whereBlind('personnel_number', 'personnel_number_index', $request->personnel_number);
-        }
         
         if ($request->filled('role')) 
         {
@@ -206,7 +201,6 @@ class UserController extends Controller
             'suffix' => 'string|max:10',
             'sex' => 'string|max:6',
             'birthdate' => 'date|date_format:Y-m-d',
-            'license_number' => 'string|max:50',
             'department_id' => 'integer|exists:departments,id',
             'email' => 'email|max:100',
         ]);

@@ -30,7 +30,12 @@ class Registration extends Model implements CipherSweetEncrypted
             ->addOptionalTextField('birthplace')
             ->addOptionalTextField('sex')
             ->addBlindIndex('sex', new BlindIndex('sex_index'))
-            ->addOptionalTextField('address')
+            ->addOptionalTextField('house_number')
+            ->addOptionalTextField('street')
+            ->addOptionalTextField('barangay')
+            ->addOptionalTextField('city')
+            ->addOptionalTextField('province')
+            ->addOptionalTextField('postal_code')
             ->addOptionalTextField('civil_status')
             ->addOptionalTextField('religion')
             ->addOptionalTextField('phone_number')
@@ -47,7 +52,12 @@ class Registration extends Model implements CipherSweetEncrypted
         'birthdate',
         'birthplace',
         'sex',
-        'address',
+        'house_number',
+        'street',
+        'barangay',
+        'city',
+        'province',
+        'postal_code',
         'civil_status',
         'religion',
         'phone_number',

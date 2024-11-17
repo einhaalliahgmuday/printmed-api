@@ -36,7 +36,6 @@ class User extends Authenticatable implements CipherSweetEncrypted
             ->addField('sex')
             ->addField('birthdate')
             ->addBlindIndex('birthdate', new BlindIndex('birthdate_index'))
-            ->addOptionalTextField('license_number')
             ->addField('email')
             ->addBlindIndex('email', new BlindIndex('email_index'));
     }
@@ -52,7 +51,6 @@ class User extends Authenticatable implements CipherSweetEncrypted
         'sex',
         'birthdate',
         'department_id',
-        'license_number',
         'email',
         'password',
         'is_locked',
