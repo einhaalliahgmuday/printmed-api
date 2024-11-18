@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\RegistrationNew;
 use App\Models\Registration;
 use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
@@ -84,6 +85,9 @@ class RegistrationController extends Controller
         $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
 
         $registration = Registration::create($fields);
+
+        // pusher event
+        event(new RegistrationNew($registration));
 
         return $registration;
     }

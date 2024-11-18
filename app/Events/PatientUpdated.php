@@ -2,34 +2,34 @@
 
 namespace App\Events;
 
-use App\Models\Registration;
-use Illuminate\Broadcasting\InteractsWithSockets;
+use App\Models\Patient;
 use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class RegistrationNew implements ShouldBroadcast
+class PatientUpdated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $registration;
+    public $patient;
 
-    public function __construct(Registration $registration)
+    public function __construct(Patient $patient)
     {
-        $this->registration = $registration;
+        $this->patient = $patient;
     }
 
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('registration-channel'),
+            new PrivateChannel('patient-channel'),
         ];
     }
 
     public function broadcastAs()
     {
-        return "registration-new";
+        return "patient-updated";
     }
 }

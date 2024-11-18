@@ -14,4 +14,5 @@ enum AuditAction: string
     case LOGOUT = 'logout';
     case SENT_RESET_LINK = 'sent reset link';
     case RESET_PASSWORD = 'reset password';
+    case DOWNLOAD = 'downloaded';
 }

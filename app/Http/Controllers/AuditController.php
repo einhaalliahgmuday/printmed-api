@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\AuditAction;
+use App\Events\ModelAction;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Models\Audit;

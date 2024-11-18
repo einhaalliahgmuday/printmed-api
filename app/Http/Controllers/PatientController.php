@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\AuditAction;
 use App\Events\ModelAction;
+use App\Events\PatientNew;
+use App\Events\PatientUpdated;
 use App\Models\Patient;
 use App\Models\Payment;
 use App\Models\Registration;
@@ -133,6 +135,9 @@ class PatientController extends Controller
             $patient->physicians()->syncWithoutDetaching([$user->id]);
         }
 
+        // pusher event
+        event(new PatientNew($patient));
+
         return $patient;
     }
 
@@ -199,6 +204,9 @@ class PatientController extends Controller
         // implements audit of update
         event(new ModelAction(AuditAction::UPDATE, $request->user(), $patient, $originalData, $request));
 
+        // pusher event
+        event(new PatientUpdated($patient));
+
         return $patient;
     }
 
@@ -214,9 +222,15 @@ class PatientController extends Controller
         $path = $request->file('image')->store('images/patients', ['local', 'private']);
         $patient->update(['photo' => $path]);
 
+        $file = Storage::get($path);
         $mimeType = Storage::mimeType($path);
-    
-        return $path;
+
+        // pusher event
+        // event(new PatientUpdated($patient));
+
+        return response()->file($file, [
+            'Content-Type' => $mimeType
+        ]);
     }
 
     public function destroy(Patient $patient)
