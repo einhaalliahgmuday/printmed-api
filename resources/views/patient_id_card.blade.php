@@ -17,96 +17,236 @@
 		}
 		
 		body {
-			font-family: Arial;
-			font-size: 8px;
+			font-family: Calibri;
+			font-size: 10px;
+			line-height: 1;
 		}
 		
-        .id-card {
+        .id-card-container {
 			position: relative;
             width: 3.375in;
             height: 2.125in;
             border: 1px solid #000;
-            display: flex;
-            flex-direction: column;
-			align-items: center;
-			padding: 7px 0;
+			border-radius: 7px;
+			overflow: hidden;
         }
-		
-		.id-card::before {
-			content: '';
+
+		.id-card-content {
 			position: absolute;
-			top: 0;
-			left: 0;
-			right: 0;
-			bottom: 0;
-			background-image: "{{public_path('assets/images/patient_id_card_bg.png')}}";
-			background-size: cover;
-			background-position: center;
-			background-repeat: no-repeat;
-			opacity: 0.75;
-			z-index: -1;  
+			padding: 7px 0;
+			width: 100%;
+			height: 100%;
         }
+
+		.bg {
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			opacity: 75%;
+			border-radius: 7px;
+		}
 		
 		.logo {
 			max-width: 100%;
 			height: 25px;
+			display: block;
+			margin: auto;
 		}
 		
-		.title-card {
+		.title-container {
 			background-color: #B43C3A; 
 			color: white; 
-			width: 100%; 
 			font-weight: bold; 
-			margin: 7px 0; 
+			padding: 5px 0; 
 			font-size: 10px;
+			text-align: center;
+			margin: 7px 0;
 		}
 		
-		.information-card {
+		.information-container {
 			margin: 0 7px;
-			height: 100%;
-			padding: 7px;
+			height: 1.3in;
+			padding: 1px;
 			background-color: #FFF;
 			border-radius: 7px;
 		}
-		
-		.information-card.front {
-			display: grid;
-			grid-template-columns: repeat(3, 1fr);
-			grid-gap: 6px;
+
+		.information-container > table {
+			width: 100%;
+			height: 100%;
+			border-spacing: 7px;
+			word-wrap: break-word;
+ 		 	word-break: break-word;
 		}
-		
-		.information-card.back {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			justify-content: space-between;
-			text-align: center;
+
+		.information-container td {
+			width: 33.3%;
+			height: 100%;
 		}
-		
-		.photo-container {
-			width: 1in;
+
+		.information-container td > div {
+			height: 100%;
+		}
+
+		.id-photo-container {
 			height: 1in;
-		}
-		
-		.qr-container {
-			width: .7;
-			height: .7in;
-		}
-		
-		.photo, .qr {
+			width: 1in;
 			max-width: 100%;
-			max-height: 100%;
-			border-radius: 2.5px;
+		}
+		
+		.id-photo {
+			height: 100%;
+			width: 100%;
+			border-radius: 5px;
 			object-fit: cover;
+		}
+
+		.valid-until-text {
+			text-align: center;
+			font-size: 8px;
+			margin-top: 5px;
+			font-weight: bold;
+			font-style: italic;
+		}
+
+		.information-title {
+			font-size: 8px;
+		}
+
+		.information {
+			font-weight: bold;
+			text-transform: uppercase;
+		}
+
+		.mb-2 {
+			margin-bottom: 2px;
+		}
+
+		.qr-container {
+			margin-top: 6px;
+			height: .68in;
+			width: .68in;
+		}
+
+		.qr {
+			height: 100%;
+			width: 100%;
+			object-fit: cover;
+		}
+
+		.information-container.back div {
+			text-align: center;
+			margin: 18px auto;
+		}
+
+		.w-80 {
+			width: 75%;
+		}
+
+		.w-95 {
+			width: 95%;
+		}
+
+		.information-container span {
+			font-weight: bold;
+		}
+
+		.fs-8 {
+			font-size: 8px;
+		}
+
+		.fi {
+			font-style: italic;
 		}
     </style>
 </head>
-<body">
-	{{-- style="background-image: {{$photo}}; height: 500px; --}}
-    {{-- <img {{'data:image/png;base64,'.base64_encode($qr)}} width="100px"/> --}}
-	<div style="height: 300px; width: 300px; background-image: url('file:///C:/path/to/your/project/public/storage/images/patient_id_card_bg.png')"></div>
-	 {{-- <p>{{$photo}}</p> --}}
-    {{-- <img src="{{$photo}}" class="logo" style="height: 2.125in; width: 3.375in;"> --}}
-     <!-- <img src="" alt=""> -->
+<body>
+	{{-- <table>
+		<tr>
+			<td> --}}
+				<div class="id-card-container">
+					<img class="bg" src="{{ public_path('images/patient_id_card_bg.png') }}" alt="">
+					
+					<div class="id-card-content">
+						<div>
+							<img class="logo" src="{{ public_path('images/carmona_hospital_logo_1.png') }}" alt="">
+						</div>
+						<div class="title-container">
+							<p>PATIENT IDENTIFICATION CARD</p>
+						</div>
+						<div class="information-container">
+							<table>
+								<tr>
+									<td>
+										<div>
+											<div class="id-photo-container">
+												<img class="id-photo" src="{{ storage_path('app/private/images/patients/REQLTcBlb62TxW8AjVJRL1mOaYey8KhlJdAYAAcO.png') }}" alt="">
+											</div>
+											<p class="valid-until-text">Valid Until: August 9, 2021</p>
+										</div>
+									</td>
+									<td>
+										<div>
+											<div class="mb-2">
+												<p class="information-title">Patient Number</p>
+												<p class="information">{{"$patient->patient_number"}}</p>
+											</div>
+											<div class="mb-2">
+												<p class="information-title">Name</p>
+												<p class="information">{{"$patient->full_name"}}</p>
+											</div>
+											<div>
+												<p class="information-title">Address</p>
+												<p class="information fs-8">Qx3Tq5nH7b8LrA2FpV9yZzJwK1G</p>
+											</div>
+										</div>
+									</td>
+									<td>
+										<div>
+											<div class="mb-2">
+												<p class="information-title">Birthdate</p>
+												<p class="information">{{"$patient->birthdate"}}</p>
+											</div>
+											<div class="mb-2">
+												<p class="information-title">Sex</p>
+												<p class="information">{{"$patient->sex"}}</p>
+											</div>
+											<div class="qr-container">
+												<img class="qr" src="{{ 'data:image/png;base64,' . $qr }}" alt="">
+											</div>
+										</div>
+									</td>
+								</tr>
+							</table>
+						</div>
+					</div>
+				</div>
+			</td>
+			<td>
+				<div class="id-card-container">
+					<img class="bg" src="{{ public_path('images/patient_id_card_bg.png') }}" alt="">
+					
+					<div class="id-card-content">
+						<div>
+							<img class="logo" src="{{ public_path('images/carmona_hospital_logo_1.png') }}" alt="">
+						</div>
+						<div class="title-container">
+							<p>IN CASE OF LOSS</p>
+						</div>
+						<div class="information-container back">
+							<div class="w-80">
+								<p>If this ID is lost or stolen, please immediately report it to the hospital's registration desk or contact our support team to deactivate and reissue your ID.</p>
+								<p><span>Phone: </span>{{"(02) 1234-5678"}}</p>
+								<p><span>Email: </span>{{"support@carmonamedical.com"}}</p>
+							</div>
+							<div class="w-95">
+								<p class="fs-8 fi">This QR code is used exclusively for accessing the patient's record within the Patient Management Record System. It serves as an identification method to ensure secure and authorized access to the patient’s health information. Unauthorized use of this QR code is prohibited and may result in legal action.</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			{{-- </td>
+		</tr>
+	</table> --}}
 </body>
 </html>

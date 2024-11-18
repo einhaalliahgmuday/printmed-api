@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\RegistrationController;
+use Barryvdh\Snappy\Facades\SnappyImage;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsultationController;
@@ -9,10 +11,53 @@ use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PatientPhysicianController;
 use App\Http\Controllers\PatientQrIdController;
 use App\Http\Controllers\UserController;
+use App\Models\Patient;
+use Barryvdh\Snappy\Facades\SnappyPdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+
+Route::get('/', function(Request $request) {
+    // $path = storage_path('app/private/images/patients/REQLTcBlb62TxW8AjVJRL1mOaYey8KhlJdAYAAcO.png');
+
+    // return $path;
+
+    // $file = Storage::get($path);
+    // $mimeType = Storage::mimeType($path);
+
+    // return $path;
+    $uuid = (string) Str::uuid();
+
+    $qr = QrCode::size(300)
+                    ->style('round') //square, dot, round
+                    ->eye('circle') // square, circle
+                    ->format('png')
+                    ->merge('/public/images/carmona_hospital_logo_3.png')
+                    ->gradient(19, 147, 79, 159, 16, 8, 'vertical')
+                    ->generate($uuid);
+
+    $qrBytes = base64_encode($qr);
+
+    $patient = Patient::find(1);
+
+
+    $pdf = SnappyImage::loadView('patient_id_card', ['patient' => $patient, 'qr' => $qrBytes])
+                    // ->setPaper('Letter', 'portrait')
+                    // ->setOption('zoom', 1.3)
+                    ->setOption('quality', 100)
+                    // ->setOption('dpi', 300)
+                    ->setOption('zoom', 5)
+                    ->setOption('format', 'jpeg')
+                    // ->setOption('width', 200)
+                    // ->setOption('height', 208)
+                    ->setOption('enable-local-file-access', true);
+
+    return response($pdf->output())->header('Content-Type', 'image/jpeg');
+});
+
+// patient registration
+Route::apiResource('registration', RegistrationController::class)->except(['update', 'destroy']);
 
 // auth and password
 Route::post('/login', [AuthController::class, 'login']);
@@ -26,9 +71,9 @@ Route::middleware(['auth:sanctum'])->group(function() {
     });
 
     // auth, registration, and password
-    Route::post('/register', [AuthController::class, 'register'])->middleware(['role:admin']);
-    Route::get('/register/is-email-exists', [UserController::class, 'isEmailExists'])->middleware(['role:admin']);
-    Route::get('/register/is-personnel-number-exists', [UserController::class, 'isPersonnelNumberExists'])->middleware(['role:admin']);
+    Route::post('/create-user', [AuthController::class, 'createUser'])->middleware(['role:admin']);
+    Route::get('/create-user/is-email-exists', [UserController::class, 'isEmailExists'])->middleware(['role:admin']);
+    Route::get('/create-user/is-personnel-number-exists', [UserController::class, 'isPersonnelNumberExists'])->middleware(['role:admin']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware(['role:admin']);
     Route::put('/change-password', [AuthController::class,'changePassword']);
