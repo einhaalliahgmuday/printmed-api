@@ -75,8 +75,7 @@ class Patient extends Model implements CipherSweetEncrypted
         'age',
         'last_visit',
         'follow_up_date',
-        'latest_prescription',
-        'physicians'
+        'latest_prescription'
     ];
 
     // generates unique patient number

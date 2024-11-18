@@ -19,7 +19,7 @@ class AuthController extends Controller
 {
     use CommonMethodsTrait;
 
-    public function register(Request $request) 
+    public function createUser(Request $request) 
     {
         $fields = $request->validate([
             'role' => 'required|string|in:admin,physician,secretary,queue manager',
