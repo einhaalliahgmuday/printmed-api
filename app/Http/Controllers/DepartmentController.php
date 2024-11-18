@@ -16,7 +16,7 @@ class DepartmentController extends Controller
     public function store(Request $request)
     {
         $fields = $request->validate([
-            'name' => 'required|string|max:100|unique:departments,name'
+            'name' => 'required|string|max:50|unique:departments,name'
         ]);
 
         $department = Department::create($fields);
@@ -27,7 +27,7 @@ class DepartmentController extends Controller
     public function update(Request $request, Department $department)
     {
         $fields = $request->validate([
-            'name' => 'required|string|max:100|unique:departments,name'
+            'name' => 'required|string|max:50|unique:departments,name'
         ]);
 
         $department->update($fields);

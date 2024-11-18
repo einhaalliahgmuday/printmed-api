@@ -16,15 +16,11 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 class PatientQrController extends Controller
 {
     public function store(Request $request, Patient $patient) {
-        $request->validate(
-            ['send_email' => 'boolean']
-        );
+        $request->validate([
+            'send_email' => 'boolean'
+        ]);
 
-        $patientQr = PatientQr::where('patient_id', $patient->id)->where('isDeactivated', 0)->latest()->first();
-
-        if ($patientQr) {
-            $patientQr->update(['isDeactivated' => 1]);
-        }
+        PatientQr::where('patient_id', $patient->id)->where('isDeactivated', 0)->update(['isDeactivated' => 1]);
 
         if (!$patient->photo) {
             return response()->json([
@@ -63,9 +59,7 @@ class PatientQrController extends Controller
         $qrBytes = base64_encode($qr);
         $expirationDate = now()->addMonths(10);
 
-        // dd($request->send_email == 1, $patient->email);
-
-        if ($request->filled('send_email') && $request->send_email == 1)
+        if ($request->filled('send_email') && $request->send_email == 1 && $patient->email)
         {
             $idImage = SnappyImage::loadView('patient_id_card', ['patient' => $patient, 'photo' => $photoBytes, 'qr' => $qrBytes, 'expirationDate' => $expirationDate->format('F j, Y'), 'isImage' => true])
                         ->setOption('quality', 100)
@@ -73,7 +67,7 @@ class PatientQrController extends Controller
                         ->setOption('format', 'jpeg')
                         ->setOption('enable-local-file-access', true);
 
-            Mail::to("einha@gmail.com")->send(new PatientIdCard($idImage->output(), $patient->first_name));
+            Mail::to($patient->email)->send(new PatientIdCard($idImage->output(), $patient->first_name));
         }
 
         $idPdf = SnappyPdf::loadView('patient_id_card', ['patient' => $patient, 'photo' => $photoBytes,  'qr' => $qrBytes, 'expirationDate' => $expirationDate->format('F j, Y'), 'isImage' => false])
@@ -90,11 +84,7 @@ class PatientQrController extends Controller
     }
 
     public function deactivate(Patient $patient) {
-        $patientQr = PatientQr::where('patient_id', $patient->id)->where('isDeactivated', 0)->latest()->first();
-
-        if ($patientQr) {
-            $patientQr->update(['isDeactivated' => 1]);
-        }
+        PatientQr::where('patient_id', $patient->id)->where('isDeactivated', 0)->update(['isDeactivated' => 1]);
 
         return response()->json(['message' => 'Patient identification card successfully deactivated.']);
     }

@@ -279,4 +279,22 @@ class AuthController extends Controller
         
         $user->notify(new ResetPasswordNotification($isNewAccount, $token, $user->email));
     }
+
+    public function isEmailExists(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|max:100'
+        ]);
+
+        return $this->isUserEmailExists($request->email);
+    }
+
+    public function isPersonnelNumberExists(Request $request)
+    {
+        $request->validate([
+            'personnel_number' => 'required|string|max:8'
+        ]);
+        
+        return $this->isUserPersonnelNumberExists($request->personnel_number);
+    }
 }

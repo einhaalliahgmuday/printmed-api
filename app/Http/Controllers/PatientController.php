@@ -55,7 +55,7 @@ class PatientController extends Controller
 
         if (count($patients) > 0)
         {
-            if($request->filled('sort_by') && in_array($request->sort_by, ['last_name', 'patient_number', 'follow_up_date'])) 
+            if($request->filled('sort_by')) 
             {
                 $isDesc = $request->input('sort_direction') == 'desc';
 
@@ -78,6 +78,16 @@ class PatientController extends Controller
 
         return response()->json(['patients' => null]);
     }
+
+    // public function index(Request $request) {
+    //     $request->validate([
+    //         'qr_code' => 'string|max:100'
+    //     ]);
+
+    //     $patientQr = PatientQr::whereBlind('uuid', 'uuid_index', $request->qr_code)->where('created_at', '<', now())->latest()->first();
+
+    //     return $patientQr->patient;
+    // }
 
     public function store(Request $request)
     {

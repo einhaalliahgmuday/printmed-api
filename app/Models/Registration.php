@@ -17,6 +17,8 @@ class Registration extends Model implements CipherSweetEncrypted
     public static function configureCipherSweet(EncryptedRow $encryptedRow): void
     {
         $encryptedRow
+            ->addField('registration_id')
+            ->addBlindIndex('registration_id', new BlindIndex('registration_id_index'))
             ->addField('full_name')
             ->addBlindIndex('full_name', new BlindIndex('full_name_index'))
             ->addField('first_name')
@@ -44,6 +46,7 @@ class Registration extends Model implements CipherSweetEncrypted
     }
 
     protected $fillable = [
+        'registration_id',
         'full_name',
         'first_name',
         'middle_name',

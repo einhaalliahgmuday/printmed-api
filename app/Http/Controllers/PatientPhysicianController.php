@@ -25,6 +25,7 @@ class PatientPhysicianController extends Controller
 
         $patient->physicians()->syncWithoutDetaching([$request->physician_id]);
 
+        // returns patient's physicians
         return response()->json([
             'patient_physicians' => $patient->physicians
         ], 200);
@@ -38,6 +39,7 @@ class PatientPhysicianController extends Controller
 
         $patient->physicians()->detach([$request->physician_id]);
 
+        // returns patient's physicians
         return response()->json([
             'patient_physicians' => $patient->physicians
         ], 200);
