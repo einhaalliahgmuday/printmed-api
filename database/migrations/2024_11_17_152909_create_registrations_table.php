@@ -8,9 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('patients', function (Blueprint $table) {
+        Schema::create('registrations', function (Blueprint $table) {
             $table->id();
-            $table->string('patient_number');
             $table->string('full_name');
             $table->string('first_name');
             $table->string('middle_name')->nullable();
@@ -29,13 +28,12 @@ return new class extends Migration
             $table->string('religion')->nullable();
             $table->string('phone_number')->nullable();
             $table->string('email')->nullable();
-            $table->string('photo')->nullable();
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('patients');
+        Schema::dropIfExists('registrations');
     }
 };

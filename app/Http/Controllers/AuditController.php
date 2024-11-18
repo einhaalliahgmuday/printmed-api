@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Models\Audit;
+use Barryvdh\Snappy\Facades\SnappyPdf;
 use Carbon\Carbon;
 
 class AuditController extends Controller
@@ -14,7 +14,7 @@ class AuditController extends Controller
     {
         $request->validate([
             'page' => 'integer',
-            'resource' => 'string|in:user,patient,consultation record,payment',
+            'resource' => 'string|in:user,patient,consultation,payment',
             'date_from' => 'date|date_format:Y-m-d',
             'date_until' => 'date|date_format:Y-m-d|after_or_equal:date_from'
         ]);
@@ -49,7 +49,7 @@ class AuditController extends Controller
 
         $date = now()->format('Y-m-d');
 
-        $pdf = Pdf::loadView('audits', ['audits' => $auditsInformation['data']])->setPaper('a4', 'landscape');
+        $pdf = SnappyPdf::loadView('audits', ['audits' => $auditsInformation['data']])->setPaper('a4', 'landscape');
 
         return $pdf->download("printmed_audits_retrieved_at_{$date}.pdf");
     }
@@ -155,8 +155,8 @@ class AuditController extends Controller
             case 'patient':
                 $requestResourceClass = 'App\Models\Patient';
                 break;
-            case 'consultation record':
-                $requestResourceClass = 'App\Models\ConsultationRecord';
+            case 'consultation':
+                $requestResourceClass = 'App\Models\Consultation';
                 break;
             case 'payment':
                 $requestResourceClass = 'App\Models\Payment';

@@ -20,7 +20,6 @@ class DepartmentController extends Controller
         ]);
 
         $department = Department::create($fields);
-        Queue::create(['department_id' => $department->id]);
 
         return $department;
     }
@@ -38,6 +37,12 @@ class DepartmentController extends Controller
 
     public function destroy(Department $department)
     {
+        if ($department->users_count > 0) {
+            return response()->json([
+                'message' => 'You cannot delete delete this department.'
+            ]);
+        }
+
         $department->delete();
 
         return response()->json(['message' => 'Department successfully deleted.']);

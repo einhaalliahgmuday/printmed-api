@@ -7,9 +7,15 @@ use App\AuditAction;
 use App\Events\AccountAction;
 use App\Events\ModelAction;
 use App\Events\UpdateUser;
+use App\Mail\VerifyEmailOtp;
+use App\Models\Otp;
 use App\Models\User;
+use App\Notifications\OtpVerificationNotification;
 use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -38,11 +44,6 @@ class UserController extends Controller
                 $q->whereBlind('personnel_number', 'personnel_number_index', $search)
                 ->orWhereBlind('full_name', 'full_name_index', $search);
             });
-        }
-
-        if ($request->filled('personnel_number')) 
-        {
-            $query->whereBlind('personnel_number', 'personnel_number_index', $request->personnel_number);
         }
         
         if ($request->filled('role')) 
@@ -146,8 +147,46 @@ class UserController extends Controller
 
         $user = $request->user();
 
-        $user->email = $request->new_email;
-        $user->save();
+        //sends otp to user's email as another authentication
+        $token = Str::random(60);
+        $otp = Otp::create([
+            'email' => $request->new_email,
+            'code' => rand(100000, 999999),
+            'token' => Hash::make($token),
+            'expires_at' => now()->addMinutes(5),
+            'user_id' => $user->id
+        ]);
+
+        Mail::to($request->new_email)->send(new VerifyEmailOtp($otp->code));
+
+        return response()->json([
+            'email' => $request->new_email,
+            'token' => $token,
+        ], 200);
+    }
+
+    public function verifyEmailOtp(Request $request) 
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'code' => 'required|size:6'
+        ]);
+
+        $otp = Otp::whereBlind('email', 'email_index', $request->email)
+            ->whereBlind('code', 'code_index', $request->code)
+            ->first();
+
+        $user = $otp->user;
+        
+        if (!$otp || now()->isAfter($otp->expires_at) || !Hash::check($request->token, $otp->token) || !$user) 
+        {
+            return response()->json([
+                'message' => 'Invalid request'
+            ], 404);
+        }
+        
+        $user->update(['email' => $request->email, 'email_verified_at' => now()]);
 
         return $user;
     }
@@ -162,7 +201,6 @@ class UserController extends Controller
             'suffix' => 'string|max:10',
             'sex' => 'string|max:6',
             'birthdate' => 'date|date_format:Y-m-d',
-            'license_number' => 'string|max:50',
             'department_id' => 'integer|exists:departments,id',
             'email' => 'email|max:100',
         ]);

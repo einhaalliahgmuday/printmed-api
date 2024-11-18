@@ -30,7 +30,7 @@ class PatientPhysicianController extends Controller
         ], 200);
     }
 
-    public function update(Request $request, Patient $patient)
+    public function destroy(Request $request, Patient $patient)
     {
         $request->validate([
             'physician_id' => 'required|integer|exists:patient_physicians,physician_id'

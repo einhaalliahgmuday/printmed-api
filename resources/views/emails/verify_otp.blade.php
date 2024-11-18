@@ -41,10 +41,15 @@
 <body>
     <div class="container">
         <div class="logo-container">
-            <img src="{{asset('images/carmona_hospital_logo.png')}}" class="logo">
+            <img src="{{asset('images/carmona_hospital_logo_1.png')}}" class="logo">
         </div>
-        <h3>Let's log you in</h3>
-		<p>Use this code to sign up to PrintMed.</p>
+        @if ($isVerifyEmail)
+            <h3>Verify Your Email</h3>
+            <p>Use this code to update your email at PrintMed.</p>
+        @else
+            <h3>Let's log you in</h3>
+            <p>Use this code to sign up to PrintMed.</p>
+        @endif
         <p class="code">{{$code}}</p>
 		<p class="note">The code will expire in 5 minutes. If you did not expect this email, please disregard it.</p>
     </div>

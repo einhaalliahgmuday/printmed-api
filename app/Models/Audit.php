@@ -9,7 +9,6 @@ use Spatie\LaravelCipherSweet\Concerns\UsesCipherSweet;
 use Spatie\LaravelCipherSweet\Contracts\CipherSweetEncrypted;
 use App\Models\User;
 use App\Models\Patient;
-use App\Models\Payment;
 use ParagonIE\CipherSweet\BlindIndex;
 
 class Audit extends Model implements CipherSweetEncrypted
@@ -57,8 +56,6 @@ class Audit extends Model implements CipherSweetEncrypted
                 return Patient::find($this->user_id);
             case 'Consultation':
                 return Consultation::find($this->user_id);
-            case 'Payment':
-                return Payment::find($this->user_id);
         }
     }
 }

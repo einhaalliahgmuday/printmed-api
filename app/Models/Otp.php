@@ -29,6 +29,15 @@ class Otp extends Model implements CipherSweetEncrypted
         'email',
         'code',
         'token',
-        'expires_at'
+        'expires_at',
+        'user_id',
     ];
+
+    public function user() {
+        if ($this->user_id) {
+            return $this->hasOne(User::class, 'id', 'user_id');
+        }
+
+        return collect();
+    }
 }

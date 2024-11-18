@@ -19,7 +19,6 @@ return new class extends Migration
             $table->string('suffix')->nullable();
             $table->string('sex');
             $table->string('birthdate');
-            $table->string('license_number')->nullable();
             $table->foreignId('department_id')->onDelete('restrict')->nullable();
             $table->string('email');
             $table->timestamp('email_verified_at')->nullable();

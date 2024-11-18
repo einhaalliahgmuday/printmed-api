@@ -36,7 +36,6 @@ class User extends Authenticatable implements CipherSweetEncrypted
             ->addField('sex')
             ->addField('birthdate')
             ->addBlindIndex('birthdate', new BlindIndex('birthdate_index'))
-            ->addOptionalTextField('license_number')
             ->addField('email')
             ->addBlindIndex('email', new BlindIndex('email_index'));
     }
@@ -52,7 +51,6 @@ class User extends Authenticatable implements CipherSweetEncrypted
         'sex',
         'birthdate',
         'department_id',
-        'license_number',
         'email',
         'password',
         'is_locked',
@@ -73,27 +71,6 @@ class User extends Authenticatable implements CipherSweetEncrypted
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
-
-    public function getFullNameAttribute($value)
-    {
-        switch ($this->role) 
-        {
-            case 'physician':
-                switch (strtolower($this->sex))
-                {
-                    case 'male':
-                        return "Dr. {$value}";
-                    case 'female':
-                        return "Dra. {$value}";
-                    default:
-                        return "Doc. {$value}";
-                }
-            case 'secretary':
-                return "Sec. {$value}";
-        }
-
-        return $value;
-    }
 
     public function getDepartmentNameAttribute() {
         if ($this->department) {
@@ -118,18 +95,20 @@ class User extends Authenticatable implements CipherSweetEncrypted
     {
         if($this->role === 'physician')
         {
-            return $this->belongsToMany(Patient::class, 'patient_physicians', 'physician_id', 'patient_id')
+            return $this->belongsToMany(Patient::class, 'patient_physician', 'physician_id', 'patient_id')
                         ->select('patients.id', 'patient_number', 'patients.full_name', 'patients.birthdate', 'patients.sex', 'patients.created_at');
         }
 
         return collect(); 
     }
 
-    public function payments()
+    // returns patients with provided access
+    public function patientAccesses()
     {
         if($this->role === 'physician')
         {
-            return $this->hasMany(Payment::class, 'physician_id', 'id');
+            return $this->belongsToMany(Patient::class, 'physician_accesses', 'physician_id', 'patient_id')
+                        ->select('patients.id', 'patient_number', 'patients.full_name', 'patients.birthdate', 'patients.sex', 'patients.created_at');
         }
 
         return collect(); 
