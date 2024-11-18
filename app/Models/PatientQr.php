@@ -9,7 +9,7 @@ use ParagonIE\CipherSweet\EncryptedRow;
 use Spatie\LaravelCipherSweet\Concerns\UsesCipherSweet;
 use Spatie\LaravelCipherSweet\Contracts\CipherSweetEncrypted;
 
-class PatientQrId extends Model implements CipherSweetEncrypted
+class PatientQr extends Model implements CipherSweetEncrypted
 {
     use HasFactory;
     use UsesCipherSweet;
@@ -28,6 +28,6 @@ class PatientQrId extends Model implements CipherSweetEncrypted
     ];
 
     function patient() {
-        return $this->hasOne(Patient::class, 'patient_id');
+        return $this->belongsTo(Patient::class, 'patient_id');
     }
 }

@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('patient_qr_ids', function (Blueprint $table) {
+        Schema::create('patient_qrs', function (Blueprint $table) {
             $table->id();
             $table->string('uuid');
             $table->boolean('isDeactivated')->default(false);

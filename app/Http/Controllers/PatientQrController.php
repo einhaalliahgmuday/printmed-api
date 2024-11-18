@@ -2,21 +2,29 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PatientIdCard;
 use App\Models\Patient;
-use App\Models\PatientQrId;
+use App\Models\PatientQr;
 use Barryvdh\Snappy\Facades\SnappyImage;
 use Barryvdh\Snappy\Facades\SnappyPdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
-class PatientQrIdController extends Controller
+class PatientQrController extends Controller
 {
     public function store(Request $request, Patient $patient) {
         $request->validate(
-            ['send_to_email' => 'boolean']
+            ['send_email' => 'boolean']
         );
+
+        $patientQr = PatientQr::where('patient_id', $patient->id)->where('isDeactivated', 0)->latest()->first();
+
+        if ($patientQr) {
+            $patientQr->update(['isDeactivated' => 1]);
+        }
 
         if (!$patient->photo) {
             return response()->json([
@@ -31,12 +39,12 @@ class PatientQrIdController extends Controller
         $uuid = (string) Str::uuid();
         $loopCount = 0;
 
-        while (PatientQrId::whereBlind('uuid', 'uuid_index', $uuid)->exists() && $loopCount < 3)
+        while (PatientQr::whereBlind('uuid', 'uuid_index', $uuid)->exists() && $loopCount < 3)
         {
             $uuid = (string) Str::uuid();
         }
 
-        if (PatientQrId::whereBlind('uuid', 'uuid_index', $uuid)->exists())
+        if (PatientQr::whereBlind('uuid', 'uuid_index', $uuid)->exists())
         {
             return response()->json(['message' => 'There was a problem generating an ID. Please try again.'], 500);
         }
@@ -55,7 +63,9 @@ class PatientQrIdController extends Controller
         $qrBytes = base64_encode($qr);
         $expirationDate = now()->addMonths(10);
 
-        if ($request->filled('send_to_email') && $request->sent_to_email == true && $patient->email)
+        // dd($request->send_email == 1, $patient->email);
+
+        if ($request->filled('send_email') && $request->send_email == 1)
         {
             $idImage = SnappyImage::loadView('patient_id_card', ['patient' => $patient, 'photo' => $photoBytes, 'qr' => $qrBytes, 'expirationDate' => $expirationDate->format('F j, Y'), 'isImage' => true])
                         ->setOption('quality', 100)
@@ -63,7 +73,7 @@ class PatientQrIdController extends Controller
                         ->setOption('format', 'jpeg')
                         ->setOption('enable-local-file-access', true);
 
-            event();
+            Mail::to("einha@gmail.com")->send(new PatientIdCard($idImage->output(), $patient->first_name));
         }
 
         $idPdf = SnappyPdf::loadView('patient_id_card', ['patient' => $patient, 'photo' => $photoBytes,  'qr' => $qrBytes, 'expirationDate' => $expirationDate->format('F j, Y'), 'isImage' => false])
@@ -71,7 +81,7 @@ class PatientQrIdController extends Controller
                         ->setOption('zoom', 1.3)
                         ->setOption('enable-local-file-access', true);
 
-        PatientQrId::create([
+        PatientQr::create([
             'uuid' => $uuid,
             'patient_id' => $patient->id
         ]);
@@ -80,6 +90,12 @@ class PatientQrIdController extends Controller
     }
 
     public function deactivate(Patient $patient) {
+        $patientQr = PatientQr::where('patient_id', $patient->id)->where('isDeactivated', 0)->latest()->first();
 
+        if ($patientQr) {
+            $patientQr->update(['isDeactivated' => 1]);
+        }
+
+        return response()->json(['message' => 'Patient identification card successfully deactivated.']);
     }
 }
