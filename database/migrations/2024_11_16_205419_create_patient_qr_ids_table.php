@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('patient_qr_ids', function (Blueprint $table) {
             $table->id();
             $table->string('uuid');
+            $table->boolean('isDeactivated')->default(false);
             $table->foreignId('patient_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });

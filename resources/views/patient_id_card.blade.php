@@ -103,7 +103,7 @@
 
 		.valid-until-text {
 			text-align: center;
-			font-size: 8px;
+			font-size: 7px;
 			margin-top: 5px;
 			font-weight: bold;
 			font-style: italic;
@@ -116,6 +116,10 @@
 		.information {
 			font-weight: bold;
 			text-transform: uppercase;
+		}
+
+		.information.name, .information.address {
+			font-size: {{ strlen($patient->full_name) > 50 ? '8px' : '10px' }}
 		}
 
 		.mb-2 {
@@ -161,9 +165,11 @@
     </style>
 </head>
 <body>
-	{{-- <table>
+	@if ($isImage)
+	<table>
 		<tr>
-			<td> --}}
+			<td>
+	@endif
 				<div class="id-card-container">
 					<img class="bg" src="{{ public_path('images/patient_id_card_bg.png') }}" alt="">
 					
@@ -180,9 +186,9 @@
 									<td>
 										<div>
 											<div class="id-photo-container">
-												<img class="id-photo" src="{{ storage_path('app/private/images/patients/REQLTcBlb62TxW8AjVJRL1mOaYey8KhlJdAYAAcO.png') }}" alt="">
+												<img class="id-photo" src="{{ 'data:image/png;base64,' . $photo }}" alt="">
 											</div>
-											<p class="valid-until-text">Valid Until: August 9, 2021</p>
+											<p class="valid-until-text">Valid Until: {{$expirationDate}}</p>
 										</div>
 									</td>
 									<td>
@@ -193,11 +199,11 @@
 											</div>
 											<div class="mb-2">
 												<p class="information-title">Name</p>
-												<p class="information">{{"$patient->full_name"}}</p>
+												<p class="information name">{{"$patient->full_name"}}</p>
 											</div>
 											<div>
 												<p class="information-title">Address</p>
-												<p class="information fs-8">Qx3Tq5nH7b8LrA2FpV9yZzJwK1G</p>
+												<p class="information address">{{"$patient->address"}}</p>
 											</div>
 										</div>
 									</td>
@@ -205,7 +211,7 @@
 										<div>
 											<div class="mb-2">
 												<p class="information-title">Birthdate</p>
-												<p class="information">{{"$patient->birthdate"}}</p>
+												<p class="information">{{\Carbon\Carbon::parse($patient->birthdate)->format('F j, Y')}}</p>
 											</div>
 											<div class="mb-2">
 												<p class="information-title">Sex</p>
@@ -245,8 +251,10 @@
 						</div>
 					</div>
 				</div>
-			{{-- </td>
+	@if ($isImage)
+			</td>
 		</tr>
-	</table> --}}
+	</table>
+	@endif
 </body>
 </html>
