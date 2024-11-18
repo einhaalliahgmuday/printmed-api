@@ -9,7 +9,7 @@ use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PatientPhysicianController;
-use App\Http\Controllers\PatientQrIdController;
+use App\Http\Controllers\PatientQrController;
 use App\Http\Controllers\UserController;
 use App\Models\Patient;
 use Barryvdh\Snappy\Facades\SnappyPdf;
@@ -18,43 +18,9 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
-Route::get('/', function(Request $request) {
-    // $path = storage_path('app/private/images/patients/REQLTcBlb62TxW8AjVJRL1mOaYey8KhlJdAYAAcO.png');
+Route::post('/{patient}', [PatientQrController::class, 'store']);
 
-    // return $path;
-
-    // $file = Storage::get($path);
-    // $mimeType = Storage::mimeType($path);
-
-    // return $path;
-    $uuid = (string) Str::uuid();
-
-    $qr = QrCode::size(300)
-                    ->style('round') //square, dot, round
-                    ->eye('circle') // square, circle
-                    ->format('png')
-                    ->merge('/public/images/carmona_hospital_logo_3.png')
-                    ->gradient(19, 147, 79, 159, 16, 8, 'vertical')
-                    ->generate($uuid);
-
-    $qrBytes = base64_encode($qr);
-
-    $patient = Patient::find(1);
-
-
-    $pdf = SnappyImage::loadView('patient_id_card', ['patient' => $patient, 'qr' => $qrBytes])
-                    // ->setPaper('Letter', 'portrait')
-                    // ->setOption('zoom', 1.3)
-                    ->setOption('quality', 100)
-                    // ->setOption('dpi', 300)
-                    ->setOption('zoom', 5)
-                    ->setOption('format', 'jpeg')
-                    // ->setOption('width', 200)
-                    // ->setOption('height', 208)
-                    ->setOption('enable-local-file-access', true);
-
-    return response($pdf->output())->header('Content-Type', 'image/jpeg');
-});
+Route::post('/update-patient-photo/{patient}', [PatientController::class, 'updatePhoto']);
 
 // patient registration
 Route::apiResource('registration', RegistrationController::class)->except(['update', 'destroy']);
@@ -105,7 +71,6 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::apiResource('patients', PatientController::class)->except(['destroy'])->middleware(['role:secretary,physician']);
     Route::post('/get-patient/{uuid}', [PatientController::class, 'getUsingUuid'])->middleware(['role:secretary,physician']);
     Route::get('/get-patient-photo/{patient}', [PatientController::class, 'getPhoto'])->middleware(['role:secretary,physician']);
-    Route::get('/update-patient-photo/{patient}', [PatientController::class, 'updatePhoto'])->middleware(['role:secretary,physician']);
     Route::get('/duplicate-patients', [PatientController::class, 'getDuplicates'])->middleware(['role:secretary,physician']);
     Route::get('/patients-count', [PatientController::class, 'getCount'])->middleware(['role:admin']);
 

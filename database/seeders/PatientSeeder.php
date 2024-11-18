@@ -21,6 +21,7 @@ class PatientSeeder extends Seeder
                 'civil_status' => 'Single',
                 'religion' => 'Christianity',
                 'phone_number' => '123-456-7890',
+                'email' => 'einhaalliah@gmail.com'
             ],
             [
                 'patient_number' => 'PN000002',

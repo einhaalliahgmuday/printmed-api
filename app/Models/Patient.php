@@ -75,7 +75,10 @@ class Patient extends Model implements CipherSweetEncrypted
         'age',
         'last_visit',
         'follow_up_date',
-        'latest_prescription'
+        // 'latest_prescription',
+        // 'qr_status',
+        // 'physicians'
+        
     ];
 
     // generates unique patient number
@@ -104,19 +107,19 @@ class Patient extends Model implements CipherSweetEncrypted
         $address = "";
 
         if ($this->house_number) {
-            $address .= "{$this->house_number} ";
+            $address .= "{$this->house_number}, ";
         }
         if ($this->street) {
-            $address .= "{$this->street} ";
+            $address .= "{$this->street}, ";
         }
         if ($this->barangay) {
-            $address .= "{$this->barangay} ";
+            $address .= "{$this->barangay}, ";
         }
         if ($this->city) {
-            $address .= "{$this->city} ";
+            $address .= "{$this->city}, ";
         }
         if ($this->province) {
-            $address .= "{$this->province} ";
+            $address .= "{$this->province}, ";
         }
         if ($this->postal_code) {
             $address .= $this->postal_code;
@@ -156,6 +159,27 @@ class Patient extends Model implements CipherSweetEncrypted
         return null;
     }
 
+    public function getQrStatus()
+    {
+        $latestQr = PatientQr::where('patient_id', $this->id)->latest()->first();
+        $qrCount = PatientQr::where('patient_id', $this->id)->count();
+
+        if ($latestQr)
+        {
+            $qrStatus['is_qr_active'] = $latestQr->isDeactivated;
+            $qrStatus['qrs_count'] = $qrCount;
+
+            return $qrStatus;
+        }
+
+        return null;
+    }
+
+    public function getPhysiciansAttribute()
+    {
+        return $this->physicians()->get();
+    }
+
     public function consultationRecords()
     {
         return $this->hasMany(Consultation::class, 'patient_id')
@@ -172,10 +196,4 @@ class Patient extends Model implements CipherSweetEncrypted
         return $this->belongsToMany(User::class, 'patient_physicians', 'patient_id', 'physician_id')
                     ->select('users.id', 'role', 'personnel_number', 'users.full_name', 'users.sex', 'department_id', 'license_number');
     }
-
-    // public function qr()
-    // {
-    //     return $this->hasOne(Consultation::class, 'patient_id')
-    //                 ->select('id', 'chief_complaint', 'primary_diagnosis', 'created_at', 'updated_at');
-    // }
 }

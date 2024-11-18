@@ -222,15 +222,10 @@ class PatientController extends Controller
         $path = $request->file('image')->store('images/patients', ['local', 'private']);
         $patient->update(['photo' => $path]);
 
-        $file = Storage::get($path);
-        $mimeType = Storage::mimeType($path);
+        // $file = Storage::get($path);
+        // $mimeType = Storage::mimeType($path);
 
-        // pusher event
-        // event(new PatientUpdated($patient));
-
-        return response()->file($file, [
-            'Content-Type' => $mimeType
-        ]);
+        return response()->json([], 200);
     }
 
     public function destroy(Patient $patient)
