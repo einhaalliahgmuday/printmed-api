@@ -10,17 +10,7 @@ class Department extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
-        'is_active'
-    ];
-
-    protected $hidden = [
-        'created_at',
-        'updated_at'
-    ];
-
-    protected $appends = [
-        'users_count'
+        'name'
     ];
 
     public function getUsersCountAttribute() 

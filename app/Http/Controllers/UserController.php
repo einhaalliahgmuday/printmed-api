@@ -2,17 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\AccountActionEnum;
 use App\AuditAction;
-use App\Events\AccountAction;
 use App\Events\ModelAction;
-use App\Events\UpdateUser;
 use App\Mail\VerifyEmailOtp;
 use App\Models\Otp;
 use App\Models\User;
-use App\Notifications\OtpVerificationNotification;
 use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -21,17 +18,16 @@ class UserController extends Controller
 {
     use CommonMethodsTrait;
 
-    // implemented custom audit event in: update information of user, lock toggle of account,
-    // and unrestricting account from 3 failed login attempts
-    // - which are all executed by the Admin
-
     public function index(Request $request)
     {
         $request->validate([
-            'search' => 'string',
-            'role' => 'string|in:admin,physician,secretary,queue manager',
+            'page' => 'integer',
+            'search' => 'string',   // personnel number, full name
+            'role' => 'string|in:admin,physician,secretary',
             'department_id' => 'integer|exists:departments,id',
-            'status' => 'string|in:new,active,locked,restricted'
+            'status' => 'string|in:new,active,locked,restricted',
+            'sort_by' => 'string|in:personnel_number,last_name',
+            'sort_direction' => 'string|in:asc,desc'
         ]);
 
         $query = User::query();
@@ -60,10 +56,10 @@ class UserController extends Controller
         {
             switch($request->staus) {
                 case 'new':
-                    $query->whereColumn('created_at','updated_at');
+                    $query->where('email_verified_at', null);
                     break;
                 case 'active':
-                    $query->whereColumn('created_at','!=', 'updated_at');
+                    $query->where('email_verified_at', '!=', null)->where('is_locked', 0, )->where('failed_login_attempts', '<=', 2);
                     break;
                 case 'locked':
                     $query->where('is_locked', 1);
@@ -75,63 +71,36 @@ class UserController extends Controller
         }
 
         $query->orderBy('updated_at', 'desc');
-        
-        $users = $query->paginate(20);
-        $users->appends($request->all());
+        $users = $query->get();
 
-        return $users;
+        if (count($users) > 0)
+        {
+            if($request->filled('sort_by')) 
+            {
+                $isDesc = $request->input('sort_direction') === 'desc';
+
+                $users = $users->sortBy($request->sort_by, SORT_REGULAR, $isDesc)->values();
+            }
+
+            $page = $request->input('page',1);
+            $data = array_slice($users->toArray(), ($page - 1) * 15, 15);
+            $paginator = new LengthAwarePaginator(
+                $data, 
+                count($users), 
+                15, 
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+            $paginator->appends($request->query());
+
+            return $paginator;
+        }
+
+        return response()->json(['users' => null]);
     }
 
     public function show(User $user) {
         return $user;
-    }
-
-    public function getPhysicians(Request $request) 
-    {
-        $request->validate([
-            'department_id' => 'integer|exists:departments,id'
-        ]);
-
-        // gets physicians whose accounts are not locked
-        $query = User::query()->whereBlind('role','role_index', 'physician')->where('is_locked', false);
-
-        if ($request->filled('department_id'))
-        {
-            $query->where('department_id', $request->department_id);
-        }
-
-        $physicians = $query->select('id', 'role', 'personnel_number', 'full_name', 'sex', 'department_id', 'license_number')->get();
-
-        return $physicians;
-    }
-
-    public function getUsersCount(Request $request)
-    {
-        $request->validate([
-            'department_id' => 'integer|exists:departments,id'
-        ]);
-
-        //gets users count who are not locked
-        $adminsCount = User::whereBlind('role', 'role_index', 'admin')->where('is_locked', false)->count();
-        $physiciansCount = User::whereBlind('role', 'role_index', 'physician')->where('is_locked', false);
-        $secretariesCount = User::whereBlind('role', 'role_index', 'secretary')->where('is_locked', false);
-        $queueManagersCount = User::whereBlind('role', 'role_index', 'queue manager')->where('is_locked', false)->count();
-
-        if ($request->filled('department_id'))
-        {
-            $physiciansCount->where('department_id', $request->department_id);
-            $secretariesCount->where('department_id', $request->department_id);
-        }
-
-        $physiciansCount = $physiciansCount->count();
-        $secretariesCount = $secretariesCount->count();
-        
-        return response()->json([
-            'admins' => $adminsCount,
-            'physicians' => $physiciansCount,
-            'secretaries' => $secretariesCount,
-            'queue_managers' => $queueManagersCount
-        ]);
     }
 
     public function updateEmail(Request $request) 
@@ -140,12 +109,12 @@ class UserController extends Controller
             'new_email' => 'required|email|max:100',
         ]);
 
+        $user = $request->user();
+
         if ($this->isUserEmailExists($request->new_email)) 
         {
-            return response()->json(['message' => 'The email provided already exists.'], 422);
+            return response()->json(['message' => 'The email is already taken.'], 422);
         }
-
-        $user = $request->user();
 
         //sends otp to user's email as another authentication
         $token = Str::random(60);
@@ -183,7 +152,7 @@ class UserController extends Controller
         {
             return response()->json([
                 'message' => 'Invalid request'
-            ], 404);
+            ], 400);
         }
         
         $user->update(['email' => $request->email, 'email_verified_at' => now()]);
@@ -196,30 +165,29 @@ class UserController extends Controller
         $fields = $request->validate([
             'personnel_number' => 'string|size:8',
             'first_name' => 'string|max:100',
-            'middle_name' => 'string|max:100',
+            'middle_name' => 'nullable|string|max:100',
             'last_name' => 'string|max:100',
-            'suffix' => 'string|max:10',
+            'suffix' => 'nullable|string|max:10',
             'sex' => 'string|max:6',
             'birthdate' => 'date|date_format:Y-m-d',
             'department_id' => 'integer|exists:departments,id',
-            'email' => 'email|max:100',
+            'email' => 'nullable|email|max:100',
         ]);
 
         if ($request->email !== $userToUpdate->email && $this->isUserEmailExists($request->email)) 
         {
-            return response()->json(['message' => 'The email provided already exists.'], 422);
+            return response()->json(['message' => 'The email is already taken.'], 422);
         }
 
         if ($request->personnel_number !== $userToUpdate->personnel_number && $this->isUserPersonnelNumberExists($request->personnel_number)) 
         {
-            return response()->json(['message' => 'The personnel number provided already exists.'], 422);
+            return response()->json(['message' => 'The personnel number is already taken.'], 422);
         }
 
         $originalData = $userToUpdate->toArray();
 
         if (!in_array($userToUpdate->role, ['physician', 'secretary']))
         {
-            $fields['license'] = null;
             $fields["department_id"] = null;
         }
 
@@ -266,21 +234,31 @@ class UserController extends Controller
         return $userToUpdate;
     }
 
-    public function isEmailExists(Request $request)
+    // for secretary assigning physicians
+    public function getPhysicians(Request $request) 
     {
-        $request->validate([
-            'email' => 'email|max:100'
-        ]);
+        $user = $request->user();
 
-        return $this->isUserEmailExists($request->email);
+        // gets physicians from the same department as secretary and whose accounts are not locked
+        $query = User::query()->whereBlind('role', 'role_index', 'physician')->where('department_id', $user->department_id)->where('is_locked', false);
+
+        $physicians = $query->select('id', 'role', 'personnel_number', 'full_name', 'sex', 'department_id')->get();
+
+        return $physicians;
     }
 
-    public function isPersonnelNumberExists(Request $request)
+    // for admin
+    public function getUsersCount(Request $request)
     {
-        $request->validate([
-            'personnel_number' => 'string|max:8'
-        ]);
+        //only gets count users who are not locked
+        $admins = User::whereBlind('role', 'role_index', 'admin')->where('is_locked', false)->count();
+        $physicians = User::whereBlind('role', 'role_index', 'physician')->where('is_locked', false)->count();
+        $secretaries = User::whereBlind('role', 'role_index', 'secretary')->where('is_locked', false)->count();
         
-        return $this->isUserPersonnelNumberExists($request->personnel_number);
+        return response()->json([
+            'admins' => $admins,
+            'physicians' => $physicians,
+            'secretaries' => $secretaries
+        ]);
     }
 }

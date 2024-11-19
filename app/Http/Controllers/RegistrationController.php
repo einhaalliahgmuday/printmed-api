@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\RegistrationNew;
 use App\Models\Registration;
 use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class RegistrationController extends Controller
 {
@@ -13,10 +13,7 @@ class RegistrationController extends Controller
 
     public function index(Request $request) {
         $request->validate([
-            'search' => 'string',
-            'sex' => 'string',
-            'sort_by' => 'string|in:last_name,follow_up_date',
-            'sort_direction' => 'string|in:asc,desc'
+            'search' => 'string',   // registration id, full name
         ]);
 
         $query = Registration::query()->where('created_at', '>', now()->startOfDay());
@@ -27,43 +24,14 @@ class RegistrationController extends Controller
 
             $query->where(function($q) use ($search) {
                 $q->WhereBlind('full_name', 'full_name_index', $search)
-                ->orWhereBlind('first_name', 'first_name_index', $search)
-                ->orWhereBlind('last_name', 'last_name_index', $search);
+                ->orWhereBlind('registration_id', 'registration_id_index', $search);
             });
         }
 
-        if($request->filled('sex'))
-        {
-            $query->whereBlind('sex', 'sex_index', $request->sex);
-        }
-
         $query->orderBy('updated_at', 'desc');
-        $registrations = $query->get();
+        $registrations = $query->select('id', 'registration_id', 'first_name', 'last_name', 'birthdate', 'sex')->paginate();
 
-        if (count($registrations) > 0)
-        {
-            if($request->filled('sort_by') && in_array($request->sort_by, ['last_name', 'follow_up_date'])) 
-            {
-                $isDesc = $request->input('sort_direction') == 'desc';
-
-                $registrations = $registrations->sortBy($request->sort_by, SORT_REGULAR, $isDesc)->values();
-            } 
-
-            $page = $request->input('page',1);
-            $data = array_slice($registrations->toArray(), ($page - 1) * 15, 15);
-            $paginator = new LengthAwarePaginator(
-                $data, 
-                count($registrations), 
-                15, 
-                $page,
-                ['path' => $request->url(), 'query' => $request->query()]
-            );
-            $paginator->appends($request->query());
-
-            return $paginator;
-        }
-
-        return response()->json(['registrations' => null]);
+        return $registrations;
     }
 
     public function store(Request $request) {
@@ -72,18 +40,29 @@ class RegistrationController extends Controller
             'middle_name' => 'string|max:100',
             'last_name'=> 'required|string|max:100',
             'suffix' => 'string|max:20',
-            'birthdate' => 'date|date_format:Y-m-d',
-            'birthplace' => 'string',
-            'sex' => 'string|max:6|nullable',
-            'address' => 'string|max:255',
-            'civil_status' => 'string|max:20',
+            'birthdate' => 'required|date|date_format:Y-m-d',
+            'birthplace' => 'required|string',
+            'sex' => 'required|string|max:6|nullable',
+            'house_number' => 'string|max:20',
+            'street' => 'string|max:20',
+            'barangay' => 'required|string|max:20',
+            'city' => 'required|string|max:20',
+            'province' => 'required|string|max:20',
+            'postal_code' => 'int|max:4',
+            'civil_status' => 'required|string|max:20',
             'religion' => 'string|max:100',
             'phone_number' => 'string|max:12',
             'email' => 'email|max:100',
         ]);
         $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
 
+        $latestRegistration = Registration::select('id')->latest()->first();
+        $fields['registration_id'] = (string)random_int(100000, 999999) . str_pad($latestRegistration->id, 4, '0', STR_PAD_LEFT);
+
         $registration = Registration::create($fields);
+
+        // pusher event
+        event(new RegistrationNew($registration));
 
         return $registration;
     }

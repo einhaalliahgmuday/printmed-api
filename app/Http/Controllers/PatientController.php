@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\AuditAction;
 use App\Events\ModelAction;
+use App\Events\PatientNew;
+use App\Events\PatientUpdated;
 use App\Models\Patient;
 use App\Models\Payment;
 use App\Models\Registration;
@@ -53,7 +55,7 @@ class PatientController extends Controller
 
         if (count($patients) > 0)
         {
-            if($request->filled('sort_by') && in_array($request->sort_by, ['last_name', 'patient_number', 'follow_up_date'])) 
+            if($request->filled('sort_by')) 
             {
                 $isDesc = $request->input('sort_direction') == 'desc';
 
@@ -76,6 +78,16 @@ class PatientController extends Controller
 
         return response()->json(['patients' => null]);
     }
+
+    // public function index(Request $request) {
+    //     $request->validate([
+    //         'qr_code' => 'string|max:100'
+    //     ]);
+
+    //     $patientQr = PatientQr::whereBlind('uuid', 'uuid_index', $request->qr_code)->where('created_at', '<', now())->latest()->first();
+
+    //     return $patientQr->patient;
+    // }
 
     public function store(Request $request)
     {
@@ -132,6 +144,9 @@ class PatientController extends Controller
         {
             $patient->physicians()->syncWithoutDetaching([$user->id]);
         }
+
+        // pusher event
+        event(new PatientNew($patient));
 
         return $patient;
     }
@@ -199,6 +214,9 @@ class PatientController extends Controller
         // implements audit of update
         event(new ModelAction(AuditAction::UPDATE, $request->user(), $patient, $originalData, $request));
 
+        // pusher event
+        event(new PatientUpdated($patient));
+
         return $patient;
     }
 
@@ -214,9 +232,10 @@ class PatientController extends Controller
         $path = $request->file('image')->store('images/patients', ['local', 'private']);
         $patient->update(['photo' => $path]);
 
-        $mimeType = Storage::mimeType($path);
-    
-        return $path;
+        // $file = Storage::get($path);
+        // $mimeType = Storage::mimeType($path);
+
+        return response()->json([], 200);
     }
 
     public function destroy(Patient $patient)
