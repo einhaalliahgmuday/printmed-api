@@ -185,7 +185,7 @@ class UserController extends Controller
             'sex' => 'string|max:6',
             'birthdate' => 'date|date_format:Y-m-d',
             'department_id' => 'integer|exists:departments,id',
-            'email' => 'nullable|email|max:100',
+            'email' => 'email|max:100',
         ]);
 
         if ($request->email !== $userToUpdate->email && $this->isUserEmailExists($request->email)) 

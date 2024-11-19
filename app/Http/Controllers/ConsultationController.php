@@ -51,34 +51,32 @@ class ConsultationController extends Controller
     {
         $fields = $request->validate([
             'patient_id' => 'required|integer|exists:patients,id',
-            'height' => 'numeric|decimal:0,2',
-            'height_unit' => 'string|in:cm,m|required_with:height',
-            'weight' => 'numeric|decimal:0,2',
-            'weight_unit' => 'string|in:kg,lb|required_with:weight',
-            'temperature' => 'numeric|decimal:0,2',
-            'temperature_unit' => 'string|in:K,C|required_with:temperature',
-            'blood_pressure' => 'string|max:7',
+            'height' => 'required|numeric|decimal:0,2',
+            'height_unit' => 'required|string|in:cm,m|required_with:height',
+            'weight' => 'required|numeric|decimal:0,2',
+            'weight_unit' => 'required|string|in:kg,lb|required_with:weight',
+            'temperature' => 'required|numeric|decimal:0,2',
+            'temperature_unit' => 'required|string|in:K,C|required_with:temperature',
+            'blood_pressure' => 'required|string|max:7',
             'chief_complaint' => 'required|string',
-            'history_of_present_illness' => 'string',
-            'family_hx' => 'string',
-            'medical_hx' => 'string',
-            'pediatrics_h' => 'string',
-            'pediatrics_e' => 'string',
-            'pediatrics_a' => 'string',
-            'pediatrics_d' => 'string',
-            'primary_diagnosis' => 'string',
+            'present_illness_hx' => 'nullable|string',
+            'family_hx' => 'nullable|string',
+            'medical_hx' => 'nullable|string',
+            'pediatrics_h' => 'nullable|string',
+            'pediatrics_e' => 'nullable|string',
+            'pediatrics_a' => 'nullable|string',
+            'pediatrics_d' => 'nullable|string',
+            'primary_diagnosis' => 'required|string',
             'diagnosis' => 'required|string',
-            'follow_up_date' => 'date|date_format:Y-m-d'
+            'follow_up_date' => 'nullable|date|date_format:Y-m-d'
         ]);
 
         $request->validate([
-            'prescriptions' => 'array',
+            'prescriptions' => 'required|array',
             'prescriptions.*.name' => 'required_with:prescriptions|string|max:100',
             'prescriptions.*.dosage' => 'required_with:prescriptions|string|max:255',
             'prescriptions.*.instruction' => 'required_with:prescriptions|string|max:255',
         ]);
-
-        $prescriptions = $request->prescriptions;
 
         Gate::authorize('create', [$request]);
 
@@ -89,17 +87,14 @@ class ConsultationController extends Controller
 
         $consultation = Consultation::create($fields);
 
-        if ($prescriptions && count($prescriptions) > 0) 
+        foreach($request->prescriptions as $prescription) 
         {
-            foreach($prescriptions as $prescription) 
-            {
-                Prescription::create([
-                    'name' => $prescription['name'],
-                    'dosage' => $prescription['dosage'],
-                    'instruction' => $prescription['instruction'],
-                    'consultation_id' => $consultation->id
-                ]);
-            }
+            Prescription::create([
+                'name' => $prescription['name'],
+                'dosage' => $prescription['dosage'],
+                'instruction' => $prescription['instruction'],
+                'consultation_id' => $consultation->id
+            ]);
         }
 
         // audit creation of consultation and prescription
@@ -118,61 +113,60 @@ class ConsultationController extends Controller
         return $consultation;
     }
 
-    public function update(Request $request, Consultation $consultation)
-    {
-        Gate::authorize('update', $consultation);
+    // public function update(Request $request, Consultation $consultation)
+    // {
+    //     Gate::authorize('update', $consultation);
 
-        $fields = $request->validate([
-            'height' => 'nullable|numeric|decimal:0,2',
-            'height_unit' => 'nullable|string|in:cm,m|required_with:height',
-            'weight' => 'nullable|numeric|decimal:0,2',
-            'weight_unit' => 'nullable|string|in:kg,lb|required_with:weight',
-            'temperature' => 'nullable|numeric|decimal:0,2',
-            'temperature_unit' => 'nullable|string|in:K,C|required_with:temperature',
-            'blood_pressure' => 'nullable|string|max:7',
-            'chief_complaint' => 'required|string',
-            'history_of_present_illness' => 'nullable|string',
-            'family_hx' => 'nullable|string',
-            'medical_hx' => 'nullable|string',
-            'pediatrics_h' => 'nullable|string',
-            'pediatrics_e' => 'nullable|string',
-            'pediatrics_a' => 'nullable|string',
-            'pediatrics_d' => 'nullable|string',
-            'primary_diagnosis' => 'string',
-            'diagnosis' => 'required|string',
-            'follow_up_date' => 'nullable|date|date_format:Y-m-d'
-        ]);
+    //     $fields = $request->validate([
+    //         'height' => 'required|numeric|decimal:0,2',
+    //         'height_unit' => 'required|string|in:cm,m|required_with:height',
+    //         'weight' => 'required|numeric|decimal:0,2',
+    //         'weight_unit' => 'required|string|in:kg,lb|required_with:weight',
+    //         'temperature' => 'required|numeric|decimal:0,2',
+    //         'temperature_unit' => 'required|string|in:K,C|required_with:temperature',
+    //         'blood_pressure' => 'required|string|max:7',
+    //         'chief_complaint' => 'required|string',
+    //         'present_illness_hx' => 'nullable|string',
+    //         'family_hx' => 'nullable|string',
+    //         'medical_hx' => 'nullable|string',
+    //         'pediatrics_h' => 'nullable|string',
+    //         'pediatrics_e' => 'nullable|string',
+    //         'pediatrics_a' => 'nullable|string',
+    //         'pediatrics_d' => 'nullable|string',
+    //         'primary_diagnosis' => 'required|string',
+    //         'diagnosis' => 'required|string'
+    //     ]);
 
-        $request->validate([
-            'prescriptions' => 'nullable|array',
-            'prescriptions.*.name' => 'required_with:prescriptions|string|max:100',
-            'prescriptions.*.dosage' => 'required_with:prescriptions|string|max:255',
-            'prescriptions.*.instruction' => 'required_with:prescriptions|string|max:255',
-        ]);
+    //     $request->validate([
+    //         'prescriptions' => 'nullable|array',
+    //         'prescriptions.*.name' => 'required_with:prescriptions|string|max:100',
+    //         'prescriptions.*.dosage' => 'required_with:prescriptions|string|max:255',
+    //         'prescriptions.*.instruction' => 'required_with:prescriptions|string|max:255',
+    //     ]);
 
-        $originalData = $consultation->toArray();
+    //     $originalData = $consultation->toArray();
 
-        $consultation->update($fields);
+    //     $consultation->update($fields);
 
-        $prescriptions = $request->prescriptions;
-        if ($prescriptions && count($prescriptions) > 0) 
-        {
-            Prescription::where('consultation_id', $consultation->id)->delete();
-            foreach($prescriptions as $prescription) 
-            {
-                Prescription::create([
-                    'name' => $prescription['name'],
-                    'dosage' => $prescription['dosage'],
-                    'instruction' => $prescription['instruction'],
-                    'consultation_id' => $consultation->id
-                ]);
-            }
-        }
+    //     $prescriptions = $request->prescriptions;
+    //     if ($prescriptions && count($prescriptions) > 0) 
+    //     {
+    //         Prescription::where('consultation_id', $consultation->id)->delete();
+    //         foreach($prescriptions as $prescription) 
+    //         {
+    //             Prescription::create([
+    //                 'name' => $prescription['name'],
+    //                 'dosage' => $prescription['dosage'],
+    //                 'instruction' => $prescription['instruction'],
+    //                 'consultation_id' => $consultation->id
+    //             ]);
+    //         }
+    //     }
 
-        event(new ModelAction(AuditAction::UPDATE, $request->user(), $consultation, $originalData, $request));
+    //     event(new ModelAction(AuditAction::UPDATE, $request->user(), $consultation, $originalData, $request));
 
-        return $consultation;
-    }
+    //     return $consultation;
+    // }
 
     public function destroy(Consultation $consultation)
     {

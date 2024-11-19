@@ -73,7 +73,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::apiResource('vital-signs', VitalSignsController::class)->only('update', 'destroy')->middleware('role:secretary');
 
     // CONSULTATIONS
-    Route::apiResource('consultations', ConsultationController::class)->only(['store', 'update', 'show'])->middleware(['role:physician']);
+    Route::apiResource('consultations', ConsultationController::class)->only(['store', 'show'])->middleware(['role:physician']);
     Route::get('/patients/{patient}/consultations', [ConsultationController::class, 'index'])->middleware(['role:physician']);
 
     // PATIENT QR IDs
