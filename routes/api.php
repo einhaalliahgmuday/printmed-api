@@ -61,11 +61,10 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::apiResource('registrations', RegistrationController::class)->only(['index', 'show'])->middleware(['role:secretary']);
 
     // PATIENTS
-    Route::apiResource('patients', PatientController::class)->except(['destroy', 'update'])->middleware(['role:secretary']);
-    Route::put('/patients/{patient}', [PatientController::class, 'update'])->middleware(['role:secretary,physician']);
+    Route::apiResource('patients', PatientController::class)->only(['store', 'index'])->middleware(['role:secretary']);
+    Route::apiResource('patients', PatientController::class)->only(['show', 'update'])->middleware(['role:secretary,physician']);
     Route::get('/patient-photo/{patient}', [PatientController::class, 'getPhoto'])->middleware(['role:secretary,physician']);
-    Route::put('/patient-photo/{patient}', [PatientController::class, 'updatePhoto'])->middleware(['role:secretary,physician']);
-    Route::get('/patient-using-qr', [PatientController::class, 'getUsingQr'])->middleware(['role:secretary,physician']);
+    Route::post('/patient-photo/{patient}', [PatientController::class, 'updatePhoto'])->middleware(['role:secretary,physician']);
     Route::get('/duplicate-patients', [PatientController::class, 'getDuplicates'])->middleware(['role:secretary']);
 
     // PATIENT VITAL SIGNS
@@ -79,6 +78,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
     // PATIENT QR IDs
     Route::post('/generate-patient-id-card', [PatientQrController::class, 'store'])->middleware(['role:secretary']);
     Route::post('/deactivate-patient-qr', [PatientQrController::class, 'deactivate'])->middleware(['role:secretary']);
+    Route::get('/patient-using-qr', [PatientQrController::class, 'getPatient'])->middleware(['role:secretary,physician']);
 
     // PATIENT-PHYSICIAN RELATIONSHIP
     Route::post('/patients/{patient}/assign-physician', [PatientPhysicianController::class, 'store'])->middleware(['role:secretary']);

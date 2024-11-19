@@ -24,7 +24,7 @@ class ConsultationController extends Controller
             'date_until' => 'date|date_format:Y-m-d|after_or_equal:date_from'
         ]);
 
-        Gate::authorize('get', [$request->user(), $patient]);
+        Gate::authorize('is-assigned-physician', [$patient->id]);
 
         $query = Consultation::query()
                             ->select('id', 'chief_complaint', 'primary_diagnosis', 'created_at')
@@ -78,7 +78,7 @@ class ConsultationController extends Controller
             'prescriptions.*.instruction' => 'required_with:prescriptions|string|max:255',
         ]);
 
-        Gate::authorize('create', [$request]);
+        Gate::authorize('is-assigned-physician', [$request->patient_id]);
 
         $user = $request->user();
 
@@ -105,7 +105,7 @@ class ConsultationController extends Controller
 
     public function show(Request $request, Consultation $consultation)
     {
-        Gate::authorize('view', $consultation);
+        Gate::authorize('is-assigned-physician', [$consultation->patient_id]);
 
         // implements audit of retrieval
         event(new ModelAction(AuditAction::RETRIEVE, $request->user(), $consultation, null, $request));
@@ -168,23 +168,23 @@ class ConsultationController extends Controller
     //     return $consultation;
     // }
 
-    public function destroy(Consultation $consultation)
-    {
-        $dateThreshold = now()->subYears(10);
+    // public function destroy(Consultation $consultation)
+    // {
+    //     $dateThreshold = now()->subYears(10);
 
-        //if patient or patient's last consultation date is not past 10 years, patient cannot be deleted
-        if ($consultation->updated_at >= $dateThreshold) 
-        {
-            return response()->json([
-                'message' => 'Consultation record cannot be deleted 10 years before.'
-            ], 403);
-        }
+    //     //if patient or patient's last consultation date is not past 10 years, patient cannot be deleted
+    //     if ($consultation->updated_at >= $dateThreshold) 
+    //     {
+    //         return response()->json([
+    //             'message' => 'Consultation record cannot be deleted 10 years before.'
+    //         ], 403);
+    //     }
 
-        $consultation->prescriptions()->delete();
-        $consultation->delete();
+    //     $consultation->prescriptions()->delete();
+    //     $consultation->delete();
 
-        return response()->json([
-            'message' => 'Consultation record successfully deleted.'
-        ]);
-    }
+    //     return response()->json([
+    //         'message' => 'Consultation record successfully deleted.'
+    //     ]);
+    // }
 }

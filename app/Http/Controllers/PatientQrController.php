@@ -80,4 +80,34 @@ class PatientQrController extends Controller
 
         return response()->json(['message' => 'Patient identification card successfully deactivated.']);
     }
+
+    public function getPatient(Request $request) {
+        $request->validate([
+            'qr_code' => 'string|max:100'
+        ]);
+
+        $patientQr = PatientQr::whereBlind('uuid', 'uuid_index', $request->qr_code)->latest()->first();
+
+        if($patientQr) {
+            if($patientQr->isDeactivated === 1) {
+                return response()->json(['message' => 'QR code is deactivated.'], 400);
+            }
+            if($patientQr->created_at > now()->subYear()) {
+                return response()->json(['message' => 'QR code is expired.'], 400);
+            }
+
+            $patient = $patientQr->patient;
+
+            $patient->append('qr_status');
+            $patient->append('latest_prescription');
+            $patient['vital_signs'] = $patient->vitalSigns()->get();
+            $patient['physicians'] = $patient->physicians()->get();
+
+            return $patient;
+        }
+
+        return response()->json([
+            'message' => 'QR code not found.'
+        ]);
+    }
 }

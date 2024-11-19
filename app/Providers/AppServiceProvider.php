@@ -16,6 +16,6 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Gate::policy(Consultation::class, ConsultationPolicy::class);
+        Gate::define('is-assigned-physician', [ConsultationPolicy::class, 'isAssignedPhysician']);
     }
 }
