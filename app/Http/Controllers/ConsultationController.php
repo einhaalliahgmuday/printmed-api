@@ -7,6 +7,7 @@ use App\Events\ModelAction;
 use App\Models\Consultation;
 use App\Models\Patient;
 use App\Models\Prescription;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -16,14 +17,33 @@ class ConsultationController extends Controller
     //only physicians of the patient can create a record
     //only the physician of a record can update the record
 
-    // cannot get records if not a patient of user
+    // cannot get records if not a patient of user?
     public function index(Request $request, Patient $patient) {
-        // Gate::authorize('view', [$request->user(), $patient]);
+        $request->validate([
+            'date_from' => 'date|date_format:Y-m-d',
+            'date_until' => 'date|date_format:Y-m-d|after_or_equal:date_from'
+        ]);
 
-        return Consultation::where('patient_id', $patient->id)
-                            ->orderBy('created_at')
-                            ->select('id', 'chief_complaint', 'primary_diagnosis')
-                            ->paginate(10);
+        Gate::authorize('get', [$request->user(), $patient]);
+
+        $query = Consultation::query()
+                            ->select('id', 'chief_complaint', 'primary_diagnosis', 'created_at')
+                            ->where('patient_id', $patient->id)
+                            ->where('department_id', $request->user()->department_id);
+
+        if ($request->filled('date_from'))
+        {
+            $dateFrom = Carbon::parse($request->date_until)->startOfDay();
+            $query->where('created_at', '>=', $dateFrom);
+        }
+
+        if ($request->filled('date_until'))
+        {
+            $dateUntil = Carbon::parse($request->date_until)->endOfDay();
+            $query->where('created_at', '<=', $dateUntil);
+        }
+
+        return $query->orderBy('created_at')->paginate(15);
     }
     
     // cannot add records if not a patient of user
@@ -60,7 +80,7 @@ class ConsultationController extends Controller
 
         $prescriptions = $request->prescriptions;
 
-        Gate::authorize('create', [Consultation::class, $request]);
+        Gate::authorize('create', [$request]);
 
         $user = $request->user();
 
@@ -105,26 +125,26 @@ class ConsultationController extends Controller
         $fields = $request->validate([
             'height' => 'nullable|numeric|decimal:0,2',
             'height_unit' => 'nullable|string|in:cm,m|required_with:height',
-            'weight' => 'numeric|decimal:0,2',
-            'weight_unit' => 'string|in:kg,lb|required_with:weight',
-            'temperature' => 'numeric|decimal:0,2',
-            'temperature_unit' => 'string|in:K,C|required_with:temperature',
-            'blood_pressure' => 'string|max:7',
+            'weight' => 'nullable|numeric|decimal:0,2',
+            'weight_unit' => 'nullable|string|in:kg,lb|required_with:weight',
+            'temperature' => 'nullable|numeric|decimal:0,2',
+            'temperature_unit' => 'nullable|string|in:K,C|required_with:temperature',
+            'blood_pressure' => 'nullable|string|max:7',
             'chief_complaint' => 'required|string',
-            'history_of_present_illness' => 'string',
-            'family_hx' => 'string',
-            'medical_hx' => 'string',
-            'pediatrics_h' => 'string',
-            'pediatrics_e' => 'string',
-            'pediatrics_a' => 'string',
-            'pediatrics_d' => 'string',
+            'history_of_present_illness' => 'nullable|string',
+            'family_hx' => 'nullable|string',
+            'medical_hx' => 'nullable|string',
+            'pediatrics_h' => 'nullable|string',
+            'pediatrics_e' => 'nullable|string',
+            'pediatrics_a' => 'nullable|string',
+            'pediatrics_d' => 'nullable|string',
             'primary_diagnosis' => 'string',
             'diagnosis' => 'required|string',
-            'follow_up_date' => 'date|date_format:Y-m-d'
+            'follow_up_date' => 'nullable|date|date_format:Y-m-d'
         ]);
 
         $request->validate([
-            'prescriptions' => 'array',
+            'prescriptions' => 'nullable|array',
             'prescriptions.*.name' => 'required_with:prescriptions|string|max:100',
             'prescriptions.*.dosage' => 'required_with:prescriptions|string|max:255',
             'prescriptions.*.instruction' => 'required_with:prescriptions|string|max:255',
@@ -166,6 +186,7 @@ class ConsultationController extends Controller
             ], 403);
         }
 
+        $consultation->prescriptions()->delete();
         $consultation->delete();
 
         return response()->json([

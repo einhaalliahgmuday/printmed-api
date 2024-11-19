@@ -15,15 +15,15 @@ class ConsultationPolicy
     {
         return $user->patients()->where('patients.id', $patient->id)->exists();
     }
+
+    public function create(Request $request): bool
+    {
+        return $request->user()->patients()->where('patients.id', $request->patient_id)->exists();
+    }
     
     public function view(User $user, Consultation $consultation): bool
     {
-        return $consultation->physician_id === $user->id;
-    }
-
-    public function create(User $user, Request $request): bool
-    {
-        return $user->patients()->where('patients.id', $request->patient_id)->exists();
+        return $consultation->department_id === $user->department_id;
     }
 
     public function update(User $user, Consultation $consultation): bool

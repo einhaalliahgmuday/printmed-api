@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\AuditAction;
-use App\Events\ModelAction;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Models\Audit;
@@ -62,19 +60,19 @@ class AuditController extends Controller
 
         if ($request->filled('resource'))
         {
-            $auditsQuery = $auditsQuery->whereBlind('auditable_type', 'auditable_type_index', $this->getRequestResourceClass($request->resource));
+            $auditsQuery->whereBlind('auditable_type', 'auditable_type_index', $this->getRequestResourceClass($request->resource));
         }
 
-        $dateFrom = Carbon::parse($request->date_until)->startOfDay();
         if ($request->filled('date_from'))
         {
-            $auditsQuery = $auditsQuery->where('created_at', '>=', $dateFrom);
+            $dateFrom = Carbon::parse($request->date_from)->startOfDay();
+            $auditsQuery->where('created_at', '>=', $dateFrom);
         }
 
-        $dateUntil = Carbon::parse($request->date_until)->endOfDay();
         if ($request->filled('date_until'))
         {
-            $auditsQuery = $auditsQuery->where('created_at', '<=', $dateUntil);
+            $dateUntil = Carbon::parse($request->date_until)->endOfDay();
+            $auditsQuery->where('created_at', '<=', $dateUntil);
         }
         $auditsQuery->orderBy('created_at', 'desc');
 
@@ -85,11 +83,11 @@ class AuditController extends Controller
             $auditsQueryClone = clone $auditsQuery;
             $totalQuery = $auditsQueryClone->count();
 
-            $auditsQuery = $auditsQuery->offset($offset)->limit($limit)->get();
+            $auditsQuery->offset($offset)->limit($limit)->get();
         }
         else 
         {
-            $auditsQuery = $auditsQuery->get();
+            $auditsQuery->get();
         }
 
         $audits = [];

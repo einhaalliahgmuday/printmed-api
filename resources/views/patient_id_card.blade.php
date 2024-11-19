@@ -118,8 +118,12 @@
 			text-transform: uppercase;
 		}
 
-		.information.name, .information.address {
+		.information.name {
 			font-size: {{ strlen($patient->full_name) > 50 ? '8px' : '10px' }}
+		}
+
+		.information.address {
+			font-size: {{ strlen($patient->address) > 50 ? '8px' : '10px' }}
 		}
 
 		.mb-2 {
@@ -165,7 +169,7 @@
     </style>
 </head>
 <body>
-	@if ($isImage)
+	@if (!$isImage)
 	<table>
 		<tr>
 			<td>
@@ -199,7 +203,7 @@
 											</div>
 											<div class="mb-2">
 												<p class="information-title">Name</p>
-												<p class="information name">{{"$patient->full_name"}}</p>
+												<p class="information name">{{"$patient->last_name, $patient->first_name"}}</p>
 											</div>
 											<div>
 												<p class="information-title">Address</p>

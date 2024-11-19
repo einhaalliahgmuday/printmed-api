@@ -33,17 +33,9 @@ class PatientQrController extends Controller
         }
 
         $uuid = (string) Str::uuid();
-        $loopCount = 0;
-
-        while (PatientQr::whereBlind('uuid', 'uuid_index', $uuid)->exists() && $loopCount < 3)
-        {
-            $uuid = (string) Str::uuid();
-        }
-
-        if (PatientQr::whereBlind('uuid', 'uuid_index', $uuid)->exists())
-        {
-            return response()->json(['message' => 'There was a problem generating an ID. Please try again.'], 500);
-        }
+        $latestPatientQr = PatientQr::select('id')->latest()->first();
+        $id = $latestPatientQr ? $latestPatientQr->id : 0;
+        $uuid .= "-" . str_pad($id, 6, '0', STR_PAD_LEFT);
 
         $photoPath = $patient->photo;
         $photo = Storage::get($photoPath);

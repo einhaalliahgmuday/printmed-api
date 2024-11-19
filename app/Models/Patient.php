@@ -74,11 +74,7 @@ class Patient extends Model implements CipherSweetEncrypted
         'address',
         'age',
         'last_visit',
-        'follow_up_date',
-        // 'latest_prescription',
-        // 'qr_status',
-        // 'physicians'
-        
+        'follow_up_date'
     ];
 
     // generates unique patient number
@@ -159,7 +155,7 @@ class Patient extends Model implements CipherSweetEncrypted
         return null;
     }
 
-    public function getQrStatus()
+    public function getQrStatusAttribute()
     {
         $latestQr = PatientQr::where('patient_id', $this->id)->latest()->first();
         $qrCount = PatientQr::where('patient_id', $this->id)->count();
@@ -175,20 +171,15 @@ class Patient extends Model implements CipherSweetEncrypted
         return null;
     }
 
-    public function getPhysiciansAttribute()
+    public function vitalSigns()
     {
-        return $this->physicians()->get();
+        return $this->hasMany(VitalSigns::class, 'patient_id');
     }
 
     public function consultationRecords()
     {
         return $this->hasMany(Consultation::class, 'patient_id')
                     ->select('id', 'chief_complaint', 'primary_diagnosis', 'created_at', 'updated_at');
-    }
-
-    public function vitalSigns()
-    {
-        return $this->hasMany(VitalSigns::class, 'patient_id');
     }
 
     public function physicians()
