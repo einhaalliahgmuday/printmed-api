@@ -83,7 +83,7 @@ class PatientController extends Controller
             'birthdate' => 'required|date|date_format:Y-m-d',
             'birthplace' => 'string',
             'sex' => 'required|string|max:6',
-            'house_number' => 'string|max:20',
+            'house_number' => 'string|max:30',
             'street' => 'string|max:20',
             'barangay' => 'required|string|max:20',
             'city' => 'required|string|max:20',
@@ -93,7 +93,7 @@ class PatientController extends Controller
             'religion' => 'nullable|string|max:100',
             'phone_number' => 'string|max:12',
             'email' => 'nullable|email|max:100',
-            'registration_id' => 'int|exist:registrations,id'
+            'registration_id' => 'int|exists:registrations,id'
         ]);
 
         $request->validate([

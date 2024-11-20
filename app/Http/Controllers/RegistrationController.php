@@ -29,7 +29,7 @@ class RegistrationController extends Controller
         }
 
         $query->orderBy('updated_at', 'desc');
-        $registrations = $query->select('id', 'registration_id', 'first_name', 'last_name', 'birthdate', 'sex')->paginate();
+        $registrations = $query->paginate();
 
         return $registrations;
     }
@@ -43,12 +43,12 @@ class RegistrationController extends Controller
             'birthdate' => 'required|date|date_format:Y-m-d',
             'birthplace' => 'required|string',
             'sex' => 'required|string|max:6',
-            'house_number' => 'nullable|string|max:20',
+            'house_number' => 'nullable|string|max:30',
             'street' => 'nullable|string|max:20',
             'barangay' => 'required|string|max:20',
             'city' => 'required|string|max:20',
             'province' => 'required|string|max:20',
-            'postal_code' => 'nullable|int|max:4',
+            'postal_code' => 'nullable|int|digits_between:1,4',
             'civil_status' => 'required|string|max:20',
             'religion' => 'nullable|string|max:100',
             'phone_number' => 'nullable|string|max:12',
