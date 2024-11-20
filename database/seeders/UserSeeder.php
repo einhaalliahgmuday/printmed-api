@@ -52,18 +52,6 @@ class UserSeeder extends Seeder
         ]);
 
         User::create([
-            'role' => 'queue manager',
-            'personnel_number' => 'PN000004',
-            'full_name' => 'Nico Ampoloquio',
-            'first_name' => 'Nico',
-            'last_name' => 'Ampoloquio',
-            'sex' => 'Male',
-            'birthdate' => '2003-01-08',
-            'email' => 'nicoampoloquio@gmail.com',
-            'password' => 'password',
-        ]);
-
-        User::create([
             'role' => 'physician',
             'personnel_number' => 'PN000005',
             'full_name' => 'Mekaila Mae Aguila',

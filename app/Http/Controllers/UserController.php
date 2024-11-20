@@ -18,6 +18,9 @@ class UserController extends Controller
 {
     use CommonMethodsTrait;
 
+
+    // ADMIN ACTIONS
+
     public function index(Request $request)
     {
         $request->validate([
@@ -99,9 +102,193 @@ class UserController extends Controller
         return response()->json(['users' => null]);
     }
 
+    public function store(Request $request) 
+    {
+        $fields = $request->validate([
+            'role' => 'required|string|in:admin,physician,secretary,queue manager',
+            'personnel_number' => 'required|string|size:8',
+            'first_name' => 'required|string|max:100',
+            'middle_name' => 'string|max:100',
+            'last_name' => 'required|string|max:100',
+            'suffix' => 'string|max:10',
+            'sex' => 'required|string|max:6',
+            'birthdate' => 'required|date|date_format:Y-m-d',
+            'department_id' => 'integer|exists:departments,id',
+            'email' => 'required|email|max:100',
+        ]);
+
+        if (in_array($request->role, ['physician', 'secretary'])) 
+        {
+            if (!$request->filled('department_id'))
+            {
+                return response()->json(['message' => 'The department field is required.'], 422);
+            }
+        }
+        else {
+            $fields["department_id"] = null;
+        }
+
+        if ($this->isUserPersonnelNumberExists($request->personnel_number)) 
+        {
+            return response()->json(['message' => 'The personnel number is already taken'], 422);
+        }
+
+        if ($this->isUserEmailExists($request->email)) 
+        {
+            return response()->json(['message' => 'The email is already taken.'], 422);
+        }
+
+        $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
+
+        $user = User::create($fields);
+
+        // implements audit of user creation
+        event(new ModelAction(AuditAction::CREATE, $request->user(), $user, null, $request));
+
+        $this->sendResetLink(true, $user);
+
+        return response()->json([
+            'user' => $user
+        ]);
+    }
+
+    public function isEmailExists(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|max:100'
+        ]);
+
+        return $this->isUserEmailExists($request->email);
+    }
+
+    public function isPersonnelNumberExists(Request $request)
+    {
+        $request->validate([
+            'personnel_number' => 'required|string|max:8'
+        ]);
+        
+        return $this->isUserPersonnelNumberExists($request->personnel_number);
+    }
+
     public function show(User $user) {
         return $user;
     }
+
+    public function updateInformation(Request $request, User $userToUpdate) 
+    {
+        $fields = $request->validate([
+            'personnel_number' => 'string|size:8',
+            'first_name' => 'string|max:100',
+            'middle_name' => 'nullable|string|max:100',
+            'last_name' => 'string|max:100',
+            'suffix' => 'nullable|string|max:10',
+            'sex' => 'string|max:6',
+            'birthdate' => 'date|date_format:Y-m-d',
+            'department_id' => 'integer|exists:departments,id',
+            'email' => 'email|max:100',
+        ]);
+
+        if ($request->email !== $userToUpdate->email && $this->isUserEmailExists($request->email)) 
+        {
+            return response()->json(['message' => 'The email is already taken.'], 422);
+        }
+
+        if ($request->personnel_number !== $userToUpdate->personnel_number && $this->isUserPersonnelNumberExists($request->personnel_number)) 
+        {
+            return response()->json(['message' => 'The personnel number is already taken.'], 422);
+        }
+
+        $originalData = $userToUpdate->toArray();
+
+        if (!in_array($userToUpdate->role, ['physician', 'secretary']))
+        {
+            $fields["department_id"] = null;
+        }
+
+        $userToUpdate->update($fields);
+
+        if ($request->filled('first_name') || $request->filled('last_name'))
+        {
+            $userToUpdate->update(['full_name' => $this->getFullName($userToUpdate->first_name, $userToUpdate->last_name)]);
+        }
+
+        // implements audit of update
+        event(new ModelAction(AuditAction::UPDATE, $request->user(), $userToUpdate, $originalData, $request));
+
+        return $userToUpdate;
+    }
+
+    // send reset link to user
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $user = User::whereBlind('email', 'email_index', $request->email)->first();
+
+        if (!$user) 
+        {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        $this->sendResetLink(false, $user);
+
+        // implements audit of sending reset link, which is executed by Admin
+        event(new ModelAction(AuditAction::SENT_RESET_LINK, $request->user(), $user, null, $request));
+
+        return response()->json([
+            'message' => 'Reset link sent.'
+        ], 200);
+    }
+
+    public function toggleLock(Request $request, User $userToUpdate)
+    {
+        $userToUpdate->is_locked = !$userToUpdate->is_locked;
+        $userToUpdate->failed_login_attempts = 0;
+        $userToUpdate->save();
+
+        // if account is locked, all its access tokens will be deleted
+        if($userToUpdate->is_locked)
+        {
+            $userToUpdate->tokens()->delete();
+        }
+
+        // audit locking of account
+        event(new ModelAction(AuditAction::LOCK, $request->user(), $userToUpdate, null, $request));
+
+        return $userToUpdate;
+    }
+
+    public function unrestrict(Request $request, User $userToUpdate)
+    {
+        $failedLoginAttempts = $userToUpdate->failed_login_attempts;
+        
+        $userToUpdate->failed_login_attempts = 0;
+        $userToUpdate->save();
+
+        $failedLoginAttempts <= 3 ?: event(new ModelAction(AuditAction::UNRESTRICT, $request->user(), $userToUpdate, null, $request));
+
+        return $userToUpdate;
+    }
+
+    public function getUsersCount(Request $request)
+    {
+        //only gets count users who are not locked
+        $admins = User::whereBlind('role', 'role_index', 'admin')->where('is_locked', false)->count();
+        $physicians = User::whereBlind('role', 'role_index', 'physician')->where('is_locked', false)->count();
+        $secretaries = User::whereBlind('role', 'role_index', 'secretary')->where('is_locked', false)->count();
+        
+        return response()->json([
+            'admins' => $admins,
+            'physicians' => $physicians,
+            'secretaries' => $secretaries
+        ]);
+    }
+
+
+
+    // USER ACTIONS
 
     public function updateEmail(Request $request) 
     {
@@ -160,81 +347,30 @@ class UserController extends Controller
         return $user;
     }
 
-    public function updateInformation(Request $request, User $userToUpdate) 
+    public function changePassword(Request $request) 
     {
-        $fields = $request->validate([
-            'personnel_number' => 'string|size:8',
-            'first_name' => 'string|max:100',
-            'middle_name' => 'nullable|string|max:100',
-            'last_name' => 'string|max:100',
-            'suffix' => 'nullable|string|max:10',
-            'sex' => 'string|max:6',
-            'birthdate' => 'date|date_format:Y-m-d',
-            'department_id' => 'integer|exists:departments,id',
-            'email' => 'nullable|email|max:100',
+        $user = $request->user();
+        
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|regex:/[a-z]/|regex:/[A-Z]/|regex:/[0-9]/|regex:/[@$!%*?&]/|confirmed'
         ]);
 
-        if ($request->email !== $userToUpdate->email && $this->isUserEmailExists($request->email)) 
+        if (!Hash::check($request->current_password, $user->password))
         {
-            return response()->json(['message' => 'The email is already taken.'], 422);
+            return response()->json([
+                'message' => 'The provided credentials are incorrect.'
+            ], 401);
         }
 
-        if ($request->personnel_number !== $userToUpdate->personnel_number && $this->isUserPersonnelNumberExists($request->personnel_number)) 
-        {
-            return response()->json(['message' => 'The personnel number is already taken.'], 422);
-        }
+        $user->password = Hash::make($request->new_password);
+        $user->save();
 
-        $originalData = $userToUpdate->toArray();
-
-        if (!in_array($userToUpdate->role, ['physician', 'secretary']))
-        {
-            $fields["department_id"] = null;
-        }
-
-        $userToUpdate->update($fields);
-
-        if ($request->filled('first_name') || $request->filled('last_name'))
-        {
-            $userToUpdate->update(['full_name' => $this->getFullName($userToUpdate->first_name, $userToUpdate->last_name)]);
-        }
-
-        // implements audit of update
-        event(new ModelAction(AuditAction::UPDATE, $request->user(), $userToUpdate, $originalData, $request));
-
-        return $userToUpdate;
+        return response()->json([
+            'message' => 'Password changed successfully.'
+        ]);
     }
 
-    public function toggleLock(Request $request, User $userToUpdate)
-    {
-        $userToUpdate->is_locked = !$userToUpdate->is_locked;
-        $userToUpdate->failed_login_attempts = 0;
-        $userToUpdate->save();
-
-        // if account is locked, all its access tokens will be deleted
-        if($userToUpdate->is_locked)
-        {
-            $userToUpdate->tokens()->delete();
-        }
-
-        // audit locking of account
-        event(new ModelAction(AuditAction::LOCK, $request->user(), $userToUpdate, null, $request));
-
-        return $userToUpdate;
-    }
-
-    public function unrestrict(Request $request, User $userToUpdate)
-    {
-        $failedLoginAttempts = $userToUpdate->failed_login_attempts;
-        
-        $userToUpdate->failed_login_attempts = 0;
-        $userToUpdate->save();
-
-        $failedLoginAttempts <= 3 ?: event(new ModelAction(AuditAction::UNRESTRICT, $request->user(), $userToUpdate, null, $request));
-
-        return $userToUpdate;
-    }
-
-    // for secretary assigning physicians
     public function getPhysicians(Request $request) 
     {
         $user = $request->user();
@@ -245,20 +381,5 @@ class UserController extends Controller
         $physicians = $query->select('id', 'role', 'personnel_number', 'full_name', 'sex', 'department_id')->get();
 
         return $physicians;
-    }
-
-    // for admin
-    public function getUsersCount(Request $request)
-    {
-        //only gets count users who are not locked
-        $admins = User::whereBlind('role', 'role_index', 'admin')->where('is_locked', false)->count();
-        $physicians = User::whereBlind('role', 'role_index', 'physician')->where('is_locked', false)->count();
-        $secretaries = User::whereBlind('role', 'role_index', 'secretary')->where('is_locked', false)->count();
-        
-        return response()->json([
-            'admins' => $admins,
-            'physicians' => $physicians,
-            'secretaries' => $secretaries
-        ]);
     }
 }

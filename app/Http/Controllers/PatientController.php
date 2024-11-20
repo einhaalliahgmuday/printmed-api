@@ -7,7 +7,7 @@ use App\Events\ModelAction;
 use App\Events\PatientNew;
 use App\Events\PatientUpdated;
 use App\Models\Patient;
-use App\Models\Payment;
+use App\Models\PatientQr;
 use App\Models\Registration;
 use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
@@ -17,22 +17,21 @@ use Illuminate\Support\Facades\Storage;
 class PatientController extends Controller
 {
     use CommonMethodsTrait;
-
+    
     public function index(Request $request)
     {        
-        $user = $request->user();
-
         $request->validate([
-            'search' => 'string',
+            'page' => 'integer',
+            'search' => 'string',   // patient number, full name
             'sort_by' => 'string|in:last_name,patient_number,follow_up_date',
             'sort_direction' => 'string|in:asc,desc'
         ]);
 
         
         //if role is physician, it will only query the patients of the physician
-        $query = $user->role == 'physician' ? $user->patients() : Patient::query()->select('id', 'patient_number', 'first_name', 'last_name', 'full_name', 'birthdate', 'sex', 'created_at');
+        $query = Patient::query()->select('id', 'patient_number', 'first_name', 'last_name', 'full_name', 'birthdate', 'sex', 'created_at');
 
-        //query can be filter based on search (name, patient_number), sex
+        //query can be filter based on search (name, patient_number)
         //it can also be sorted by last_name, patient_number, and follow_up_date
         
         if ($request->filled('search')) 
@@ -45,12 +44,7 @@ class PatientController extends Controller
             });
         }
 
-        if($request->filled('sex'))
-        {
-            $query->whereBlind('sex', 'sex_index', $request->sex);
-        }
-
-        $query->orderBy('patients.updated_at', 'desc');
+        $query->orderBy('updated_at', 'desc');
         $patients = $query->get();
 
         if (count($patients) > 0)
@@ -60,7 +54,7 @@ class PatientController extends Controller
                 $isDesc = $request->input('sort_direction') == 'desc';
 
                 $patients = $patients->sortBy($request->sort_by, SORT_REGULAR, $isDesc)->values();
-            } 
+            }
 
             $page = $request->input('page',1);
             $data = array_slice($patients->toArray(), ($page - 1) * 15, 15);
@@ -79,43 +73,31 @@ class PatientController extends Controller
         return response()->json(['patients' => null]);
     }
 
-    // public function index(Request $request) {
-    //     $request->validate([
-    //         'qr_code' => 'string|max:100'
-    //     ]);
-
-    //     $patientQr = PatientQr::whereBlind('uuid', 'uuid_index', $request->qr_code)->where('created_at', '<', now())->latest()->first();
-
-    //     return $patientQr->patient;
-    // }
-
     public function store(Request $request)
     {
-        $user = $request->user();
-
         $fields = $request->validate([
             'first_name' => 'required|string|max:100',
-            'middle_name' => 'string|max:100',
+            'middle_name' => 'nullable|string|max:100',
             'last_name'=> 'required|string|max:100',
-            'suffix' => 'string|max:20',
-            'birthdate' => 'date|date_format:Y-m-d',
+            'suffix' => 'nullable|string|max:20',
+            'birthdate' => 'required|date|date_format:Y-m-d',
             'birthplace' => 'string',
-            'sex' => 'string|max:6|nullable',
-            'house_number' => 'string|max:100',
-            'street' => 'string|max:100',
-            'barangay' => 'string|max:100',
-            'city' => 'string|max:100',
-            'province' => 'string|max:100',
-            'postal_code' => 'string|max:100',
-            'civil_status' => 'string|max:20',
-            'religion' => 'string|max:100',
+            'sex' => 'required|string|max:6',
+            'house_number' => 'string|max:20',
+            'street' => 'string|max:20',
+            'barangay' => 'required|string|max:20',
+            'city' => 'required|string|max:20',
+            'province' => 'required|string|max:20',
+            'postal_code' => 'nullable|int|digits_between:1,4',
+            'civil_status' => 'required|string|max:20',
+            'religion' => 'nullable|string|max:100',
             'phone_number' => 'string|max:12',
-            'email' => 'email|max:100',
+            'email' => 'nullable|email|max:100',
             'registration_id' => 'int|exist:registrations,id'
         ]);
 
         $request->validate([
-            'photo' => 'image|mimes:png|max:2048|dimensions:min_width=200,min_height=200'
+            'photo' => 'nullable|image|mimes:png|max:2048|dimensions:min_width=200,min_height=200'
         ]);
 
         $fields['patient_number'] = Patient::generatePatientNumber();
@@ -123,7 +105,7 @@ class PatientController extends Controller
 
         $patient = Patient::create($fields);
 
-        if ($request->filled('photo')) {
+        if ($request->filled('photo') && $request->photo) {
             $path = $request->file('photo')->store('images/patients', ['local', 'private']);
             $patient->update(['photo' => $path]);
         }
@@ -140,11 +122,6 @@ class PatientController extends Controller
         // audit creation of patient
         event(new ModelAction(AuditAction::CREATE, $request->user(), $patient, null, $request));
 
-        if ($user->role == 'physician')
-        {
-            $patient->physicians()->syncWithoutDetaching([$user->id]);
-        }
-
         // pusher event
         event(new PatientNew($patient));
 
@@ -153,53 +130,42 @@ class PatientController extends Controller
 
     public function show(Request $request, Patient $patient)
     {
+        $patient->append('qr_status');
+        $patient->append('latest_prescription');
+        $patient['vital_signs'] = $patient->vitalSigns()->get();
+        $patient['physicians'] = $patient->physicians()->get();
+        $patient['consultations'] = $patient->consultations()->get();
+
+        if ($patient->photo) {
+            $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
+        }
+
         // implements audit of patient retrieval
         event(new ModelAction(AuditAction::RETRIEVE, $request->user(), $patient, null, $request));
 
         return $patient;
     }
 
-    public function getPhoto(Patient $patient)
-    {
-        $path = $patient->photo;
-
-        if ($path != null) {
-            if (!Storage::exists($path)) {
-                return response()->json(['error' => 'Photo not found'], 404);
-            }
-    
-            $mimeType = Storage::mimeType($path);
-    
-            return response()->file(Storage::get($path), [
-                'Content-Type' => $mimeType
-            ]);
-        }
-
-        return response()->json([
-            'message' => 'Patient has no photo.'
-        ], 400);
-    }
-
     public function update(Request $request, Patient $patient)
     {
         $fields = $request->validate([
             'first_name' => 'string|max:100',
-            'middle_name' => 'string|max:100',
+            'middle_name' => 'nullable|string|max:100',
             'last_name'=> 'string|max:100',
-            'suffix' => 'string|max:20',
+            'suffix' => 'nullable|string|max:20',
             'birthdate' => 'date|date_format:Y-m-d',
-            'birthplace' => 'string',
-            'sex' => 'string|max:6',
-            'house_number' => 'string|max:100',
-            'street' => 'string|max:100',
-            'barangay' => 'string|max:100',
-            'city' => 'string|max:100',
-            'province' => 'string|max:100',
-            'postal_code' => 'string|max:100',
+            'birthplace' => 'nullable|string',
+            'sex' => 'string|max:6|nullable',
+            'house_number' => 'string|max:20',
+            'street' => 'string|max:20',
+            'barangay' => 'string|max:20',
+            'city' => 'string|max:20',
+            'province' => 'string|max:20',
+            'postal_code' => 'nullable|int|digits_between:1,4',
             'civil_status' => 'string|max:20',
-            'religion' => 'string|max:100',
+            'religion' => 'nullable|string|max:100',
             'phone_number' => 'string|max:12',
-            'email' => 'email|max:100',
+            'email' => 'nullable|email|max:100',
         ]);
 
         $originalData = $patient->toArray();
@@ -220,6 +186,54 @@ class PatientController extends Controller
         return $patient;
     }
 
+    // public function destroy(Patient $patient)
+    // {
+    //     $dateThreshold = now()->subYears(10);
+    //     $lastConsultationRecordDate = $patient->consultationRecords()
+    //                                         ->select('created_at')
+    //                                         ->orderBy('created_at','desc')
+    //                                         ->pluck('created_at')
+    //                                         ->first();
+
+    //     //if patient or patient's last consultation date is not past 10 years, patient cannot be deleted
+    //     if ($patient->updated_at >= $dateThreshold || $lastConsultationRecordDate >= $dateThreshold) 
+    //     {
+    //         return response()->json([
+    //             'message' => 'Patient record cannot be deleted 10 years before last record.'
+    //         ], 403);
+    //     }
+
+    //     if ($patient->photo)
+    //     {
+    //         Storage::delete($patient->photo);
+    //     }
+
+    //     $patient->delete();
+
+    //     return response()->json([
+    //         'message' => 'Patient successfully deleted.'
+    //     ], 200);
+    // }
+
+    public function getPhoto(Patient $patient)
+    {
+        $path = $patient->photo;
+
+        if ($path != null) {
+            if (!Storage::exists($path)) {
+                return response()->json(['error' => 'Photo not found'], 404);
+            }
+    
+            $mimeType = Storage::mimeType($path);
+    
+            return response(Storage::get($path))->headers('Content-Type', $mimeType);
+        }
+
+        return response()->json([
+            'message' => 'Patient has no photo.'
+        ], 400);
+    }
+
     public function updatePhoto(Request $request, Patient $patient) {
         $request->validate([
             'image' => 'required|image|mimes:png|max:2048|dimensions:min_width=200,min_height=200'
@@ -232,34 +246,9 @@ class PatientController extends Controller
         $path = $request->file('image')->store('images/patients', ['local', 'private']);
         $patient->update(['photo' => $path]);
 
-        // $file = Storage::get($path);
-        // $mimeType = Storage::mimeType($path);
+        $mimeType = Storage::mimeType($path);
 
-        return response()->json([], 200);
-    }
-
-    public function destroy(Patient $patient)
-    {
-        $dateThreshold = now()->subYears(10);
-        $lastConsultationRecordDate = $patient->consultationRecords()
-                                            ->select('updated_at')
-                                            ->orderBy('updated_at','desc')
-                                            ->pluck('updated_at')
-                                            ->first();
-
-        //if patient or patient's last consultation date is not past 10 years, patient cannot be deleted
-        if ($patient->updated_at >= $dateThreshold || $lastConsultationRecordDate >= $dateThreshold) 
-        {
-            return response()->json([
-                'message' => 'Patient record cannot be deleted 10 years before last record.'
-            ], 403);
-        }
-
-        $patient->delete();
-
-        return response()->json([
-            'message' => 'Patient successfully deleted.'
-        ], 200);
+        return response(Storage::get($path))->header('Content-Type', $mimeType);
     }
 
     public function getDuplicates(Request $request) 

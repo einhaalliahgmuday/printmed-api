@@ -33,17 +33,9 @@ class PatientQrController extends Controller
         }
 
         $uuid = (string) Str::uuid();
-        $loopCount = 0;
-
-        while (PatientQr::whereBlind('uuid', 'uuid_index', $uuid)->exists() && $loopCount < 3)
-        {
-            $uuid = (string) Str::uuid();
-        }
-
-        if (PatientQr::whereBlind('uuid', 'uuid_index', $uuid)->exists())
-        {
-            return response()->json(['message' => 'There was a problem generating an ID. Please try again.'], 500);
-        }
+        $latestPatientQr = PatientQr::select('id')->latest()->first();
+        $id = $latestPatientQr ? $latestPatientQr->id : 0;
+        $uuid .= "-" . str_pad($id, 6, '0', STR_PAD_LEFT);
 
         $photoPath = $patient->photo;
         $photo = Storage::get($photoPath);
@@ -87,5 +79,35 @@ class PatientQrController extends Controller
         PatientQr::where('patient_id', $patient->id)->where('isDeactivated', 0)->update(['isDeactivated' => 1]);
 
         return response()->json(['message' => 'Patient identification card successfully deactivated.']);
+    }
+
+    public function getPatient(Request $request) {
+        $request->validate([
+            'qr_code' => 'string|max:100'
+        ]);
+
+        $patientQr = PatientQr::whereBlind('uuid', 'uuid_index', $request->qr_code)->latest()->first();
+
+        if($patientQr) {
+            if($patientQr->isDeactivated === 1) {
+                return response()->json(['message' => 'QR code is deactivated.'], 400);
+            }
+            if($patientQr->created_at > now()->subYear()) {
+                return response()->json(['message' => 'QR code is expired.'], 400);
+            }
+
+            $patient = $patientQr->patient;
+
+            $patient->append('qr_status');
+            $patient->append('latest_prescription');
+            $patient['vital_signs'] = $patient->vitalSigns()->get();
+            $patient['physicians'] = $patient->physicians()->get();
+
+            return $patient;
+        }
+
+        return response()->json([
+            'message' => 'QR code not found.'
+        ]);
     }
 }

@@ -74,11 +74,7 @@ class Patient extends Model implements CipherSweetEncrypted
         'address',
         'age',
         'last_visit',
-        'follow_up_date',
-        // 'latest_prescription',
-        // 'qr_status',
-        // 'physicians'
-        
+        'follow_up_date'
     ];
 
     // generates unique patient number
@@ -138,19 +134,19 @@ class Patient extends Model implements CipherSweetEncrypted
 
     public function getLastVisitAttribute()
     {
-        $latestConsultationRecord = $this->consultationRecords()->where('patient_id', $this->id)->latest('updated_at')->first();
+        $latestConsultationRecord = $this->consultations()->where('patient_id', $this->id)->latest('updated_at')->first();
         
         return  $latestConsultationRecord ? $latestConsultationRecord->updated_at->toDateString() : $this->created_at->toDateString();
     }
 
     public function getFollowUpDateAttribute()
     {
-        return $this->consultationRecords()->latest('created_at')->first() ?-> follow_up_date;
+        return $this->consultations()->latest('created_at')->first() ?-> follow_up_date;
     }
 
     public function getLatestPrescriptionAttribute()
     {
-        $latestConsultationRecord = $this->consultationRecords()->latest('created_at')->first();
+        $latestConsultationRecord = $this->consultations()->latest('created_at')->first();
 
         if ($latestConsultationRecord && (Carbon::parse($latestConsultationRecord->created_at)->format('Y-m-d') === now()->format('Y-m-d'))) {
             return $latestConsultationRecord->prescription;
@@ -159,7 +155,7 @@ class Patient extends Model implements CipherSweetEncrypted
         return null;
     }
 
-    public function getQrStatus()
+    public function getQrStatusAttribute()
     {
         $latestQr = PatientQr::where('patient_id', $this->id)->latest()->first();
         $qrCount = PatientQr::where('patient_id', $this->id)->count();
@@ -175,25 +171,20 @@ class Patient extends Model implements CipherSweetEncrypted
         return null;
     }
 
-    public function getPhysiciansAttribute()
-    {
-        return $this->physicians()->get();
-    }
-
-    public function consultationRecords()
-    {
-        return $this->hasMany(Consultation::class, 'patient_id')
-                    ->select('id', 'chief_complaint', 'primary_diagnosis', 'created_at', 'updated_at');
-    }
-
     public function vitalSigns()
     {
         return $this->hasMany(VitalSigns::class, 'patient_id');
     }
 
+    public function consultations()
+    {
+        return $this->hasMany(Consultation::class, 'patient_id')
+                    ->select('id', 'chief_complaint', 'primary_diagnosis', 'created_at', 'updated_at');
+    }
+
     public function physicians()
     {
-        return $this->belongsToMany(User::class, 'patient_physicians', 'patient_id', 'physician_id')
-                    ->select('users.id', 'role', 'personnel_number', 'users.full_name', 'users.sex', 'department_id', 'license_number');
+        return $this->belongsToMany(User::class, 'patient_physician', 'patient_id', 'physician_id')
+                    ->select('users.id', 'role', 'personnel_number', 'users.full_name', 'users.sex', 'department_id');
     }
 }
