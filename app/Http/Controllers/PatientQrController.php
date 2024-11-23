@@ -86,28 +86,29 @@ class PatientQrController extends Controller
             'qr_code' => 'string|max:100'
         ]);
 
-        $patientQr = PatientQr::whereBlind('uuid', 'uuid_index', $request->qr_code)->latest()->first();
+        $patientQr = PatientQr::whereBlind('uuid', 'uuid_index', $request->qr_code)
+                                // ->where('is_deactivated', 0)
+                                ->where('created_at', '>', now()->subYear())
+                                ->latest()->first();
 
         if($patientQr) {
-            if($patientQr->isDeactivated === 1) {
-                return response()->json(['message' => 'QR code is deactivated.'], 400);
-            }
-            if($patientQr->created_at > now()->subYear()) {
-                return response()->json(['message' => 'QR code is expired.'], 400);
-            }
-
             $patient = $patientQr->patient;
 
             $patient->append('qr_status');
             $patient->append('latest_prescription');
             $patient['vital_signs'] = $patient->vitalSigns()->get();
             $patient['physicians'] = $patient->physicians()->get();
+            $patient['consultations'] = $patient->consultations()->orderBy('created_at', 'desc')->get();
+
+            if ($patient->photo) {
+                $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
+            }
 
             return $patient;
         }
 
         return response()->json([
             'message' => 'QR code not found.'
-        ]);
+        ], 404);
     }
 }

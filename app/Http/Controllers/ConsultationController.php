@@ -97,6 +97,8 @@ class ConsultationController extends Controller
             ]);
         }
 
+        $consultation['prescriptions'] = $consultation->prescriptions()->get();
+
         // audit creation of consultation and prescription
         event(new ModelAction(AuditAction::CREATE, $request->user(), $consultation, null, $request));
     
@@ -106,6 +108,8 @@ class ConsultationController extends Controller
     public function show(Request $request, Consultation $consultation)
     {
         Gate::authorize('is-assigned-physician', [$consultation->patient_id]);
+
+        $consultation['prescriptions'] = $consultation->prescriptions()->get();
 
         // implements audit of retrieval
         event(new ModelAction(AuditAction::RETRIEVE, $request->user(), $consultation, null, $request));

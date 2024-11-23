@@ -134,7 +134,6 @@ class PatientController extends Controller
         $patient->append('latest_prescription');
         $patient['vital_signs'] = $patient->vitalSigns()->get();
         $patient['physicians'] = $patient->physicians()->get();
-        $patient['consultations'] = $patient->consultations()->get();
 
         if ($patient->photo) {
             $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
@@ -161,10 +160,10 @@ class PatientController extends Controller
             'barangay' => 'string|max:20',
             'city' => 'string|max:20',
             'province' => 'string|max:20',
-            'postal_code' => 'nullable|int|digits_between:1,4',
+            'postal_code' => 'nullable|int|digits:4',
             'civil_status' => 'string|max:20',
             'religion' => 'nullable|string|max:100',
-            'phone_number' => 'string|max:12',
+            'phone_number' => 'string|min:11|max:11',
             'email' => 'nullable|email|max:100',
         ]);
 
@@ -179,6 +178,16 @@ class PatientController extends Controller
 
         // implements audit of update
         event(new ModelAction(AuditAction::UPDATE, $request->user(), $patient, $originalData, $request));
+
+        $patient->append('qr_status');
+        $patient->append('latest_prescription');
+        $patient['vital_signs'] = $patient->vitalSigns()->get();
+        $patient['physicians'] = $patient->physicians()->get();
+        $patient['consultations'] = $patient->consultations()->get();
+
+        if ($patient->photo) {
+            $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
+        }
 
         // pusher event
         event(new PatientUpdated($patient));

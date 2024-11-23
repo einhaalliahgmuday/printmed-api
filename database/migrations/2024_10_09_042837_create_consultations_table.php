@@ -11,13 +11,13 @@ return new class extends Migration
     {
         Schema::create('consultations', function (Blueprint $table) {
             $table->id();
-            $table->string('height')->nullable();
-            $table->string('height_unit')->nullable();
-            $table->string('weight')->nullable();
-            $table->string('weight_unit')->nullable();
-            $table->string('temperature')->nullable();
-            $table->string('temperature_unit')->nullable();
-            $table->string('blood_pressure')->nullable();
+            $table->string('height');
+            $table->string('height_unit');
+            $table->string('weight');
+            $table->string('weight_unit');
+            $table->string('temperature');
+            $table->string('temperature_unit');
+            $table->string('blood_pressure');
             $table->longText('chief_complaint');
             $table->longText('present_illness_hx')->nullable();
             $table->longText('family_hx')->nullable();
@@ -26,7 +26,7 @@ return new class extends Migration
             $table->longText('pediatrics_e')->nullable();
             $table->longText('pediatrics_a')->nullable();
             $table->longText('pediatrics_d')->nullable();
-            $table->longText('primary_diagnosis')->nullable();
+            $table->longText('primary_diagnosis');
             $table->longText('diagnosis');
             $table->string('follow_up_date')->nullable();
             $table->foreignId('patient_id')->constrained('patients', 'id')->cascadeOnDelete();
