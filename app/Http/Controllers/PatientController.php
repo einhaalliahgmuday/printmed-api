@@ -269,7 +269,7 @@ class PatientController extends Controller
             'sex' => 'required|string|max:6'
         ]);
 
-        $patients = Patient::select('id', 'patient_number', 'full_name', 'birthdate', 'sex')
+        $patients = Patient::select('id', 'patient_number', 'full_name', 'birthdate', 'sex', 'created_at', 'updated_at')
                             ->whereBlind('first_name', 'first_name_index', $request->first_name)
                             ->whereBlind('last_name', 'last_name_index', $request->last_name)
                             ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
