@@ -83,7 +83,7 @@ class PatientController extends Controller
             'birthdate' => 'required|date|date_format:Y-m-d',
             'birthplace' => 'string',
             'sex' => 'required|string|max:6',
-            'house_number' => 'string|max:20',
+            'house_number' => 'string|max:30',
             'street' => 'string|max:20',
             'barangay' => 'required|string|max:20',
             'city' => 'required|string|max:20',
@@ -93,7 +93,7 @@ class PatientController extends Controller
             'religion' => 'nullable|string|max:100',
             'phone_number' => 'string|max:12',
             'email' => 'nullable|email|max:100',
-            'registration_id' => 'int|exist:registrations,id'
+            'registration_id' => 'int|exists:registrations,id'
         ]);
 
         $request->validate([
@@ -269,7 +269,7 @@ class PatientController extends Controller
             'sex' => 'required|string|max:6'
         ]);
 
-        $patients = Patient::select('id', 'patient_number', 'full_name', 'birthdate', 'sex')
+        $patients = Patient::select('id', 'patient_number', 'full_name', 'birthdate', 'sex', 'created_at', 'updated_at')
                             ->whereBlind('first_name', 'first_name_index', $request->first_name)
                             ->whereBlind('last_name', 'last_name_index', $request->last_name)
                             ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
