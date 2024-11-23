@@ -33,7 +33,7 @@ class AuditModelAction
 
             if (get_class($auditable) === "App\Models\Consultation") 
             {
-                $prescriptions = $newValues['prescriptions'];
+                $prescriptions = $newValues['prescriptions']->toArray();
 
                 if(count($prescriptions) > 0) {
                     $newValues['prescriptions'] = $this->formatPrescriptions($prescriptions);
