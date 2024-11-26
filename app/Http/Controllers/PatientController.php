@@ -21,17 +21,13 @@ class PatientController extends Controller
     {        
         $request->validate([
             'page' => 'integer',
-            'search' => 'string',   // patient number, full name
+            'search' => 'string',   // patient number, full name, first name, last name
             'sort_by' => 'string|in:last_name,patient_number,follow_up_date',
-            'sort_direction' => 'string|in:asc,desc'
+            'order_by' => 'string|in:asc,desc'
         ]);
 
         
-        //if role is physician, it will only query the patients of the physician
         $query = Patient::query()->select('id', 'patient_number', 'first_name', 'last_name', 'full_name', 'birthdate', 'sex', 'created_at');
-
-        //query can be filter based on search (name, patient_number)
-        //it can also be sorted by last_name, patient_number, and follow_up_date
         
         if ($request->filled('search')) 
         {
@@ -39,7 +35,9 @@ class PatientController extends Controller
 
             $query->where(function($q) use ($search) {
                 $q->whereBlind('patient_number', 'patient_number_index', $search)
-                ->orWhereBlind('full_name', 'full_name_index', $search);
+                ->orWhereBlind('full_name', 'full_name_index', $search)
+                ->orWhereBlind('first_name', 'first_name_index', $search)
+                ->orWhereBlind('last_name', 'last_name_index', $search);
             });
         }
 
@@ -50,7 +48,7 @@ class PatientController extends Controller
         {
             if($request->filled('sort_by')) 
             {
-                $isDesc = $request->input('sort_direction') == 'desc';
+                $isDesc = $request->input('order_by') == 'desc';
 
                 $patients = $patients->sortBy($request->sort_by, SORT_REGULAR, $isDesc)->values();
             }
