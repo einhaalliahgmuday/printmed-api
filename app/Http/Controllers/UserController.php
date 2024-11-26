@@ -57,7 +57,7 @@ class UserController extends Controller
 
         if ($request->filled('status'))
         {
-            switch($request->staus) {
+            switch($request->status) {
                 case 'new':
                     $query->where('email_verified_at', null);
                     break;

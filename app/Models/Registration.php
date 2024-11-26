@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use ParagonIE\CipherSweet\BlindIndex;
@@ -66,4 +67,14 @@ class Registration extends Model implements CipherSweetEncrypted
         'email',
         'photo'
     ];
+
+    protected $appends = [
+        'age'
+    ];
+
+    public function getAgeAttribute()
+    {
+        $age = Carbon::parse($this->birthdate)->age;
+        return $age;
+    }
 }

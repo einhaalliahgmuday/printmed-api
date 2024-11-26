@@ -13,6 +13,19 @@ use App\Http\Controllers\PatientQrController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VitalSignsController;
 use Illuminate\Http\Request;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+
+Route::get('/', function () {
+    $qr = QrCode::size(300)
+                    ->style('round') //square, dot, round
+                    ->eye('circle') // square, circle
+                    ->format('png')
+                    ->merge('/public/images/carmona_hospital_logo_3.png')
+                    ->generate("Carmona Hospital and Medical Center");
+
+    return response($qr)->header('Content-Type', 'images/png');
+
+});
 
 // PATIENT REGISTRATION
 Route::post('/registrations', [RegistrationController::class, 'store']);
@@ -76,9 +89,9 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/patients/{patient}/consultations', [ConsultationController::class, 'index'])->middleware(['role:physician']);
 
     // PATIENT QR IDs
-    Route::post('/generate-patient-id-card', [PatientQrController::class, 'store'])->middleware(['role:secretary']);
+    Route::post('/generate-patient-id-card/{patient}', [PatientQrController::class, 'store'])->middleware(['role:secretary,physician']);
     Route::post('/deactivate-patient-qr', [PatientQrController::class, 'deactivate'])->middleware(['role:secretary']);
-    Route::get('/patient-using-qr', [PatientQrController::class, 'getPatient'])->middleware(['role:secretary,physician']);
+    Route::post('/patient-using-qr', [PatientQrController::class, 'getPatient'])->middleware(['role:secretary,physician']);
 
     // PATIENT-PHYSICIAN RELATIONSHIP
     Route::post('/patients/{patient}/assign-physician', [PatientPhysicianController::class, 'store'])->middleware(['role:secretary']);

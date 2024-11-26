@@ -77,22 +77,23 @@ class AuditController extends Controller
         $auditsQuery->orderBy('created_at', 'desc');
 
         $totalQuery = 0;
+        $auditsGet = collect();
 
         if ($offset !== null && $limit !== null)
         {
             $auditsQueryClone = clone $auditsQuery;
             $totalQuery = $auditsQueryClone->count();
 
-            $auditsQuery->offset($offset)->limit($limit)->get();
+            $auditsGet = $auditsQuery->offset($offset)->limit($limit)->get();
         }
         else 
         {
-            $auditsQuery->get();
+            $auditsGet = $auditsQuery->get();
         }
 
         $audits = [];
 
-        foreach ($auditsQuery as $audit)
+        foreach ($auditsGet as $audit)
         {
             $user = $audit->user;
             $resourceInformation = $this->getResourceInformation($audit);

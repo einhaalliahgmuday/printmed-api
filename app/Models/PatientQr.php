@@ -23,7 +23,7 @@ class PatientQr extends Model implements CipherSweetEncrypted
 
     protected $fillable = [
         'uuid',
-        'isDeactivated',
+        'is_deactivated',
         'patient_id'
     ];
 

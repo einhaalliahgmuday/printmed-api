@@ -20,7 +20,7 @@ class PatientQrController extends Controller
             'send_email' => 'boolean'
         ]);
 
-        PatientQr::where('patient_id', $patient->id)->where('isDeactivated', 0)->update(['isDeactivated' => 1]);
+        PatientQr::where('patient_id', $patient->id)->where('is_deactivated', 0)->update(['is_deactivated' => 1]);
 
         if (!$patient->photo) {
             return response()->json([
@@ -76,7 +76,7 @@ class PatientQrController extends Controller
     }
 
     public function deactivate(Patient $patient) {
-        PatientQr::where('patient_id', $patient->id)->where('isDeactivated', 0)->update(['isDeactivated' => 1]);
+        PatientQr::where('patient_id', $patient->id)->where('is_deactivated', 0)->update(['is_deactivated' => 1]);
 
         return response()->json(['message' => 'Patient identification card successfully deactivated.']);
     }
@@ -87,7 +87,7 @@ class PatientQrController extends Controller
         ]);
 
         $patientQr = PatientQr::whereBlind('uuid', 'uuid_index', $request->qr_code)
-                                // ->where('is_deactivated', 0)
+                                ->where('is_deactivated', 0)
                                 ->where('created_at', '>', now()->subYear())
                                 ->latest()->first();
 

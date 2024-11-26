@@ -13,7 +13,7 @@ class RegistrationController extends Controller
 
     public function index(Request $request) {
         $request->validate([
-            'search' => 'string',   // registration id, full name
+            'search' => 'string',   // registration id, full name, first name, last name
         ]);
 
         $query = Registration::query()->where('created_at', '>', now()->startOfDay());
@@ -24,6 +24,8 @@ class RegistrationController extends Controller
 
             $query->where(function($q) use ($search) {
                 $q->WhereBlind('full_name', 'full_name_index', $search)
+                ->orWhereBlind('first_name', 'first_name_index', $search)
+                ->orWhereBlind('last_name', 'last_name_index', $search)
                 ->orWhereBlind('registration_id', 'registration_id_index', $search);
             });
         }
@@ -41,17 +43,17 @@ class RegistrationController extends Controller
             'last_name'=> 'required|string|max:100',
             'suffix' => 'nullable|string|max:20',
             'birthdate' => 'required|date|date_format:Y-m-d',
-            'birthplace' => 'required|string',
+            'birthplace' => 'string',
             'sex' => 'required|string|max:6',
-            'house_number' => 'nullable|string|max:30',
-            'street' => 'nullable|string|max:20',
+            'house_number' => 'required|string|max:30',
+            'street' => 'required|string|max:20',
             'barangay' => 'required|string|max:20',
             'city' => 'required|string|max:20',
             'province' => 'required|string|max:20',
             'postal_code' => 'nullable|int|digits_between:1,4',
             'civil_status' => 'required|string|max:20',
             'religion' => 'nullable|string|max:100',
-            'phone_number' => 'nullable|string|max:12',
+            'phone_number' => 'required|string|size:11',
             'email' => 'nullable|email|max:100',
         ]);
         $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
@@ -65,7 +67,7 @@ class RegistrationController extends Controller
         // pusher event
         event(new RegistrationNew($registration));
 
-        return $registration;
+        return response()->json(['registration_id' => $registration->registration_id]);
     }
 
     public function show(Registration $registration) {

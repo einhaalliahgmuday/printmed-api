@@ -72,7 +72,7 @@ class ConsultationController extends Controller
         ]);
 
         $request->validate([
-            'prescriptions' => 'required|array',
+            'prescriptions' => 'array',
             'prescriptions.*.name' => 'required_with:prescriptions|string|max:100',
             'prescriptions.*.dosage' => 'required_with:prescriptions|string|max:255',
             'prescriptions.*.instruction' => 'required_with:prescriptions|string|max:255',
@@ -87,14 +87,16 @@ class ConsultationController extends Controller
 
         $consultation = Consultation::create($fields);
 
-        foreach($request->prescriptions as $prescription) 
-        {
-            Prescription::create([
-                'name' => $prescription['name'],
-                'dosage' => $prescription['dosage'],
-                'instruction' => $prescription['instruction'],
-                'consultation_id' => $consultation->id
-            ]);
+        if ($request->filled('prescriptions')) {
+            foreach($request->prescriptions as $prescription) 
+            {
+                Prescription::create([
+                    'name' => $prescription['name'],
+                    'dosage' => $prescription['dosage'],
+                    'instruction' => $prescription['instruction'],
+                    'consultation_id' => $consultation->id
+                ]);
+            }
         }
 
         $consultation['prescriptions'] = $consultation->prescriptions()->get();
