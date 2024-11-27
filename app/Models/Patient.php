@@ -128,8 +128,8 @@ class Patient extends Model implements CipherSweetEncrypted
 
     public function getAgeAttribute()
     {
-        $birthdate = Carbon::parse($this->birthdate)->age;
-        return $birthdate;
+        $age = Carbon::parse($this->birthdate)->age;
+        return $age;
     }
 
     public function getLastVisitAttribute()

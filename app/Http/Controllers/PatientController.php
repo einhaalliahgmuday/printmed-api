@@ -7,7 +7,6 @@ use App\Events\ModelAction;
 use App\Events\PatientNew;
 use App\Events\PatientUpdated;
 use App\Models\Patient;
-use App\Models\PatientQr;
 use App\Models\Registration;
 use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
@@ -22,17 +21,13 @@ class PatientController extends Controller
     {        
         $request->validate([
             'page' => 'integer',
-            'search' => 'string',   // patient number, full name
+            'search' => 'string',   // patient number, full name, first name, last name
             'sort_by' => 'string|in:last_name,patient_number,follow_up_date',
-            'sort_direction' => 'string|in:asc,desc'
+            'order_by' => 'string|in:asc,desc'
         ]);
 
         
-        //if role is physician, it will only query the patients of the physician
         $query = Patient::query()->select('id', 'patient_number', 'first_name', 'last_name', 'full_name', 'birthdate', 'sex', 'created_at');
-
-        //query can be filter based on search (name, patient_number)
-        //it can also be sorted by last_name, patient_number, and follow_up_date
         
         if ($request->filled('search')) 
         {
@@ -40,7 +35,9 @@ class PatientController extends Controller
 
             $query->where(function($q) use ($search) {
                 $q->whereBlind('patient_number', 'patient_number_index', $search)
-                ->orWhereBlind('full_name', 'full_name_index', $search);
+                ->orWhereBlind('full_name', 'full_name_index', $search)
+                ->orWhereBlind('first_name', 'first_name_index', $search)
+                ->orWhereBlind('last_name', 'last_name_index', $search);
             });
         }
 
@@ -51,7 +48,7 @@ class PatientController extends Controller
         {
             if($request->filled('sort_by')) 
             {
-                $isDesc = $request->input('sort_direction') == 'desc';
+                $isDesc = $request->input('order_by') == 'desc';
 
                 $patients = $patients->sortBy($request->sort_by, SORT_REGULAR, $isDesc)->values();
             }
@@ -91,24 +88,21 @@ class PatientController extends Controller
             'postal_code' => 'nullable|int|digits_between:1,4',
             'civil_status' => 'required|string|max:20',
             'religion' => 'nullable|string|max:100',
-            'phone_number' => 'string|max:12',
+            'phone_number' => 'string|size:11',
             'email' => 'nullable|email|max:100',
             'registration_id' => 'int|exists:registrations,id'
         ]);
 
         $request->validate([
-            'photo' => 'nullable|image|mimes:png|max:2048|dimensions:min_width=200,min_height=200'
+            'photo' => 'required|image|mimes:png|max:2048|dimensions:min_width=200,min_height=200'
         ]);
 
         $fields['patient_number'] = Patient::generatePatientNumber();
         $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
 
         $patient = Patient::create($fields);
-
-        if ($request->filled('photo') && $request->photo) {
-            $path = $request->file('photo')->store('images/patients', ['local', 'private']);
-            $patient->update(['photo' => $path]);
-        }
+        $path = $request->file('photo')->store('images/patients', ['local', 'private']);
+        $patient->update(['photo' => $path]);
 
         // delete record at registrations
         if ($request->filled('registration_id')) {
@@ -163,7 +157,7 @@ class PatientController extends Controller
             'postal_code' => 'nullable|int|digits:4',
             'civil_status' => 'string|max:20',
             'religion' => 'nullable|string|max:100',
-            'phone_number' => 'string|min:11|max:11',
+            'phone_number' => 'string|min:11|size:11',
             'email' => 'nullable|email|max:100',
         ]);
 
@@ -269,12 +263,18 @@ class PatientController extends Controller
             'sex' => 'required|string|max:6'
         ]);
 
-        $patients = Patient::select('id', 'patient_number', 'full_name', 'birthdate', 'sex', 'created_at', 'updated_at')
+        $patients = Patient::select('id', 'patient_number', 'full_name', 'birthdate', 'sex', 'photo', 'created_at', 'updated_at')
                             ->whereBlind('first_name', 'first_name_index', $request->first_name)
                             ->whereBlind('last_name', 'last_name_index', $request->last_name)
                             ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
                             ->whereBlind('sex', 'sex_index', $request->sex)
                             ->get();
+
+        foreach ($patients as $patient) {
+            if ($patient->photo && Storage::exists($patient->photo)) {
+                $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(10));
+            }   
+        }
 
         return $patients;
     }
