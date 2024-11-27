@@ -272,7 +272,7 @@ class UserController extends Controller
         return $userToUpdate;
     }
 
-    public function getUsersCount(Request $request)
+    public function getUsersCount()
     {
         //only gets count users who are not locked
         $admins = User::whereBlind('role', 'role_index', 'admin')->where('is_locked', false)->count();

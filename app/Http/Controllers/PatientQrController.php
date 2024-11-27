@@ -49,7 +49,7 @@ class PatientQrController extends Controller
                     ->gradient(19, 147, 79, 159, 16, 8, 'vertical')
                     ->generate($uuid);
         $qrBytes = base64_encode($qr);
-        $expirationDate = now()->addMonths(10);
+        $expirationDate = now()->addMonths(12);
 
         if ($request->filled('send_email') && $request->send_email == 1 && $patient->email)
         {

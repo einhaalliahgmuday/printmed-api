@@ -126,7 +126,7 @@ class PatientController extends Controller
     {
         $patient->append('qr_status');
         $patient->append('latest_prescription');
-        $patient['vital_signs'] = $patient->vitalSigns()->get();
+        $patient->append('vital_signs');
         $patient['physicians'] = $patient->physicians()->get();
 
         if ($patient->photo) {

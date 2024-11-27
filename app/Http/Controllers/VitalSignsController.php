@@ -20,7 +20,7 @@ class VitalSignsController extends Controller
             'blood_pressure' => 'required|string|max:7',
         ]);
 
-        if ($patient->vitalSigns->isNotEmpty()) {
+        if ($patient->vitalSigns != null) {
             $patient->vitalSigns->each->delete();
         }
 
@@ -28,12 +28,12 @@ class VitalSignsController extends Controller
             return response(['message' => 'All fields are empty.'], 400);
         }
 
-        $patient->vitalSigns()->create($fields);
+        $vitalSigns = $patient->vitalSigns()->create($fields);
 
-        return $patient;
+        return $vitalSigns;
     }
 
-    public function update(Request $request, VitalSigns $vitalSigns) 
+    public function update(Request $request, $id) 
     {
         $fields = $request->validate([
             'height' => 'numeric|decimal:0,2',
@@ -45,21 +45,29 @@ class VitalSignsController extends Controller
             'blood_pressure' => 'string|max:7',
         ]);
 
-        if (!$fields['height'] && !$fields['weight'] && !$fields['temperature'] && !$fields['blood_pressure']) {
-            return response(['message' => 'All fields are empty.'], 400);
+        $vitalSigns = VitalSigns::find($id);
+
+        if ($vitalSigns) {
+            $vitalSigns->update($fields);
+
+            return $vitalSigns;
         }
 
-        $vitalSigns->update($fields);
-
-        return $vitalSigns;
+        return response([
+            'message' => "Vital signs record not found."
+        ], 404);
     }
 
-    public function destroy(VitalSigns $vitalSigns) 
+    public function destroy($id) 
     {
-        $vitalSigns->delete();
+        $vitalSigns = VitalSigns::find($id);
 
-        return response([
-            'message' => "Vital signs record deleted successfully."
-        ]);
+        if ($vitalSigns) {
+            $vitalSigns->delete();
+
+            return response([
+                'message' => "Vital signs record deleted successfully."
+            ]);
+        }
     }
 }
