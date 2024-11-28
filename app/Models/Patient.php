@@ -160,15 +160,29 @@ class Patient extends Model implements CipherSweetEncrypted
         $latestQr = PatientQr::where('patient_id', $this->id)->latest()->first();
         $qrCount = PatientQr::where('patient_id', $this->id)->count();
 
+        $qrStatus = [];
+
         if ($latestQr)
         {
-            $qrStatus['is_qr_active'] = $latestQr->isDeactivated;
-            $qrStatus['qrs_count'] = $qrCount;
-
-            return $qrStatus;
+            $qrStatus['status'] = "Active";
+            if ($latestQr->is_deactivated === 1) {
+                $qrStatus['status'] = "Deactivated";
+                $qrStatus['date_deactivated'] = $latestQr->updated_at;
+            } else if ($latestQr->created_at < now()->subYear()) {
+                $qrStatus['status'] = "Expired";
+            }
+            $qrStatus['date_issued'] = $latestQr->created_at;
+            $qrStatus['issuances_count'] = $qrCount;
+        } else {
+            $qrStatus['status'] = null;
         }
 
-        return null;
+        return $qrStatus;;
+    }
+
+    public function getVitalSignsAttribute()
+    {
+        return $this->vitalSigns()->first();
     }
 
     public function vitalSigns()
