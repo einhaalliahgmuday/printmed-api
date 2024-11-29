@@ -17,7 +17,8 @@ return new class extends Migration
             $table->string('weight_unit');
             $table->string('temperature');
             $table->string('temperature_unit');
-            $table->string('blood_pressure');
+            $table->string('systolic');
+            $table->string('diastolic');
             $table->longText('chief_complaint');
             $table->longText('present_illness_hx')->nullable();
             $table->longText('family_hx')->nullable();

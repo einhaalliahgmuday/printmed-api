@@ -138,7 +138,7 @@ class UserController extends Controller
             return response()->json(['message' => 'The email is already taken.'], 422);
         }
 
-        $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
+        $fields['full_name'] = "{$request->first_name} {$request->last_name}";
 
         $user = User::create($fields);
 
@@ -209,7 +209,7 @@ class UserController extends Controller
 
         if ($request->filled('first_name') || $request->filled('last_name'))
         {
-            $userToUpdate->update(['full_name' => $this->getFullName($userToUpdate->first_name, $userToUpdate->last_name)]);
+            $userToUpdate->update(['full_name' => "{$request->first_name} {$request->last_name}"]);
         }
 
         // implements audit of update
@@ -378,7 +378,7 @@ class UserController extends Controller
         // gets physicians from the same department as secretary and whose accounts are not locked
         $query = User::query()->whereBlind('role', 'role_index', 'physician')->where('department_id', $user->department_id)->where('is_locked', false);
 
-        $physicians = $query->select('id', 'role', 'personnel_number', 'full_name', 'sex', 'department_id')->get();
+        $physicians = $query->select('id', 'role', 'personnel_number', 'full_name', 'first_name', 'middle_name', 'last_name', 'suffix', 'sex', 'department_id')->get();
 
         return $physicians;
     }

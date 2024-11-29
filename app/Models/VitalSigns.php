@@ -18,7 +18,8 @@ class VitalSigns extends Model implements CipherSweetEncrypted
         $encryptedRow
             ->addOptionalTextField('height')
             ->addOptionalTextField('weight')
-            ->addOptionalTextField('blood_pressure')
+            ->addOptionalTextField('systolic')
+            ->addOptionalTextField('diastolic')
             ->addOptionalTextField('temperature');
     }
 
@@ -29,7 +30,8 @@ class VitalSigns extends Model implements CipherSweetEncrypted
         'weight_unit',
         'temperature',
         'temperature_unit',
-        'blood_pressure',
+        'systolic',
+        'diastolic',
         'patient_id'
     ];
 }

@@ -10,13 +10,14 @@ return new class extends Migration
     {
         Schema::create('vital_signs', function (Blueprint $table) {
             $table->id();
-            $table->string('height')->nullable();
-            $table->string('height_unit')->nullable();
-            $table->string('weight')->nullable();
-            $table->string('weight_unit')->nullable();
-            $table->string('temperature')->nullable();
-            $table->string('temperature_unit')->nullable();
-            $table->string('blood_pressure')->nullable();
+            $table->string('height');
+            $table->string('height_unit');
+            $table->string('weight');
+            $table->string('weight_unit');
+            $table->string('temperature');
+            $table->string('temperature_unit');
+            $table->string('systolic');
+            $table->string('diastolic');
             $table->foreignId('patient_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });

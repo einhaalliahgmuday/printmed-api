@@ -8,6 +8,7 @@ use App\Models\PatientQr;
 use Barryvdh\Snappy\Facades\SnappyImage;
 use Barryvdh\Snappy\Facades\SnappyPdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -35,7 +36,7 @@ class PatientQrController extends Controller
         $uuid = (string) Str::uuid();
         $latestPatientQr = PatientQr::select('id')->latest()->first();
         $id = $latestPatientQr ? $latestPatientQr->id : 0;
-        $uuid .= "-" . str_pad($id, 6, '0', STR_PAD_LEFT);
+        $uuid .= "-" . substr(str_pad($id, 6, '0', STR_PAD_LEFT), 0, 6);
 
         $photoPath = $patient->photo;
         $photo = Storage::get($photoPath);
@@ -81,7 +82,10 @@ class PatientQrController extends Controller
         return response()->json(['message' => 'Patient identification card successfully deactivated.']);
     }
 
-    public function getPatient(Request $request) {
+    public function getPatient(Request $request) 
+    {
+        $user = $request->user();
+
         $request->validate([
             'qr_code' => 'string|max:100'
         ]);
@@ -94,11 +98,14 @@ class PatientQrController extends Controller
         if($patientQr) {
             $patient = $patientQr->patient;
 
-            $patient->append('qr_status');
-            $patient->append('latest_prescription');
-            $patient['vital_signs'] = $patient->vitalSigns()->get();
-            $patient['physicians'] = $patient->physicians()->get();
-            $patient['consultations'] = $patient->consultations()->orderBy('created_at', 'desc')->get();
+            if ($request->user()->role === "physician") {
+                Gate::authorize('is-assigned-physician', [$patient->id]);
+                $patient['consultations'] = $patient->consultations()->orderBy('created_at', 'desc')->get();
+            } else {
+                $patient['physician'] = $patient->getPhysician($user->department_id);
+            }
+
+            $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
 
             if ($patient->photo) {
                 $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));

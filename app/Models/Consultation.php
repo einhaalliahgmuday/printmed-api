@@ -18,7 +18,8 @@ class Consultation extends Model implements CipherSweetEncrypted
         $encryptedRow
             ->addOptionalTextField('height')
             ->addOptionalTextField('weight')
-            ->addOptionalTextField('blood_pressure')
+            ->addOptionalTextField('systolic')
+            ->addOptionalTextField('diastolic')
             ->addOptionalTextField('temperature')
             ->addField('chief_complaint')
             ->addOptionalTextField('present_illness_hx')
@@ -40,7 +41,8 @@ class Consultation extends Model implements CipherSweetEncrypted
         'weight_unit',
         'temperature',
         'temperature_unit',
-        'blood_pressure',
+        'systolic',
+        'diastolic',
         'chief_complaint',
         'present_illness_hx',
         'family_hx',
@@ -57,6 +59,14 @@ class Consultation extends Model implements CipherSweetEncrypted
         'department_id'
     ];
 
+    protected $appends = [
+        'physician'
+    ];
+
+    public function getPhysicianAttribute() {
+        return $this->physician()->get();
+    }
+
     public function patient()
     {
         return $this->belongsTo(Patient::class);
@@ -65,7 +75,7 @@ class Consultation extends Model implements CipherSweetEncrypted
     public function physician()
     {
         return $this->belongsTo(User::class)
-                    ->select('id', 'personnel_number', 'full_name', 'sex', 'department_id', 'license_number');
+                    ->select('id', 'full_name');
     }
 
     public function prescriptions()

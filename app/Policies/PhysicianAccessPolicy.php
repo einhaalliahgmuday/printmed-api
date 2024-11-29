@@ -2,12 +2,11 @@
 
 namespace App\Policies;
 
-use App\Models\Consultation;
 use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Http\Request;
 
-class ConsultationPolicy
+class PhysicianAccessPolicy
 {
     public function isAssignedPhysician(User $user, $patientId): bool
     {

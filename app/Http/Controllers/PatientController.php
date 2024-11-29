@@ -7,7 +7,9 @@ use App\Events\ModelAction;
 use App\Events\PatientNew;
 use App\Events\PatientUpdated;
 use App\Models\Patient;
+use App\Models\PatientPhysician;
 use App\Models\Registration;
+use App\Models\User;
 use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -19,6 +21,8 @@ class PatientController extends Controller
     
     public function index(Request $request)
     {        
+        $user = $request->user();
+
         $request->validate([
             'page' => 'integer',
             'search' => 'string',   // patient number, full name, first name, last name
@@ -42,7 +46,12 @@ class PatientController extends Controller
         }
 
         $query->orderBy('updated_at', 'desc');
-        $patients = $query->get();
+        $patients = $query->get()
+                            ->makeHidden(['qr_status', 'vital_signs']); // hides some attributes
+
+        foreach($patients as $patient) {
+            $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
+        }
 
         if (count($patients) > 0)
         {
@@ -72,16 +81,18 @@ class PatientController extends Controller
 
     public function store(Request $request)
     {
+        $user = $request->user();
+
         $fields = $request->validate([
             'first_name' => 'required|string|max:100',
             'middle_name' => 'nullable|string|max:100',
             'last_name'=> 'required|string|max:100',
             'suffix' => 'nullable|string|max:20',
             'birthdate' => 'required|date|date_format:Y-m-d',
-            'birthplace' => 'string',
+            'birthplace' => 'nullable|string',
             'sex' => 'required|string|max:6',
             'house_number' => 'string|max:30',
-            'street' => 'string|max:20',
+            'street' => 'nullable|string|max:20',
             'barangay' => 'required|string|max:20',
             'city' => 'required|string|max:20',
             'province' => 'required|string|max:20',
@@ -90,19 +101,34 @@ class PatientController extends Controller
             'religion' => 'nullable|string|max:100',
             'phone_number' => 'string|size:11',
             'email' => 'nullable|email|max:100',
-            'registration_id' => 'int|exists:registrations,id'
+            'registration_id' => 'int|exists:registrations,id',
         ]);
 
         $request->validate([
-            'photo' => 'required|image|mimes:png|max:2048|dimensions:min_width=200,min_height=200'
+            'photo' => 'required|image|mimes:png|max:2048|dimensions:min_width=200,min_height=200',
+            'physician_id' => 'required|int|exists:users,id'
         ]);
 
+        $physician = User::where('id', $request->physician_id)
+                        ->whereBlind('role', 'role_index', 'physician')
+                        ->select('id', 'full_name')
+                        ->first();
+
+        if (!$physician)
+        {
+            return response()->json([
+                'message' => 'Physician not found.'
+            ], 400);
+        }
+
         $fields['patient_number'] = Patient::generatePatientNumber();
-        $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
+        $fields['full_name'] = "{$request->first_name} {$request->last_name}";
 
         $patient = Patient::create($fields);
         $path = $request->file('photo')->store('images/patients', ['local', 'private']);
         $patient->update(['photo' => $path]);
+
+        $patient->physicians()->syncWithoutDetaching([$request->physician_id => ['department_id' => $user->department_id]]);
 
         // delete record at registrations
         if ($request->filled('registration_id')) {
@@ -114,24 +140,29 @@ class PatientController extends Controller
         }
 
         // audit creation of patient
-        event(new ModelAction(AuditAction::CREATE, $request->user(), $patient, null, $request));
+        event(new ModelAction(AuditAction::CREATE, $user, $patient, null, $request));
 
         // pusher event
         event(new PatientNew($patient));
+
+        $patient['physician'] = $physician;
+        $patient['follow_up_date'] = null;
+        if ($patient->photo) {
+            $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
+        }
 
         return $patient;
     }
 
     public function show(Request $request, Patient $patient)
     {
-        $patient->append('qr_status');
-        $patient->append('latest_prescription');
-        $patient->append('vital_signs');
-        $patient['physicians'] = $patient->physicians()->get();
+        $user = $request->user();
 
         if ($patient->photo) {
             $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
         }
+        $patient['physician'] = $patient->getPhysician($user->department_id);
+        $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
 
         // implements audit of patient retrieval
         event(new ModelAction(AuditAction::RETRIEVE, $request->user(), $patient, null, $request));
@@ -141,6 +172,8 @@ class PatientController extends Controller
 
     public function update(Request $request, Patient $patient)
     {
+        $user = $request->user();
+
         $fields = $request->validate([
             'first_name' => 'string|max:100',
             'middle_name' => 'nullable|string|max:100',
@@ -148,43 +181,66 @@ class PatientController extends Controller
             'suffix' => 'nullable|string|max:20',
             'birthdate' => 'date|date_format:Y-m-d',
             'birthplace' => 'nullable|string',
-            'sex' => 'string|max:6|nullable',
-            'house_number' => 'string|max:20',
-            'street' => 'string|max:20',
+            'sex' => 'string|max:6',
+            'house_number' => 'string|max:30',
+            'street' => 'nullable|string|max:20',
             'barangay' => 'string|max:20',
             'city' => 'string|max:20',
             'province' => 'string|max:20',
-            'postal_code' => 'nullable|int|digits:4',
+            'postal_code' => 'nullable|int|digits_between:1,4',
             'civil_status' => 'string|max:20',
             'religion' => 'nullable|string|max:100',
-            'phone_number' => 'string|min:11|size:11',
-            'email' => 'nullable|email|max:100',
+            'phone_number' => 'string|size:11',
+            'email' => 'nullable|email|max:100'
         ]);
+
+        $request->validate([
+            'photo' => 'image|mimes:png|max:2048|dimensions:min_width=200,min_height=200',
+            'physician_id' => 'int|exists:users,id'
+        ]);
+
+        if ($request->filled('physician_id')) {
+            $physician = User::where('id', $request->physician_id)
+                        ->whereBlind('role', 'role_index', 'physician')
+                        ->select('id', 'full_name')
+                        ->first();
+
+            if (!$physician) {
+                return response()->json([
+                    'message' => 'Physician not found.'
+                ], 400);
+            } else {
+                PatientPhysician::where('patient_id', $patient->id)->where('department_id', $user->department_id)->delete();
+                $patient->physicians()->syncWithoutDetaching([$request->physician_id => ['department_id' => $user->department_id]]);
+            }
+        }
+
+        if ($request->filled('first_name') || $request->filled('last_name'))
+        {
+            $patient->update(['full_name' => "{$request->first_name} {$request->last_name}"]);
+        }
+
+        if ($request->file('photo'))
+        {
+            $path = $request->file('photo')->store('images/patients', ['local', 'private']);
+            $patient->update(['photo' => $path]);
+        }
 
         $originalData = $patient->toArray();
 
         $patient->update($fields);
 
-        if ($request->filled('first_name') || $request->filled('last_name'))
-        {
-            $patient->update(['full_name' => $this->getFullName($patient->first_name, $patient->last_name)]);
-        }
-
         // implements audit of update
         event(new ModelAction(AuditAction::UPDATE, $request->user(), $patient, $originalData, $request));
 
-        $patient->append('qr_status');
-        $patient->append('latest_prescription');
-        $patient['vital_signs'] = $patient->vitalSigns()->get();
-        $patient['physicians'] = $patient->physicians()->get();
-        $patient['consultations'] = $patient->consultations()->get();
+        // pusher event
+        event(new PatientUpdated($patient));
 
         if ($patient->photo) {
             $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
         }
-
-        // pusher event
-        event(new PatientUpdated($patient));
+        $patient['physician'] = $patient->getPhysician($user->department_id);
+        $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
 
         return $patient;
     }
@@ -256,6 +312,8 @@ class PatientController extends Controller
 
     public function getDuplicates(Request $request) 
     {
+        $user = $request->user();
+
         $request->validate([
             'first_name' => 'required|string|max:100',
             'last_name'=> 'required|string|max:100',
@@ -263,8 +321,7 @@ class PatientController extends Controller
             'sex' => 'required|string|max:6'
         ]);
 
-        $patients = Patient::select('id', 'patient_number', 'full_name', 'birthdate', 'sex', 'photo', 'created_at', 'updated_at')
-                            ->whereBlind('first_name', 'first_name_index', $request->first_name)
+        $patients = Patient::whereBlind('first_name', 'first_name_index', $request->first_name)
                             ->whereBlind('last_name', 'last_name_index', $request->last_name)
                             ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
                             ->whereBlind('sex', 'sex_index', $request->sex)
@@ -272,8 +329,10 @@ class PatientController extends Controller
 
         foreach ($patients as $patient) {
             if ($patient->photo && Storage::exists($patient->photo)) {
-                $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(10));
+                $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
             }   
+            $patient['physician'] = $patient->getPhysician($user->department_id);
+            $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
         }
 
         return $patients;

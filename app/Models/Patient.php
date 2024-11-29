@@ -74,7 +74,9 @@ class Patient extends Model implements CipherSweetEncrypted
         'address',
         'age',
         'last_visit',
-        'follow_up_date'
+        'qr_status',
+        'vital_signs',
+
     ];
 
     // generates unique patient number
@@ -98,27 +100,31 @@ class Patient extends Model implements CipherSweetEncrypted
         return sprintf('%s-%05d', $year, $increment);
     }
 
+    public function getFullNameAttribute() {
+        return $this->getFullName($this->first_name, $this->middle_name, $this->last_name, $this->suffix);
+    }
+
     public function getAddressAttribute()
     {
         $address = "";
 
         if ($this->house_number) {
-            $address .= "{$this->house_number}, ";
+            $address .= "{$this->house_number}";
         }
         if ($this->street) {
-            $address .= "{$this->street}, ";
+            $address .= ", {$this->street}";
         }
         if ($this->barangay) {
-            $address .= "{$this->barangay}, ";
+            $address .= ", {$this->barangay}";
         }
         if ($this->city) {
-            $address .= "{$this->city}, ";
+            $address .= ", {$this->city}";
         }
         if ($this->province) {
-            $address .= "{$this->province}, ";
+            $address .= ", {$this->province}";
         }
         if ($this->postal_code) {
-            $address .= $this->postal_code;
+            $address .= ", {$this->postal_code}";
         }
 
         $address = trim($address);
@@ -136,23 +142,7 @@ class Patient extends Model implements CipherSweetEncrypted
     {
         $latestConsultationRecord = $this->consultations()->where('patient_id', $this->id)->latest('updated_at')->first();
         
-        return  $latestConsultationRecord ? $latestConsultationRecord->updated_at->toDateString() : $this->created_at->toDateString();
-    }
-
-    public function getFollowUpDateAttribute()
-    {
-        return $this->consultations()->latest('created_at')->first() ?-> follow_up_date;
-    }
-
-    public function getLatestPrescriptionAttribute()
-    {
-        $latestConsultationRecord = $this->consultations()->latest('created_at')->first();
-
-        if ($latestConsultationRecord && (Carbon::parse($latestConsultationRecord->created_at)->format('Y-m-d') === now()->format('Y-m-d'))) {
-            return $latestConsultationRecord->prescription;
-        }
-
-        return null;
+        return  $latestConsultationRecord ? $latestConsultationRecord->updated_at->toDateString() : null;
     }
 
     public function getQrStatusAttribute()
@@ -182,7 +172,25 @@ class Patient extends Model implements CipherSweetEncrypted
 
     public function getVitalSignsAttribute()
     {
-        return $this->vitalSigns()->first();
+        return $this->vitalSigns()->where('created_at', '>', now()->startOfDay())->first();
+    }
+
+    public function getPhysician(int $departmentId) 
+    {
+        return $this->physicians()->where('users.department_id', $departmentId)
+                                ->where('is_locked', 0)
+                                ->orderByDesc('patient_physician.created_at')
+                                ->first();
+    }
+
+    public function getFollowUpDate(int $departmentId) 
+    {
+        $latestConsultationByDepartment = $this->consultations()->select('follow_up_date')
+                                                ->where('department_id', $departmentId)
+                                                ->latest()
+                                                ->first();
+
+        return $latestConsultationByDepartment ?-> follow_up_date;
     }
 
     public function vitalSigns()
@@ -199,6 +207,6 @@ class Patient extends Model implements CipherSweetEncrypted
     public function physicians()
     {
         return $this->belongsToMany(User::class, 'patient_physician', 'patient_id', 'physician_id')
-                    ->select('users.id', 'role', 'personnel_number', 'users.full_name', 'users.sex', 'department_id');
+                    ->select('users.id', 'role', 'personnel_number', 'users.full_name', 'users.first_name', 'users.middle_name', 'users.last_name', 'users.suffix', 'users.sex', 'users.department_id');
     }
 }

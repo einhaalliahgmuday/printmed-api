@@ -72,6 +72,10 @@ class User extends Authenticatable implements CipherSweetEncrypted
         'password' => 'hashed',
     ];
 
+    public function getFullNameAttribute() {
+        return $this->getFullName($this->first_name, $this->middle_name, $this->last_name, $this->suffix);
+    }
+
     public function getDepartmentNameAttribute() {
         if ($this->department) {
             return $this->department->name;
