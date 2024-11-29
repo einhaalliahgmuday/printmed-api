@@ -46,7 +46,7 @@ class RegistrationController extends Controller
             'birthplace' => 'string',
             'sex' => 'required|string|max:6',
             'house_number' => 'required|string|max:30',
-            'street' => 'required|string|max:20',
+            'street' => 'nullable|string|max:20',
             'barangay' => 'required|string|max:20',
             'city' => 'required|string|max:20',
             'province' => 'required|string|max:20',
@@ -56,11 +56,11 @@ class RegistrationController extends Controller
             'phone_number' => 'required|string|size:11',
             'email' => 'nullable|email|max:100',
         ]);
-        $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
+        $fields['full_name'] = "{$request->first_name} {$request->last_name}";
 
         $latestRegistration = Registration::select('id')->latest()->first();
         $id = $latestRegistration ? $latestRegistration->id : 0;
-        $fields['registration_id'] = (string)random_int(100000, 999999) . str_pad($id, 4, '0', STR_PAD_LEFT);
+        $fields['registration_id'] = (string)random_int(100000, 999999) . substr(str_pad($id, 4, '0', STR_PAD_LEFT), 0, 4);
 
         $registration = Registration::create($fields);
 

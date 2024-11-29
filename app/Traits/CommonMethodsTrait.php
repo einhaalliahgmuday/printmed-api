@@ -10,9 +10,21 @@ use Illuminate\Support\Str;
 
 trait CommonMethodsTrait
 {
-    private function getFullName($firstName, $lastName): string
+    private function getFullName($firstName, $middleName, $lastName, $suffix): string
     {
-        return "{$firstName} {$lastName}";
+        $fullName = "{$firstName}";
+
+        if ($middleName) {
+            $fullName .= " " . strtoupper($middleName[0]) . '.';
+        }
+
+        $fullName .= " {$lastName}";
+
+        if ($suffix) {
+            $fullName .= " {$suffix}";
+        }
+
+        return $fullName;
     }
 
     public function isUserEmailExists(string $email)
