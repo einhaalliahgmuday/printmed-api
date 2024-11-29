@@ -2,8 +2,7 @@
 
 namespace App\Providers;
 
-use App\Models\Consultation;
-use App\Policies\ConsultationPolicy;
+use App\Policies\PhysicianAccessPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -16,6 +15,6 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Gate::define('is-assigned-physician', [ConsultationPolicy::class, 'isAssignedPhysician']);
+        Gate::define('is-assigned-physician', [PhysicianAccessPolicy::class, 'isAssignedPhysician']);
     }
 }

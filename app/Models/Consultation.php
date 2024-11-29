@@ -18,7 +18,8 @@ class Consultation extends Model implements CipherSweetEncrypted
         $encryptedRow
             ->addOptionalTextField('height')
             ->addOptionalTextField('weight')
-            ->addOptionalTextField('blood_pressure')
+            ->addOptionalTextField('systolic')
+            ->addOptionalTextField('diastolic')
             ->addOptionalTextField('temperature')
             ->addField('chief_complaint')
             ->addOptionalTextField('present_illness_hx')
@@ -40,7 +41,8 @@ class Consultation extends Model implements CipherSweetEncrypted
         'weight_unit',
         'temperature',
         'temperature_unit',
-        'blood_pressure',
+        'systolic',
+        'diastolic',
         'chief_complaint',
         'present_illness_hx',
         'family_hx',

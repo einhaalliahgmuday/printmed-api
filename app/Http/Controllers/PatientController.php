@@ -8,6 +8,7 @@ use App\Events\PatientNew;
 use App\Events\PatientUpdated;
 use App\Models\Patient;
 use App\Models\Registration;
+use App\Models\User;
 use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -72,6 +73,8 @@ class PatientController extends Controller
 
     public function store(Request $request)
     {
+        $user = $request->user();
+
         $fields = $request->validate([
             'first_name' => 'required|string|max:100',
             'middle_name' => 'nullable|string|max:100',
@@ -90,12 +93,22 @@ class PatientController extends Controller
             'religion' => 'nullable|string|max:100',
             'phone_number' => 'string|size:11',
             'email' => 'nullable|email|max:100',
-            'registration_id' => 'int|exists:registrations,id'
+            'registration_id' => 'int|exists:registrations,id',
         ]);
 
         $request->validate([
-            'photo' => 'required|image|mimes:png|max:2048|dimensions:min_width=200,min_height=200'
+            'photo' => 'required|image|mimes:png|max:2048|dimensions:min_width=200,min_height=200',
+            'physician_id' => 'required|int|exists:users,id'
         ]);
+
+        $isPhysicianExists = User::where('id', $request->physician_id)->whereBlind('role', 'role_index', 'physician')->exists();
+
+        if (!$isPhysicianExists)
+        {
+            return response()->json([
+                'message' => 'Physician not found.'
+            ], 400);
+        }
 
         $fields['patient_number'] = Patient::generatePatientNumber();
         $fields['full_name'] = $this->getFullName($request->first_name, $request->last_name);
@@ -103,6 +116,8 @@ class PatientController extends Controller
         $patient = Patient::create($fields);
         $path = $request->file('photo')->store('images/patients', ['local', 'private']);
         $patient->update(['photo' => $path]);
+
+        $patient->physicians()->syncWithoutDetaching([$request->physician_id => ['department_id' => $user->department_id]]);
 
         // delete record at registrations
         if ($request->filled('registration_id')) {
@@ -114,7 +129,7 @@ class PatientController extends Controller
         }
 
         // audit creation of patient
-        event(new ModelAction(AuditAction::CREATE, $request->user(), $patient, null, $request));
+        event(new ModelAction(AuditAction::CREATE, $user, $patient, null, $request));
 
         // pusher event
         event(new PatientNew($patient));

@@ -11,6 +11,7 @@ class PatientPhysician extends Pivot
 
     protected $fillable = [
         'physician_id',
-        'patient_id'
+        'patient_id',
+        'department_id'
     ];
 }

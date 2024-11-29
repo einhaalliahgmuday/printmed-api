@@ -182,7 +182,7 @@ class Patient extends Model implements CipherSweetEncrypted
 
     public function getVitalSignsAttribute()
     {
-        return $this->vitalSigns()->first();
+        return $this->vitalSigns()->where('created_at', '>', now()->startOfDay())->first();
     }
 
     public function vitalSigns()
@@ -199,6 +199,6 @@ class Patient extends Model implements CipherSweetEncrypted
     public function physicians()
     {
         return $this->belongsToMany(User::class, 'patient_physician', 'patient_id', 'physician_id')
-                    ->select('users.id', 'role', 'personnel_number', 'users.full_name', 'users.sex', 'department_id');
+                    ->select('users.id', 'role', 'personnel_number', 'users.full_name', 'users.sex', 'users.department_id');
     }
 }

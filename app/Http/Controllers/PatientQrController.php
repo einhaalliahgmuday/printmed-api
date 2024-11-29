@@ -8,6 +8,7 @@ use App\Models\PatientQr;
 use Barryvdh\Snappy\Facades\SnappyImage;
 use Barryvdh\Snappy\Facades\SnappyPdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -93,6 +94,10 @@ class PatientQrController extends Controller
 
         if($patientQr) {
             $patient = $patientQr->patient;
+
+            if ($request->user()->role === "physician") {
+                Gate::authorize('is-assigned-physician', [$patient->id]);
+            }
 
             $patient->append('qr_status');
             $patient->append('latest_prescription');
