@@ -64,7 +64,7 @@ class Consultation extends Model implements CipherSweetEncrypted
     ];
 
     public function getPhysicianAttribute() {
-        return $this->physician()->get();
+        return $this->physician()->first();
     }
 
     public function patient()

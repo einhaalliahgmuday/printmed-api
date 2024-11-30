@@ -105,11 +105,12 @@ class PatientQrController extends Controller
                 $patient['physician'] = $patient->getPhysician($user->department_id);
             }
 
-            $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
-
             if ($patient->photo) {
                 $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
             }
+            $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
+            $patient['last_visit'] = $patient->getLastVisitDate($user->department_id);
+            $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
 
             return $patient;
         }

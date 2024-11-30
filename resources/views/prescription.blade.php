@@ -154,7 +154,7 @@
                     <div class="text-md">
                         @foreach ($prescription as $item)
                             <div class="mt-15 text-lg">
-                                <p><span class="bold mr-10">{{$item['name']}}</span>{{$item['dosage']}}</p>
+                                <p class="bold"><span class="mr-10">{{$item['name']}}</span>{{$item['dosage']}}</p>
                                 <p>{{$item['instruction']}}</p>
                             </div>
                         @endforeach
