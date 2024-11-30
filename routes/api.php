@@ -33,7 +33,7 @@ Route::post('/registrations', [RegistrationController::class, 'store']);
 // AUTH AND PASSWORD
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
-Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware(['throttle:3,60']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 //routes that requires authentication to access
 Route::middleware(['auth:sanctum'])->group(function() {

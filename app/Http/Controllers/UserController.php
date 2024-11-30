@@ -184,7 +184,7 @@ class UserController extends Controller
             'suffix' => 'nullable|string|max:10',
             'sex' => 'string|max:6',
             'birthdate' => 'date|date_format:Y-m-d',
-            'department_id' => 'integer|exists:departments,id',
+            'department_id' => 'nullable|integer|exists:departments,id',
             'email' => 'email|max:100',
         ]);
 
