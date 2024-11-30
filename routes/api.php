@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\RegistrationController;
-use Barryvdh\Snappy\Facades\SnappyImage;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsultationController;
@@ -13,19 +12,6 @@ use App\Http\Controllers\PatientQrController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VitalSignsController;
 use Illuminate\Http\Request;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
-
-Route::get('/', function () {
-    $qr = QrCode::size(300)
-                    ->style('round') //square, dot, round
-                    ->eye('circle') // square, circle
-                    ->format('png')
-                    ->merge('/public/images/carmona_hospital_logo_3.png')
-                    ->generate("Carmona Hospital and Medical Center");
-
-    return response($qr)->header('Content-Type', 'images/png');
-
-});
 
 // PATIENT REGISTRATION
 Route::post('/registrations', [RegistrationController::class, 'store']);
@@ -86,6 +72,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
 
     // CONSULTATIONS
     Route::apiResource('consultations', ConsultationController::class)->only(['store', 'show'])->middleware(['role:physician']);
+    Route::get('/consultations/{consultation}/print-prescription', [ConsultationController::class, 'printPrescription'])->middleware(['role:physician']);
     Route::get('/patients/{patient}/consultations', [ConsultationController::class, 'index'])->middleware(['role:physician']);
 
     // PATIENT QR IDs
