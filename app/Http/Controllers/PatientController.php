@@ -26,7 +26,7 @@ class PatientController extends Controller
         $request->validate([
             'page' => 'integer',
             'search' => 'string',   // patient number, full name, first name, last name
-            'sort_by' => 'string|in:last_name,patient_number,follow_up_date',
+            'sort_by' => 'string|in:name,patient_number,follow_up_date',
             'order_by' => 'string|in:asc,desc'
         ]);
 
@@ -57,9 +57,14 @@ class PatientController extends Controller
         {
             if($request->filled('sort_by')) 
             {
-                $isDesc = $request->input('order_by') == 'desc';
+                $isDesc = $request->input('order_by', 'desc') == 'desc';
 
-                $patients = $patients->sortBy($request->sort_by, SORT_REGULAR, $isDesc)->values();
+                if ($request->sort_by == "name") {
+                    $patients = $patients->sortBy('first_name', SORT_REGULAR, $isDesc)->values();
+                    $patients = $patients->sortBy('last_name', SORT_REGULAR, $isDesc)->values();
+                } else {
+                    $patients = $patients->sortBy($request->sort_by, SORT_REGULAR, $isDesc)->values();
+                }
             }
 
             $page = $request->input('page',1);
@@ -111,7 +116,7 @@ class PatientController extends Controller
 
         $physician = User::where('id', $request->physician_id)
                         ->whereBlind('role', 'role_index', 'physician')
-                        ->select('id', 'full_name')
+                        ->select('id', 'full_name', 'first_name', 'middle_name', 'last_name', 'suffix')
                         ->first();
 
         if (!$physician)
@@ -202,7 +207,7 @@ class PatientController extends Controller
         if ($request->filled('physician_id')) {
             $physician = User::where('id', $request->physician_id)
                         ->whereBlind('role', 'role_index', 'physician')
-                        ->select('id', 'full_name')
+                        ->select('id', 'full_name', 'first_name', 'middle_name', 'last_name', 'suffix')
                         ->first();
 
             if (!$physician) {

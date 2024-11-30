@@ -97,7 +97,7 @@ class Patient extends Model implements CipherSweetEncrypted
             }
         }
 
-        return sprintf('%s-%05d', $year, $increment);
+        return sprintf('P%05d-%d', $increment, $year);
     }
 
     public function getFullNameAttribute() {
