@@ -55,6 +55,7 @@ class User extends Authenticatable implements CipherSweetEncrypted
         'password',
         'is_locked',
         'failed_login_attempts',
+        'restricted_timestamp',
         'email_verified_at'
     ];
 

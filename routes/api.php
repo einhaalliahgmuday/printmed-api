@@ -11,6 +11,7 @@ use App\Http\Controllers\PatientPhysicianController;
 use App\Http\Controllers\PatientQrController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VitalSignsController;
+use App\Models\Audit;
 use Illuminate\Http\Request;
 
 // PATIENT REGISTRATION
@@ -19,6 +20,7 @@ Route::post('/registrations', [RegistrationController::class, 'store']);
 // AUTH AND PASSWORD
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware(['throttle:3,60']);
 
 //routes that requires authentication to access
