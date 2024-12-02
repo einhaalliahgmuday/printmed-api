@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\AuditAction;
+use App\Events\ModelAction;
 use App\Mail\PatientIdCard;
 use App\Models\Patient;
 use App\Models\PatientQr;
@@ -111,6 +113,9 @@ class PatientQrController extends Controller
             $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
             $patient['last_visit'] = $patient->getLastVisitDate($user->department_id);
             $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
+
+            // implements audit of patient retrieval
+            event(new ModelAction(AuditAction::RETRIEVE, $user, $patient, null, $request));
 
             return $patient;
         }

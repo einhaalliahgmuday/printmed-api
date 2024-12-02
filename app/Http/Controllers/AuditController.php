@@ -14,13 +14,13 @@ class AuditController extends Controller
     {
         $request->validate([
             'page' => 'integer',
-            'resource' => 'string|in:user,patient,consultation,payment',
+            'resource' => 'string|in:user,patient',
             'date_from' => 'date|date_format:Y-m-d',
             'date_until' => 'date|date_format:Y-m-d|after_or_equal:date_from'
         ]);
 
         $page = $request->input('page',1);
-        $limit = 15;
+        $limit = 20;
         $offset = ($page - 1) * $limit;
 
         $auditsInformation = $this->getAudits($request, $offset, $limit);
@@ -40,7 +40,7 @@ class AuditController extends Controller
     public function downloadAudits(Request $request)
     {
         $request->validate([
-            'resource' => 'string|in:user,patient,consultation record,payment',
+            'resource' => 'string|in:user,patient',
             'date_from' => 'date|date_format:Y-m-d',
             'date_until' => 'date|date_format:Y-m-d|after_or_equal:date_from'
         ]);
@@ -58,19 +58,24 @@ class AuditController extends Controller
     {
         $auditsQuery = Audit::query();
 
-        if ($request->filled('resource'))
-        {
-            $auditsQuery->whereBlind('auditable_type', 'auditable_type_index', $this->getRequestResourceClass($request->resource));
+        if ($request->filled('resource')) {
+            switch($request->resource) {
+                case 'user':
+                    $auditsQuery->whereBlind('auditable_type', 'auditable_type_index', 'App\Models\User');
+                    break; 
+                case 'patient':
+                    $auditsQuery->whereBlind('auditable_type', 'auditable_type_index', 'App\Models\Patient')
+                                ->orWhereBlind('auditable_type', 'auditable_type_index', 'App\Models\Consultation');
+                    break;
+            }
         }
 
-        if ($request->filled('date_from'))
-        {
+        if ($request->filled('date_from')) {
             $dateFrom = Carbon::parse($request->date_from)->startOfDay();
             $auditsQuery->where('created_at', '>=', $dateFrom);
         }
 
-        if ($request->filled('date_until'))
-        {
+        if ($request->filled('date_until')) {
             $dateUntil = Carbon::parse($request->date_until)->endOfDay();
             $auditsQuery->where('created_at', '<=', $dateUntil);
         }
@@ -79,15 +84,12 @@ class AuditController extends Controller
         $totalQuery = 0;
         $auditsGet = collect();
 
-        if ($offset !== null && $limit !== null)
-        {
+        if ($offset !== null && $limit !== null) {
             $auditsQueryClone = clone $auditsQuery;
             $totalQuery = $auditsQueryClone->count();
 
             $auditsGet = $auditsQuery->offset($offset)->limit($limit)->get();
-        }
-        else 
-        {
+        } else {
             $auditsGet = $auditsQuery->get();
         }
 
@@ -138,34 +140,31 @@ class AuditController extends Controller
             foreach ($array as $key => $value)
             {
                 $key = ucwords(str_replace('_', " ", $key));
-                $formatted[] = "{$key}: $value";
+                $formatted[] = "{$key}: {$value}";
             }
         }
     
         return $formatted;
     }
 
-    public function getRequestResourceClass(string $resource)
-    {
-        $requestResourceClass = null;
+    // public function getRequestResourceClass(string $resource)
+    // {
+    //     $requestResourceClass = null;
 
-        switch ($resource) {
-            case 'user':
-                $requestResourceClass = 'App\Models\User';
-                break;
-            case 'patient':
-                $requestResourceClass = 'App\Models\Patient';
-                break;
-            case 'consultation':
-                $requestResourceClass = 'App\Models\Consultation';
-                break;
-            case 'payment':
-                $requestResourceClass = 'App\Models\Payment';
-                break;
-        }
+    //     switch ($resource) {
+    //         case 'user':
+    //             $requestResourceClass = 'App\Models\User';
+    //             break; 
+    //         case 'patient':
+    //             $requestResourceClass = 'App\Models\Patient';
+    //             break;
+    //         case 'consultation':
+    //             $requestResourceClass = 'App\Models\Consultation';
+    //             break;
+    //     }
 
-        return $requestResourceClass;
-    }
+    //     return $requestResourceClass;
+    // }
 
     public function getResourceType(string $auditableType)
     {
@@ -186,7 +185,7 @@ class AuditController extends Controller
             {
                 $resourceEntity = $resourceType === 'user' ? $auditable->personnel_number : $auditable->patient_number;
             }
-            else if (in_array($resourceType, ['payment', 'consultation']))
+            else if (in_array($resourceType, ['consultation']))
             {
                 $resourceEntity = $auditable->patient->patient_number;
             }
@@ -202,30 +201,21 @@ class AuditController extends Controller
         $resource = $audit->auditable_type ? $this->getResourceType($audit->auditable_type) : null;
         $event = $audit->event;
 
-        if ($event == 'updated') 
-        {
+        if ($event == 'updated') {
             $auditMessage = "{$event} a {$resource}";
-        }
-        else if ($event == 'created') 
-        {
+        } else if ($event == 'created') {
             $auditMessage = "added a {$resource}";
-        } 
-        else if ($event == 'retrieved') 
-        {
+        } else if ($event == 'retrieved') {
             $auditMessage = "viewed a {$resource}";
-        } 
-        else if (in_array($event, ['unrestricted', 'locked', 'unlocked'])) 
-        {
+        } else if (in_array($event, ['locked', 'unlocked'])) {  // 'unrestricted'
             $auditMessage = "{$event} a user";
-        }
-        else if ($event == 'sent reset link') 
-        {
-            $auditMessage = "sent reset link to user";
-        } 
-        else if (in_array($event, ['login', 'logout', 'reset password', 'restricted'])) 
-        {
+        } else if (in_array($event, ['login', 'logout'])) { // 'reset password', 'restricted'
             $auditMessage = $event;
         }
+        // else if ($event == 'sent reset link') 
+        // {
+        //     $auditMessage = "sent reset link to user";
+        // } 
 
         return strtolower($auditMessage);
     }
