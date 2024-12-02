@@ -235,6 +235,8 @@ class PatientController extends Controller
             $patient->update(['photo' => $path]);
         }
 
+        $patient->makeHidden(['qr_status', 'age', 'address', 'vital_signs']);
+
         $originalData = $patient->toArray();
 
         $patient->update($fields);
@@ -245,6 +247,7 @@ class PatientController extends Controller
         // pusher event
         event(new PatientUpdated($patient));
 
+        $patient->append(['qr_status', 'age', 'address', 'vital_signs']);
         if ($patient->photo) {
             $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
         }
@@ -285,41 +288,41 @@ class PatientController extends Controller
     //     ], 200);
     // }
 
-    public function getPhoto(Patient $patient)
-    {
-        $path = $patient->photo;
+    // public function getPhoto(Patient $patient)
+    // {
+    //     $path = $patient->photo;
 
-        if ($path != null) {
-            if (!Storage::exists($path)) {
-                return response()->json(['error' => 'Photo not found'], 404);
-            }
+    //     if ($path != null) {
+    //         if (!Storage::exists($path)) {
+    //             return response()->json(['error' => 'Photo not found'], 404);
+    //         }
     
-            $mimeType = Storage::mimeType($path);
+    //         $mimeType = Storage::mimeType($path);
     
-            return response(Storage::get($path))->headers('Content-Type', $mimeType);
-        }
+    //         return response(Storage::get($path))->headers('Content-Type', $mimeType);
+    //     }
 
-        return response()->json([
-            'message' => 'Patient has no photo.'
-        ], 400);
-    }
+    //     return response()->json([
+    //         'message' => 'Patient has no photo.'
+    //     ], 400);
+    // }
 
-    public function updatePhoto(Request $request, Patient $patient) {
-        $request->validate([
-            'image' => 'required|image|mimes:png|max:2048|dimensions:min_width=200,min_height=200'
-        ]);
+    // public function updatePhoto(Request $request, Patient $patient) {
+    //     $request->validate([
+    //         'image' => 'required|image|mimes:png|max:2048|dimensions:min_width=200,min_height=200'
+    //     ]);
         
-        if($patient->photo != null) {
-            Storage::delete($patient->photo);;
-        }
+    //     if($patient->photo != null) {
+    //         Storage::delete($patient->photo);;
+    //     }
 
-        $path = $request->file('image')->store('images/patients', ['local', 'private']);
-        $patient->update(['photo' => $path]);
+    //     $path = $request->file('image')->store('images/patients', ['local', 'private']);
+    //     $patient->update(['photo' => $path]);
 
-        $mimeType = Storage::mimeType($path);
+    //     $mimeType = Storage::mimeType($path);
 
-        return response(Storage::get($path))->header('Content-Type', $mimeType);
-    }
+    //     return response(Storage::get($path))->header('Content-Type', $mimeType);
+    // }
 
     public function getDuplicates(Request $request) 
     {

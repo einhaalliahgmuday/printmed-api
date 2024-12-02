@@ -25,12 +25,12 @@ class UserController extends Controller
     {
         $request->validate([
             'page' => 'integer',
-            'search' => 'string',   // personnel number, full name
+            'search' => 'string',   // personnel number, full name, first name, last name
             'role' => 'string|in:admin,physician,secretary',
             'department_id' => 'integer|exists:departments,id',
             'status' => 'string|in:new,active,locked,restricted',
             'sort_by' => 'string|in:personnel_number,last_name',
-            'sort_direction' => 'string|in:asc,desc'
+            'order_by' => 'string|in:asc,desc'
         ]);
 
         $query = User::query();
@@ -41,7 +41,9 @@ class UserController extends Controller
 
             $query->where(function($q) use ($search) {
                 $q->whereBlind('personnel_number', 'personnel_number_index', $search)
-                ->orWhereBlind('full_name', 'full_name_index', $search);
+                ->orWhereBlind('full_name', 'full_name_index', $search)
+                ->orWhereBlind('first_name', 'first_name_index', $search)
+                ->orWhereBlind('last_name', 'last_name_index', $search);
             });
         }
         
@@ -80,9 +82,9 @@ class UserController extends Controller
         {
             if($request->filled('sort_by')) 
             {
-                $isDesc = $request->input('sort_direction') === 'desc';
+                $isDesc = $request->input('order_by') === 'desc';
 
-                $users = $users->sortBy($request->sort_by, SORT_REGULAR, $isDesc)->values();
+                $users = $users->sortBy("personnel_number", SORT_REGULAR, $isDesc)->values();
             }
 
             $page = $request->input('page',1);
@@ -99,14 +101,14 @@ class UserController extends Controller
             return $paginator;
         }
 
-        return response()->json(['users' => null]);
+        return response()->json(['data' => null]);
     }
 
     public function store(Request $request) 
     {
         $fields = $request->validate([
             'role' => 'required|string|in:admin,physician,secretary,queue manager',
-            'personnel_number' => 'required|string|size:8',
+            'personnel_number' => 'required|string|size:10',
             'first_name' => 'required|string|max:100',
             'middle_name' => 'string|max:100',
             'last_name' => 'required|string|max:100',
@@ -130,12 +132,12 @@ class UserController extends Controller
 
         if ($this->isUserPersonnelNumberExists($request->personnel_number)) 
         {
-            return response()->json(['message' => 'The personnel number is already taken'], 422);
+            return response()->json(['field' => 'personnel_number', 'message' => 'The personnel number is already taken'], 422);
         }
 
         if ($this->isUserEmailExists($request->email)) 
         {
-            return response()->json(['message' => 'The email is already taken.'], 422);
+            return response()->json(['field' => 'email', 'message' => 'The email is already taken.'], 422);
         }
 
         $fields['full_name'] = "{$request->first_name} {$request->last_name}";
@@ -147,9 +149,7 @@ class UserController extends Controller
 
         $this->sendResetLink(true, $user);
 
-        return response()->json([
-            'user' => $user
-        ]);
+        return $user;
     }
 
     public function isEmailExists(Request $request)
@@ -177,25 +177,33 @@ class UserController extends Controller
     public function updateInformation(Request $request, User $userToUpdate) 
     {
         $fields = $request->validate([
-            'personnel_number' => 'string|size:8',
+            'personnel_number' => 'string|size:10',
             'first_name' => 'string|max:100',
             'middle_name' => 'nullable|string|max:100',
             'last_name' => 'string|max:100',
             'suffix' => 'nullable|string|max:10',
             'sex' => 'string|max:6',
             'birthdate' => 'date|date_format:Y-m-d',
-            'department_id' => 'integer|exists:departments,id',
+            'department_id' => 'nullable|integer|exists:departments,id',
             'email' => 'email|max:100',
         ]);
 
         if ($request->email !== $userToUpdate->email && $this->isUserEmailExists($request->email)) 
         {
-            return response()->json(['message' => 'The email is already taken.'], 422);
+            return response()->json(['field' => 'email', 'message' => 'The email is already taken.'], 422);
         }
 
         if ($request->personnel_number !== $userToUpdate->personnel_number && $this->isUserPersonnelNumberExists($request->personnel_number)) 
         {
-            return response()->json(['message' => 'The personnel number is already taken.'], 422);
+            return response()->json(['field' => 'personnel_number', 'message' => 'The personnel number is already taken'], 422);
+        }
+
+        if (in_array($request->role, ['physician', 'secretary'])) 
+        {
+            if (!$request->filled('department_id') || $request->department_id == "")
+            {
+                return response()->json(['message' => 'The department field is required.'], 422);
+            }
         }
 
         $originalData = $userToUpdate->toArray();
@@ -235,7 +243,7 @@ class UserController extends Controller
         $this->sendResetLink(false, $user);
 
         // implements audit of sending reset link, which is executed by Admin
-        event(new ModelAction(AuditAction::SENT_RESET_LINK, $request->user(), $user, null, $request));
+        // event(new ModelAction(AuditAction::SENT_RESET_LINK, $request->user(), $user, null, $request));
 
         return response()->json([
             'message' => 'Reset link sent.'
@@ -262,12 +270,12 @@ class UserController extends Controller
 
     public function unrestrict(Request $request, User $userToUpdate)
     {
-        $failedLoginAttempts = $userToUpdate->failed_login_attempts;
+        // $failedLoginAttempts = $userToUpdate->failed_login_attempts;
         
         $userToUpdate->failed_login_attempts = 0;
         $userToUpdate->save();
 
-        $failedLoginAttempts <= 3 ?: event(new ModelAction(AuditAction::UNRESTRICT, $request->user(), $userToUpdate, null, $request));
+        // $failedLoginAttempts <= 3 ?: event(new ModelAction(AuditAction::UNRESTRICT, $request->user(), $userToUpdate, null, $request));
 
         return $userToUpdate;
     }
@@ -378,7 +386,7 @@ class UserController extends Controller
         // gets physicians from the same department as secretary and whose accounts are not locked
         $query = User::query()->whereBlind('role', 'role_index', 'physician')->where('department_id', $user->department_id)->where('is_locked', false);
 
-        $physicians = $query->select('id', 'role', 'personnel_number', 'full_name', 'first_name', 'middle_name', 'last_name', 'suffix', 'sex', 'department_id')->get();
+        $physicians = $query->get()->makeHidden('email');
 
         return $physicians;
     }
