@@ -6,6 +6,7 @@ use App\Events\RegistrationNew;
 use App\Models\Registration;
 use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class RegistrationController extends Controller
 {
@@ -65,7 +66,7 @@ class RegistrationController extends Controller
         $registration = Registration::create($fields);
 
         // pusher event
-        event(new RegistrationNew($registration));
+        RegistrationNew::dispatch($registration);
 
         return response()->json(['registration_id' => $registration->registration_id]);
     }
