@@ -338,16 +338,23 @@ class UserController extends Controller
         ]);
 
         $otp = Otp::whereBlind('email', 'email_index', $request->email)
-            ->whereBlind('code', 'code_index', $request->code)
+            ->orderByDesc('expires_at')
             ->first();
 
         $user = $otp->user;
         
-        if (!$otp || now()->isAfter($otp->expires_at) || !Hash::check($request->token, $otp->token) || !$user) 
-        {
+        if (!$otp || !Hash::check($request->token, $otp->token) || !$user) {
             return response()->json([
                 'message' => 'Invalid request'
             ], 400);
+        } else if (now()->isAfter($otp->expires_at)) {
+            return response()->json([
+                'message' => 'OTP is expired.'
+            ], 410);
+        } else if ($request->code != $otp->code) {
+            return response()->json([
+                'message' => 'OTP is invalid.'
+            ], 401);
         }
         
         $user->update(['email' => $request->email, 'email_verified_at' => now()]);
