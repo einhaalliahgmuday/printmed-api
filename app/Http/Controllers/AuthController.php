@@ -91,7 +91,7 @@ class AuthController extends Controller
             'code' => 'required|size:6'
         ]);
 
-        $otp = Otp::whereBlind('email', 'email_index', $request->email)->first();
+        $otp = Otp::whereBlind('email', 'email_index', $request->email)->orderByDesc('expires_at')->first();
         $user = User::whereBlind('email', 'email_index', $request->email)->first();
         
         if (!$otp || !$user || ($otp && !Hash::check($request->token, $otp->token))) {
@@ -129,7 +129,7 @@ class AuthController extends Controller
             'email' => 'required|email'
         ]);
 
-        $otp = Otp::whereBlind('email', 'email_index', $request->email)->first();
+        $otp = Otp::whereBlind('email', 'email_index', $request->email)->orderByDesc('expires_at')->first();
         $user = User::whereBlind('email', 'email_index', $request->email)->first();
         
         if (!$user || !$otp || ($otp && !Hash::check($request->token, $otp->token))) {
@@ -176,9 +176,10 @@ class AuthController extends Controller
 
         $resetToken = ResetToken::orderByDesc('expires_at')->whereBlind('email', 'email_index', $request->email)->first();
         
-        if (!$resetToken || !Hash::check($request->input('token'), $resetToken->token) || now()->isAfter($resetToken->expires_at))
-        {
+        if (!$resetToken || !Hash::check($request->input('token'), $resetToken->token)) {
             return response()->json(['message'=> 'Invalid request'], 400);
+        } else if ($resetToken && now()->isAfter($resetToken->expires_at)) {
+            return response()->json(['message'=> 'Reset token is expired.'], 410);
         }
 
         $user = User::whereBlind('first_name', 'first_name_index', $request->first_name)
@@ -186,9 +187,8 @@ class AuthController extends Controller
                     ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
                     ->whereBlind('email', 'email_index', $request->email)->first();
 
-        if (!$user)
-        {
-            return response()->json(['message'=> 'Invalid credentials'], 404);
+        if (!$user) {
+            return response()->json(['message'=> 'Invalid credentials'], 401);
         }
     
         
