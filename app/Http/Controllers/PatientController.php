@@ -6,6 +6,7 @@ use App\AuditAction;
 use App\Events\ModelAction;
 use App\Events\PatientNew;
 use App\Events\PatientUpdated;
+use App\Events\RegistrationDeleted;
 use App\Models\Patient;
 use App\Models\PatientPhysician;
 use App\Models\Registration;
@@ -119,8 +120,7 @@ class PatientController extends Controller
                         ->select('id', 'full_name', 'first_name', 'middle_name', 'last_name', 'suffix')
                         ->first();
 
-        if (!$physician)
-        {
+        if (!$physician) {
             return response()->json([
                 'message' => 'Physician not found.'
             ], 400);
@@ -141,14 +141,12 @@ class PatientController extends Controller
 
             if ($registration) {
                 $registration->delete();
+                RegistrationDeleted::dispatch($request->registration_id);
             }
         }
 
         // audit creation of patient
         event(new ModelAction(AuditAction::CREATE, $user, $patient, null, $request));
-
-        // pusher event
-        event(new PatientNew($patient));
 
         $patient['physician'] = $physician;
         $patient['follow_up_date'] = null;
@@ -235,7 +233,7 @@ class PatientController extends Controller
             $patient->update(['photo' => $path]);
         }
 
-        $patient->makeHidden(['qr_status', 'age', 'address', 'vital_signs']);
+        $patient->makeHidden(['qr_status', 'age', 'address', 'vital_signs', 'full_name']);
 
         $originalData = $patient->toArray();
 
@@ -244,10 +242,7 @@ class PatientController extends Controller
         // implements audit of update
         event(new ModelAction(AuditAction::UPDATE, $request->user(), $patient, $originalData, $request));
 
-        // pusher event
-        event(new PatientUpdated($patient));
-
-        $patient->append(['qr_status', 'age', 'address', 'vital_signs']);
+        $patient->append(['qr_status', 'age', 'address', 'vital_signs', 'full_name']);
         if ($patient->photo) {
             $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
         }

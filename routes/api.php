@@ -11,7 +11,6 @@ use App\Http\Controllers\PatientPhysicianController;
 use App\Http\Controllers\PatientQrController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VitalSignsController;
-use App\Models\Audit;
 use Illuminate\Http\Request;
 
 // PATIENT REGISTRATION
@@ -43,7 +42,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::put('/users/{user_to_update}/toggle-lock', [UserController::class,'toggleLock'])->middleware(['role:admin']);
     Route::put('/users/{user_to_update}/update-information', [UserController::class, 'updateInformation'])->middleware(['role:admin']);
     Route::put('/users/{user_to_update}/unrestrict', [UserController::class, 'unrestrict'])->middleware(['role:admin']);
-    Route::get('/users-count', [UserController::class, 'getUsersCount'])->middleware(['role:admin']);
+    Route::get('/users-count', [UserController::class, 'count'])->middleware(['role:admin']);
     // user controls
     Route::put('/update-email', [UserController::class, 'updateEmail']);
     Route::put('/update-email/verify-otp', [UserController::class, 'verifyEmailOtp']);

@@ -32,7 +32,7 @@ class RegistrationController extends Controller
         }
 
         $query->orderBy('updated_at', 'desc');
-        $registrations = $query->paginate();
+        $registrations = $query->paginate(20);
 
         return $registrations;
     }

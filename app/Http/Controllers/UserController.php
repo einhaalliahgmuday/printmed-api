@@ -280,12 +280,12 @@ class UserController extends Controller
         return $userToUpdate;
     }
 
-    public function getUsersCount()
+    public function count()
     {
         //only gets count users who are not locked
-        $admins = User::whereBlind('role', 'role_index', 'admin')->where('is_locked', false)->count();
-        $physicians = User::whereBlind('role', 'role_index', 'physician')->where('is_locked', false)->count();
-        $secretaries = User::whereBlind('role', 'role_index', 'secretary')->where('is_locked', false)->count();
+        $admins = User::whereBlind('role', 'role_index', 'admin')->count();
+        $physicians = User::whereBlind('role', 'role_index', 'physician')->count();
+        $secretaries = User::whereBlind('role', 'role_index', 'secretary')->count();
         
         return response()->json([
             'admins' => $admins,
