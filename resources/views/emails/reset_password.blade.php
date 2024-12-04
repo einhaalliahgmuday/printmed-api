@@ -25,8 +25,9 @@
         }
         .logo {
             max-width: 100%;
-            height: 60px;
+            height: 50px;
             margin-bottom: .5rem;
+            margin: 0 auto;
         }
         .button {
 			display: block;
@@ -41,12 +42,15 @@
 		.note {
 			margin-bottom: .5rem;
 		}
+        .ii a[href] {
+            color: #fff;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="logo-container">
-            <img src="{{asset('images/carmona_hospital_logo_1.png')}}" class="logo">
+            <img class="logo" src="https://firebasestorage.googleapis.com/v0/b/souschef-2024.firebasestorage.app/o/carmona_hospital_logo_1.png?alt=media&token=b6b2a182-f2a8-4000-9b0d-ce3b050a26c4" alt="">
         </div>
         @if (!$isNewAccount)
             <p>We received a request to reset your password.</p>
