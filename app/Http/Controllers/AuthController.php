@@ -9,6 +9,7 @@ use App\Models\ResetToken;
 use App\Models\User;
 use App\Notifications\OtpVerificationNotification;
 use App\Traits\CommonMethodsTrait;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -38,24 +39,25 @@ class AuthController extends Controller
         }
 
         //if account is restricted due to failed login attempts
-        if ($user->failed_login_attempts >= 3)
+        if ($user->failed_login_attempts >= 3 && $user->failed_login_timestamp > Carbon::now()->subHour())
         {
             return response()->json([
-                'message' => 'This account is restricted due to multiple failed login attempts. Please contact the admin.'
-            ], 401);
+                'message' => 'This account is temporarily restricted due to multiple failed login attempts. You may wait for an hour or contact the admin.'
+            ], 403);
         }
 
         //if wrong password is provided
         if (!Hash::check($request->password, $user->password)) 
         {
             $user->failed_login_attempts++;
+            $user->failed_login_timestamp = now();
             $user->save();
 
             // implemented custom audit event in when account is restricted due to 3 failed login attempts
-            if ($user->failed_login_attempts >= 3)
-            {
-                event(new ModelAction(AuditAction::RESTRICT, $user, $user, null, $request));
-            }
+            // if ($user->failed_login_attempts >= 3)
+            // {
+                // event(new ModelAction(AuditAction::RESTRICT, $user, $user, null, $request));
+            // }
 
             return response()->json([
                 'message' => 'The provided credentials are incorrect.'
@@ -89,23 +91,28 @@ class AuthController extends Controller
             'code' => 'required|size:6'
         ]);
 
-        $otp = Otp::whereBlind('email', 'email_index', $request->email)
-            ->whereBlind('code', 'code_index', $request->code)
-            ->first();
-
+        $otp = Otp::whereBlind('email', 'email_index', $request->email)->orderByDesc('expires_at')->first();
         $user = User::whereBlind('email', 'email_index', $request->email)->first();
         
-        if (!$otp || now()->isAfter($otp->expires_at) || !Hash::check($request->token, $otp->token) || !$user) 
-        {
+        if (!$otp || !$user || ($otp && !Hash::check($request->token, $otp->token))) {
             return response()->json([
                 'message' => 'Invalid request'
-            ], 404);
+            ], 400);
+        } else if (now()->isAfter($otp->expires_at)) {
+            return response()->json([
+                'message' => 'OTP is expired.'
+            ], 410);
+        } else if ($request->code != $otp->code) {
+            return response()->json([
+                'message' => 'Invalid OTP'
+            ], 401);
         }
         
         $token = $user->createToken($user->id)->plainTextToken;
         $user->update(['email_verified_at' => now()]);
+        $otp->delete();
 
-        // implements audit of login
+        // audits login
         event(new ModelAction(AuditAction::LOGIN, $user, $user, null, $request));
         
 
@@ -115,11 +122,40 @@ class AuthController extends Controller
         ]);
     }
 
+    public function resendOtp(Request $request) 
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email'
+        ]);
+
+        $otp = Otp::whereBlind('email', 'email_index', $request->email)->orderByDesc('expires_at')->first();
+        $user = User::whereBlind('email', 'email_index', $request->email)->first();
+        
+        if (!$user || !$otp || ($otp && !Hash::check($request->token, $otp->token))) {
+            return response()->json([
+                'message' => 'Invalid request'
+            ], 400);
+        }
+        
+        $otp->update([
+            'code' => rand(100000, 999999),
+            'expires_at' => now()->addMinutes(5)
+        ]);
+
+        $user->notify(new OtpVerificationNotification($otp->code));
+        
+
+        return response()->json([
+            'message' => "OTP resent successfully.",
+        ], 200);
+    }
+
     public function logout(Request $request) 
     {
         $request->user()->tokens()->delete();   
 
-        // implements audit of logout
+        // audits logout
         event(new ModelAction(AuditAction::LOGOUT, $request->user(), $request->user(), null, $request));
 
         return response()->json([
@@ -140,16 +176,16 @@ class AuthController extends Controller
 
         $resetToken = ResetToken::orderByDesc('expires_at')->whereBlind('email', 'email_index', $request->email)->first();
         
-        if (!$resetToken || !Hash::check($request->input('token'), $resetToken->token) || now()->isAfter($resetToken->expires_at))
-        {
+        if (!$resetToken || !Hash::check($request->input('token'), $resetToken->token)) {
             return response()->json(['message'=> 'Invalid request'], 400);
+        } else if ($resetToken && now()->isAfter($resetToken->expires_at)) {
+            return response()->json(['message'=> 'Reset token is expired.'], 410);
         }
 
         $user = User::whereBlind('email', 'email_index', $request->email)->first();
 
-        if (!$user)
-        {
-            return response()->json(['message'=> 'Invalid credentials'], 404);
+        if (!$user) {
+            return response()->json(['message'=> 'Invalid credentials'], 401);
         }
     
         $user->forceFill(['password' => Hash::make($request->password), 'email_verified_at' => now()])->save();
@@ -158,7 +194,7 @@ class AuthController extends Controller
         $user->tokens()->delete();  // delete all login tokens
         
         // implements audit of resetting password
-        event(new ModelAction(AuditAction::RESET_PASSWORD, $user, $user, null, $request));
+        // event(new ModelAction(AuditAction::RESET_PASSWORD, $user, $user, null, $request));
         
         return response()->json(['message' => 'Password has been reset successfully.'], 200);
     }

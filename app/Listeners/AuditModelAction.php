@@ -3,11 +3,15 @@
 namespace App\Listeners;
 
 use App\AuditAction;
+use App\Events\AuditNew;
 use App\Events\ModelAction;
 use App\Models\Audit;
+use App\Traits\AuditTrait;
 
 class AuditModelAction
 {
+    use AuditTrait;
+
     public function handle(ModelAction $event): void
     {
         $action = $event->action;
@@ -110,6 +114,9 @@ class AuditModelAction
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
         ]);
+
+        $formattedAudit = $this->formatAudit($audit);
+        AuditNew::dispatch($formattedAudit);
     }
 
     protected function formatPrescriptions(array $prescriptions)

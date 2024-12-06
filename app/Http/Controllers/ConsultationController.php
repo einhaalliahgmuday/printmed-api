@@ -7,12 +7,16 @@ use App\Events\ModelAction;
 use App\Models\Consultation;
 use App\Models\Patient;
 use App\Models\Prescription;
+use App\Traits\CommonMethodsTrait;
+use Barryvdh\Snappy\Facades\SnappyPdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 class ConsultationController extends Controller
 {
+    use CommonMethodsTrait;
+
     //store and update has policy implemented
     //only physicians of the patient can create a record
     //only the physician of a record can update the record
@@ -118,6 +122,27 @@ class ConsultationController extends Controller
         event(new ModelAction(AuditAction::RETRIEVE, $request->user(), $consultation, null, $request));
 
         return $consultation;
+    }
+
+    public function printPrescription(Request $request, Consultation $consultation)
+    {
+        Gate::authorize('is-assigned-physician', [$consultation->patient_id]);
+
+        $prescriptions = $this->getPrescriptionsPages($consultation->prescriptions()->get());
+
+        $pdf = SnappyPdf::loadView('prescription', 
+                                ['date' => $consultation->created_at, 
+                                'follow_up_date' => $consultation->follow_up_date, 
+                                'patient' => $consultation->patient()->first(), 
+                                'physician' => $consultation->physician()->first(), 
+                                'prescriptions' => $prescriptions
+                                ])
+                        ->setPaper('a4', 'landscape')
+                        ->setOptions(['margin-top' => 1.5, 'margin-bottom' => 1.5, 'margin-right' => 1.5, 'margin-left' => 1.5])
+                        ->setOption('zoom', 1.15)
+                        ->setOption('enable-local-file-access', true);
+
+        return $pdf->download("prescription.pdf");
     }
 
     // public function update(Request $request, Consultation $consultation)

@@ -6,6 +6,7 @@ use App\AuditAction;
 use App\Events\ModelAction;
 use App\Events\PatientNew;
 use App\Events\PatientUpdated;
+use App\Events\RegistrationDeleted;
 use App\Models\Patient;
 use App\Models\PatientPhysician;
 use App\Models\Registration;
@@ -26,7 +27,7 @@ class PatientController extends Controller
         $request->validate([
             'page' => 'integer',
             'search' => 'string',   // patient number, full name, first name, last name
-            'sort_by' => 'string|in:last_name,patient_number,follow_up_date',
+            'sort_by' => 'string|in:name,patient_number,follow_up_date',
             'order_by' => 'string|in:asc,desc'
         ]);
 
@@ -57,9 +58,14 @@ class PatientController extends Controller
         {
             if($request->filled('sort_by')) 
             {
-                $isDesc = $request->input('order_by') == 'desc';
+                $isDesc = $request->input('order_by', 'desc') == 'desc';
 
-                $patients = $patients->sortBy($request->sort_by, SORT_REGULAR, $isDesc)->values();
+                if ($request->sort_by == "name") {
+                    $patients = $patients->sortBy('first_name', SORT_REGULAR, $isDesc)->values();
+                    $patients = $patients->sortBy('last_name', SORT_REGULAR, $isDesc)->values();
+                } else {
+                    $patients = $patients->sortBy($request->sort_by, SORT_REGULAR, $isDesc)->values();
+                }
             }
 
             $page = $request->input('page',1);
@@ -111,11 +117,10 @@ class PatientController extends Controller
 
         $physician = User::where('id', $request->physician_id)
                         ->whereBlind('role', 'role_index', 'physician')
-                        ->select('id', 'full_name')
+                        ->select('id', 'full_name', 'first_name', 'middle_name', 'last_name', 'suffix')
                         ->first();
 
-        if (!$physician)
-        {
+        if (!$physician) {
             return response()->json([
                 'message' => 'Physician not found.'
             ], 400);
@@ -136,20 +141,20 @@ class PatientController extends Controller
 
             if ($registration) {
                 $registration->delete();
+                RegistrationDeleted::dispatch($request->registration_id);
             }
         }
 
         // audit creation of patient
         event(new ModelAction(AuditAction::CREATE, $user, $patient, null, $request));
 
-        // pusher event
-        event(new PatientNew($patient));
-
         $patient['physician'] = $physician;
         $patient['follow_up_date'] = null;
+        $patient['last_visit'] = null;
         if ($patient->photo) {
             $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
         }
+        $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
 
         return $patient;
     }
@@ -163,6 +168,8 @@ class PatientController extends Controller
         }
         $patient['physician'] = $patient->getPhysician($user->department_id);
         $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
+        $patient['last_visit'] = $patient->getLastVisitDate($user->department_id);
+        $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
 
         // implements audit of patient retrieval
         event(new ModelAction(AuditAction::RETRIEVE, $request->user(), $patient, null, $request));
@@ -202,7 +209,7 @@ class PatientController extends Controller
         if ($request->filled('physician_id')) {
             $physician = User::where('id', $request->physician_id)
                         ->whereBlind('role', 'role_index', 'physician')
-                        ->select('id', 'full_name')
+                        ->select('id', 'full_name', 'first_name', 'middle_name', 'last_name', 'suffix')
                         ->first();
 
             if (!$physician) {
@@ -226,6 +233,8 @@ class PatientController extends Controller
             $patient->update(['photo' => $path]);
         }
 
+        $patient->makeHidden(['qr_status', 'age', 'address', 'vital_signs', 'full_name']);
+
         $originalData = $patient->toArray();
 
         $patient->update($fields);
@@ -233,14 +242,14 @@ class PatientController extends Controller
         // implements audit of update
         event(new ModelAction(AuditAction::UPDATE, $request->user(), $patient, $originalData, $request));
 
-        // pusher event
-        event(new PatientUpdated($patient));
-
+        $patient->append(['qr_status', 'age', 'address', 'vital_signs', 'full_name']);
         if ($patient->photo) {
             $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
         }
         $patient['physician'] = $patient->getPhysician($user->department_id);
         $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
+        $patient['last_visit'] = $patient->getLastVisitDate($user->department_id);
+        $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
 
         return $patient;
     }
@@ -274,41 +283,41 @@ class PatientController extends Controller
     //     ], 200);
     // }
 
-    public function getPhoto(Patient $patient)
-    {
-        $path = $patient->photo;
+    // public function getPhoto(Patient $patient)
+    // {
+    //     $path = $patient->photo;
 
-        if ($path != null) {
-            if (!Storage::exists($path)) {
-                return response()->json(['error' => 'Photo not found'], 404);
-            }
+    //     if ($path != null) {
+    //         if (!Storage::exists($path)) {
+    //             return response()->json(['error' => 'Photo not found'], 404);
+    //         }
     
-            $mimeType = Storage::mimeType($path);
+    //         $mimeType = Storage::mimeType($path);
     
-            return response(Storage::get($path))->headers('Content-Type', $mimeType);
-        }
+    //         return response(Storage::get($path))->headers('Content-Type', $mimeType);
+    //     }
 
-        return response()->json([
-            'message' => 'Patient has no photo.'
-        ], 400);
-    }
+    //     return response()->json([
+    //         'message' => 'Patient has no photo.'
+    //     ], 400);
+    // }
 
-    public function updatePhoto(Request $request, Patient $patient) {
-        $request->validate([
-            'image' => 'required|image|mimes:png|max:2048|dimensions:min_width=200,min_height=200'
-        ]);
+    // public function updatePhoto(Request $request, Patient $patient) {
+    //     $request->validate([
+    //         'image' => 'required|image|mimes:png|max:2048|dimensions:min_width=200,min_height=200'
+    //     ]);
         
-        if($patient->photo != null) {
-            Storage::delete($patient->photo);;
-        }
+    //     if($patient->photo != null) {
+    //         Storage::delete($patient->photo);;
+    //     }
 
-        $path = $request->file('image')->store('images/patients', ['local', 'private']);
-        $patient->update(['photo' => $path]);
+    //     $path = $request->file('image')->store('images/patients', ['local', 'private']);
+    //     $patient->update(['photo' => $path]);
 
-        $mimeType = Storage::mimeType($path);
+    //     $mimeType = Storage::mimeType($path);
 
-        return response(Storage::get($path))->header('Content-Type', $mimeType);
-    }
+    //     return response(Storage::get($path))->header('Content-Type', $mimeType);
+    // }
 
     public function getDuplicates(Request $request) 
     {
@@ -333,6 +342,7 @@ class PatientController extends Controller
             }   
             $patient['physician'] = $patient->getPhysician($user->department_id);
             $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
+            $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
         }
 
         return $patients;

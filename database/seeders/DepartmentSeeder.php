@@ -14,6 +14,5 @@ class DepartmentSeeder extends Seeder
     {
         Department::create(['name' => 'Pediatrics']);
         Department::create(['name' => 'Opthalmology']);
-        Department::create(['name' => 'ENT']);
     }
 }

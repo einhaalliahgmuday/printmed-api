@@ -246,8 +246,8 @@
 						<div class="information-container back">
 							<div class="w-80">
 								<p>If this ID is lost or stolen, please immediately report it to the hospital's registration desk or contact our support team to deactivate and reissue your ID.</p>
-								<p><span>Phone: </span>{{"(02) 1234-5678"}}</p>
-								<p><span>Email: </span>{{"support@carmonamedical.com"}}</p>
+								<p><span>Phone: </span>{{"(00) 0000-0000"}}</p>
+								<p><span>Email: </span>{{"printmed.samsantech@gmail.com"}}</p>
 							</div>
 							<div class="w-95">
 								<p class="fs-8 fi">This QR code is used exclusively for accessing the patient's record within the Patient Management Record System. It serves as an identification method to ensure secure and authorized access to the patient’s health information. Unauthorized use of this QR code is prohibited and may result in legal action.</p>

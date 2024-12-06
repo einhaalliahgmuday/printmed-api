@@ -14,7 +14,7 @@ class UserSeeder extends Seeder
     {
         User::create([
             'role' => 'admin',
-            'personnel_number' => 'PN000001',
+            'personnel_number' => 'PN-0000001',
             'full_name' => 'Einha Alliah Muday',
             'first_name' => 'Einha Alliah',
             'middle_name' => 'Genciana',
@@ -22,46 +22,59 @@ class UserSeeder extends Seeder
             'sex' => 'Female',
             'birthdate' => '2003-02-19',
             'email' => 'einhalliahmuday@gmail.com',
-            'password' => 'password',
+            'password' => 'Pass12**',
         ]);
 
         User::create([
             'role' => 'physician',
-            'personnel_number' => 'PN000002',
+            'personnel_number' => 'PN-0000002',
             'full_name' => 'Salma Fae Lumaoang',
             'first_name' => 'Salma Fae',
             'last_name' => 'Lumaoang',
             'sex' => 'Female',
             'birthdate' => '2003-08-09',
-            'email' => 'salmafaelumaoang@gmail.com',
-            'password' => 'password',
+            'email' => 'einhaalliah@gmail.com',
+            'password' => 'Pass12**',
             'department_id' => 1
         ]);
 
         User::create([
             'role' => 'secretary',
-            'personnel_number' => 'PN000003',
+            'personnel_number' => 'PN-0000003',
             'full_name' => 'Michi Legaspino',
             'first_name' => 'Michi',
             'last_name' => 'Legaspino',
             'sex' => 'Female',
             'birthdate' => '2002-01-07',
-            'email' => 'michilegaspino@gmail.com',
-            'password' => 'password',
+            'email' => 'aynamuday@gmail.com',
+            'password' => 'Pass12**',
             'department_id' => 1
         ]);
 
         User::create([
             'role' => 'physician',
-            'personnel_number' => 'PN000005',
+            'personnel_number' => 'PN-0000004',
             'full_name' => 'Mekaila Mae Aguila',
             'first_name' => 'Mekaila Mae',
             'last_name' => 'Aguila',
             'sex' => 'Female',
             'birthdate' => '2003-11-06',
             'email' => 'mekailamaeaguila@gmail.com',
-            'password' => 'password',
+            'password' => 'Pass12**',
             'department_id' => 2
+        ]);
+        
+        User::create([
+            'role' => 'physician',
+            'personnel_number' => 'PN-0000005',
+            'full_name' => 'Nico Ampoloquio',
+            'first_name' => 'Nico',
+            'last_name' => 'Ampoloquio',
+            'sex' => 'Male',
+            'birthdate' => '2003-02-10',
+            'email' => 'nicoampoloquio@gmail.com',
+            'password' => 'Pass12**',
+            'department_id' => 1
         ]);
     }
 }

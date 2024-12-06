@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\RegistrationController;
-use Barryvdh\Snappy\Facades\SnappyImage;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsultationController;
@@ -13,19 +12,6 @@ use App\Http\Controllers\PatientQrController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VitalSignsController;
 use Illuminate\Http\Request;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
-
-Route::get('/', function () {
-    $qr = QrCode::size(300)
-                    ->style('round') //square, dot, round
-                    ->eye('circle') // square, circle
-                    ->format('png')
-                    ->merge('/public/images/carmona_hospital_logo_3.png')
-                    ->generate("Carmona Hospital and Medical Center");
-
-    return response($qr)->header('Content-Type', 'images/png');
-
-});
 
 // PATIENT REGISTRATION
 Route::post('/registrations', [RegistrationController::class, 'store']);
@@ -33,6 +19,7 @@ Route::post('/registrations', [RegistrationController::class, 'store']);
 // AUTH AND PASSWORD
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 //routes that requires authentication to access
@@ -51,11 +38,11 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/is-user-email-exists', [UserController::class, 'isEmailExists'])->middleware(['role:admin']);
     Route::get('/is-personnel-number-exists', [UserController::class, 'isPersonnelNumberExists'])->middleware(['role:admin']);
     Route::get('/users/{user}', [UserController::class, 'show'])->middleware(['role:admin']);
-    Route::post('/forgot-password', [UserController::class, 'forgotPassword'])->middleware(['role:admin']);
+    Route::post('/send-reset-link', [UserController::class, 'forgotPassword'])->middleware(['role:admin']);
     Route::put('/users/{user_to_update}/toggle-lock', [UserController::class,'toggleLock'])->middleware(['role:admin']);
     Route::put('/users/{user_to_update}/update-information', [UserController::class, 'updateInformation'])->middleware(['role:admin']);
     Route::put('/users/{user_to_update}/unrestrict', [UserController::class, 'unrestrict'])->middleware(['role:admin']);
-    Route::get('/users-count', [UserController::class, 'getUsersCount'])->middleware(['role:admin']);
+    Route::get('/users-count', [UserController::class, 'count'])->middleware(['role:admin']);
     // user controls
     Route::put('/update-email', [UserController::class, 'updateEmail']);
     Route::put('/update-email/verify-otp', [UserController::class, 'verifyEmailOtp']);
@@ -86,6 +73,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
 
     // CONSULTATIONS
     Route::apiResource('consultations', ConsultationController::class)->only(['store', 'show'])->middleware(['role:physician']);
+    Route::get('/consultations/{consultation}/print-prescription', [ConsultationController::class, 'printPrescription'])->middleware(['role:physician']);
     Route::get('/patients/{patient}/consultations', [ConsultationController::class, 'index'])->middleware(['role:physician']);
 
     // PATIENT QR IDs

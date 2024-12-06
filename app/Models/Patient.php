@@ -73,7 +73,6 @@ class Patient extends Model implements CipherSweetEncrypted
     protected $appends = [
         'address',
         'age',
-        'last_visit',
         'qr_status',
         'vital_signs',
 
@@ -97,7 +96,7 @@ class Patient extends Model implements CipherSweetEncrypted
             }
         }
 
-        return sprintf('%s-%05d', $year, $increment);
+        return sprintf('P%05d-%d', $increment, $year);
     }
 
     public function getFullNameAttribute() {
@@ -138,11 +137,14 @@ class Patient extends Model implements CipherSweetEncrypted
         return $age;
     }
 
-    public function getLastVisitAttribute()
+    public function getLastVisitDate(int $departmentId) 
     {
-        $latestConsultationRecord = $this->consultations()->where('patient_id', $this->id)->latest('updated_at')->first();
-        
-        return  $latestConsultationRecord ? $latestConsultationRecord->updated_at->toDateString() : null;
+        $latestConsultationByDepartment = $this->consultations()->select('created_at')
+                                                ->where('department_id', $departmentId)
+                                                ->latest()
+                                                ->first();
+
+        return $latestConsultationByDepartment ?-> created_at;
     }
 
     public function getQrStatusAttribute()
@@ -173,6 +175,12 @@ class Patient extends Model implements CipherSweetEncrypted
     public function getVitalSignsAttribute()
     {
         return $this->vitalSigns()->where('created_at', '>', now()->startOfDay())->first();
+    }
+
+    public function isNewInDepartment(int $departmentId)
+    {
+        return !$this->consultations()->where('department_id', $departmentId)
+                                    ->exists();
     }
 
     public function getPhysician(int $departmentId) 

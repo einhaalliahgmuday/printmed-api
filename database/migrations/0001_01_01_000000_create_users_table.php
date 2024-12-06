@@ -25,6 +25,7 @@ return new class extends Migration
             $table->string('password')->nullable();
             $table->boolean('is_locked')->default(false);
             $table->integer('failed_login_attempts')->default(0);
+            $table->timestamp('failed_login_timestamp')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

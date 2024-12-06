@@ -64,7 +64,7 @@ class Consultation extends Model implements CipherSweetEncrypted
     ];
 
     public function getPhysicianAttribute() {
-        return $this->physician()->get();
+        return $this->physician()->first();
     }
 
     public function patient()
@@ -75,7 +75,7 @@ class Consultation extends Model implements CipherSweetEncrypted
     public function physician()
     {
         return $this->belongsTo(User::class)
-                    ->select('id', 'full_name');
+                    ->select('id', 'full_name', 'first_name',  'middle_name', 'last_name', 'suffix');
     }
 
     public function prescriptions()

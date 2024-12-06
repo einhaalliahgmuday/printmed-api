@@ -21,10 +21,6 @@ class VitalSignsController extends Controller
             'diastolic' => 'required|string|max:3',
         ]);
 
-        if ($patient->vitalSigns != null) {
-            $patient->vitalSigns->each->delete();
-        }
-
         if (!$fields['height'] && !$fields['weight'] && !$fields['temperature'] && !$fields['blood_pressure']) {
             return response(['message' => 'All fields are empty.'], 400);
         }
