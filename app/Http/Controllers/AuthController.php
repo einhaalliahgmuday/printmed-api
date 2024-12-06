@@ -192,7 +192,6 @@ class AuthController extends Controller
             return response()->json(['message'=> 'Invalid credentials'], 401);
         }
     
-        
         $user->forceFill(['password' => Hash::make($request->password), 'email_verified_at' => now()])->save();
         
         $resetToken->delete();
