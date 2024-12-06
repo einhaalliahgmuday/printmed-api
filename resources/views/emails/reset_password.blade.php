@@ -33,7 +33,7 @@
 			display: block;
 			width: fit-content;
             text-decoration: none;
-			color: #fff;
+			color: white;
             padding: .7rem 1.4rem;
 			margin: 1rem 0;
             background-color: #007bff;
@@ -42,9 +42,6 @@
 		.note {
 			margin-bottom: .5rem;
 		}
-        .ii a[href] {
-            color: #fff;
-        }
     </style>
 </head>
 <body>

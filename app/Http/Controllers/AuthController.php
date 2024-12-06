@@ -166,8 +166,9 @@ class AuthController extends Controller
     public function resetPassword(Request $request) 
     {
         $request->validate([
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
+            // 'first_name' => 'required|string',
+            // 'last_name' => 'required|string',
+            'personnel_number' => 'required|string',
             'birthdate' => 'required|date|date_format:Y-m-d',
             'token' => 'required|string',
             'email' => 'required|email',
@@ -182,8 +183,8 @@ class AuthController extends Controller
             return response()->json(['message'=> 'Reset token is expired.'], 410);
         }
 
-        $user = User::whereBlind('first_name', 'first_name_index', $request->first_name)
-                    ->whereBlind('last_name', 'last_name_index', $request->last_name)
+        $user = User::whereBlind('personnel_number', 'personnel_number_index', $request->personnel_number)
+                    // ->whereBlind('last_name', 'last_name_index', $request->last_name)
                     ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
                     ->whereBlind('email', 'email_index', $request->email)->first();
 

@@ -242,7 +242,7 @@ class PatientController extends Controller
         // implements audit of update
         event(new ModelAction(AuditAction::UPDATE, $request->user(), $patient, $originalData, $request));
 
-        $patient->append(['qr_status', 'age', 'address', 'vital_signs', 'full_name']);
+        $patient->makeVisible(['qr_status', 'age', 'address', 'vital_signs', 'full_name']);
         if ($patient->photo) {
             $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
         }

@@ -188,17 +188,17 @@ class UserController extends Controller
             'email' => 'email|max:100',
         ]);
 
-        if ($request->email !== $userToUpdate->email && $this->isUserEmailExists($request->email)) 
+        if ($request->filled('email') && $request->email !== $userToUpdate->email && $this->isUserEmailExists($request->email)) 
         {
             return response()->json(['field' => 'email', 'message' => 'The email is already taken.'], 422);
         }
 
-        if ($request->personnel_number !== $userToUpdate->personnel_number && $this->isUserPersonnelNumberExists($request->personnel_number)) 
+        if ($request->filled('personnl_number') && $request->personnel_number !== $userToUpdate->personnel_number && $this->isUserPersonnelNumberExists($request->personnel_number)) 
         {
             return response()->json(['field' => 'personnel_number', 'message' => 'The personnel number is already taken'], 422);
         }
 
-        if (in_array($request->role, ['physician', 'secretary'])) 
+        if ($request->filled('role') && in_array($request->role, ['physician', 'secretary'])) 
         {
             if (!$request->filled('department_id') || $request->department_id == "")
             {
@@ -208,7 +208,7 @@ class UserController extends Controller
 
         $originalData = $userToUpdate->toArray();
 
-        if (!in_array($userToUpdate->role, ['physician', 'secretary']))
+        if ($request->filled('role') && !in_array($userToUpdate->role, ['physician', 'secretary']))
         {
             $fields["department_id"] = null;
         }

