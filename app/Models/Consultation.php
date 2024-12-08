@@ -25,10 +25,11 @@ class Consultation extends Model implements CipherSweetEncrypted
             ->addOptionalTextField('present_illness_hx')
             ->addOptionalTextField('family_hx')
             ->addOptionalTextField('medical_hx')
-            ->addOptionalTextField('pediatrics_h')
-            ->addOptionalTextField('pediatrics_e')
-            ->addOptionalTextField('pediatrics_a')
-            ->addOptionalTextField('pediatrics_d')
+            ->addOptionalTextField('birth_maternal_hx')
+            ->addOptionalTextField('immunization')
+            ->addOptionalTextField('heads')
+            ->addOptionalTextField('pertinent_physical_examination')
+            ->addOptionalTextField('laboratory_diagnostics_tests')
             ->addOptionalTextField('primary_diagnosis')
             ->addField('diagnosis')
             ->addOptionalTextField('follow_up_date');
@@ -47,10 +48,11 @@ class Consultation extends Model implements CipherSweetEncrypted
         'present_illness_hx',
         'family_hx',
         'medical_hx',
-        'pediatrics_h',
-        'pediatrics_e',
-        'pediatrics_a',
-        'pediatrics_d',
+        'birth_maternal_hx',
+        'immunization',
+        'heads',
+        'pertinent_physical_examination',
+        'laboratory_diagnostics_tests',
         'primary_diagnosis',
         'diagnosis',
         'follow_up_date',
