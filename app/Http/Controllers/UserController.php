@@ -226,30 +226,6 @@ class UserController extends Controller
         return $userToUpdate;
     }
 
-    // send reset link to user
-    public function forgotPassword(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email'
-        ]);
-
-        $user = User::whereBlind('email', 'email_index', $request->email)->first();
-
-        if (!$user) 
-        {
-            return response()->json(['message' => 'User not found.'], 404);
-        }
-
-        $this->sendResetLink(false, $user);
-
-        // implements audit of sending reset link, which is executed by Admin
-        // event(new ModelAction(AuditAction::SENT_RESET_LINK, $request->user(), $user, null, $request));
-
-        return response()->json([
-            'message' => 'Reset link sent.'
-        ], 200);
-    }
-
     public function toggleLock(Request $request, User $userToUpdate)
     {
         $userToUpdate->is_locked = !$userToUpdate->is_locked;
@@ -297,6 +273,29 @@ class UserController extends Controller
 
 
     // USER ACTIONS
+
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $user = User::whereBlind('email', 'email_index', $request->email)->first();
+
+        if (!$user) 
+        {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        $this->sendResetLink(false, $user);
+
+        // implements audit of sending reset link, which is executed by Admin
+        // event(new ModelAction(AuditAction::SENT_RESET_LINK, $request->user(), $user, null, $request));
+
+        return response()->json([
+            'message' => 'Reset link sent.'
+        ], 200);
+    }
 
     public function updateEmail(Request $request) 
     {
