@@ -22,8 +22,13 @@ return new class extends Migration
             $table->string('house_number')->nullable();
             $table->string('street')->nullable();
             $table->string('barangay')->nullable();
+            $table->string('barangay_code')->nullable();
             $table->string('city')->nullable();
+            $table->string('city_code')->nullable();
             $table->string('province')->nullable();
+            $table->string('province_code')->nullable();
+            $table->string('region')->nullable();
+            $table->string('region_code')->nullable();
             $table->string('postal_code')->nullable();
             $table->string('civil_status')->nullable();
             $table->string('religion')->nullable();

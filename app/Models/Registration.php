@@ -36,8 +36,13 @@ class Registration extends Model implements CipherSweetEncrypted
             ->addOptionalTextField('house_number')
             ->addOptionalTextField('street')
             ->addOptionalTextField('barangay')
+            ->addOptionalTextField('barangay_code')
             ->addOptionalTextField('city')
+            ->addOptionalTextField('city_code')
             ->addOptionalTextField('province')
+            ->addOptionalTextField('province_code')
+            ->addOptionalTextField('region')
+            ->addOptionalTextField('region_code')
             ->addOptionalTextField('postal_code')
             ->addOptionalTextField('civil_status')
             ->addOptionalTextField('religion')
@@ -58,8 +63,13 @@ class Registration extends Model implements CipherSweetEncrypted
         'house_number',
         'street',
         'barangay',
+        'barangay_code',
         'city',
+        'city_code',
         'province',
+        'province_code',
+        'region',
+        'region_code',
         'postal_code',
         'civil_status',
         'religion',
