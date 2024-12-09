@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
 class PatientController extends Controller
@@ -260,6 +261,35 @@ class PatientController extends Controller
         $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
         $patient['last_visit'] = $patient->getLastVisitDate($user->department_id);
         $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
+
+        return $patient;
+    }
+
+    public function getUsingId(Request $request) {
+        $request->validate([
+            'patient_number' => 'required|string|size:11'
+        ]);
+
+        $patient = Patient::whereBlind('patient_number', 'patient_number_index', $request->patient_number)->first();
+
+        if (!$patient) {
+            return response()->json(['message' => 'Patient not found.'], 404);
+        }
+
+        Gate::authorize('is-assigned-physician', [$patient->id]);
+
+        $user = $request->user();
+
+        if($patient->photo) {
+            $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
+        }
+        $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
+        $patient['last_visit'] = $patient->getLastVisitDate($user->department_id);
+        $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
+        $patient['consultations'] = $patient->consultations()->orderBy('created_at', 'desc')->get();
+
+        // implements audit of patient retrieval
+        event(new ModelAction(AuditAction::RETRIEVE, $user, $patient, null, $request));
 
         return $patient;
     }
