@@ -23,10 +23,11 @@ return new class extends Migration
             $table->longText('present_illness_hx')->nullable();
             $table->longText('family_hx')->nullable();
             $table->longText('medical_hx')->nullable();
-            $table->longText('pediatrics_h')->nullable();
-            $table->longText('pediatrics_e')->nullable();
-            $table->longText('pediatrics_a')->nullable();
-            $table->longText('pediatrics_d')->nullable();
+            $table->longText('birth_maternal_hx')->nullable();
+            $table->longText('immunization')->nullable();
+            $table->longText('heads')->nullable();
+            $table->longText('pertinent_physical_examination')->nullable();
+            $table->longText('laboratory_diagnostics_tests')->nullable();
             $table->longText('primary_diagnosis');
             $table->longText('diagnosis');
             $table->string('follow_up_date')->nullable();

@@ -33,14 +33,14 @@ class VitalSignsController extends Controller
     public function update(Request $request, $id) 
     {
         $fields = $request->validate([
-            'height' => 'required|numeric|decimal:0,2',
-            'height_unit' => 'required|string|in:cm,m|required_with:height',
-            'weight' => 'required|numeric|decimal:0,2',
-            'weight_unit' => 'required|string|in:kg,lb|required_with:weight',
-            'temperature' => 'required|numeric|decimal:0,2',
-            'temperature_unit' => 'required|string|in:K,C|required_with:temperature',
-            'systolic' => 'required|string|max:3',
-            'diastolic' => 'required|string|max:3',
+            'height' => 'numeric|decimal:0,2',
+            'height_unit' => 'string|in:cm,m|required_with:height',
+            'weight' => 'numeric|decimal:0,2',
+            'weight_unit' => 'string|in:kg,lb|required_with:weight',
+            'temperature' => 'numeric|decimal:0,2',
+            'temperature_unit' => 'string|in:K,C|required_with:temperature',
+            'systolic' => 'string|max:3',
+            'diastolic' => 'string|max:3',
         ]);
 
         $vitalSigns = VitalSigns::find($id);

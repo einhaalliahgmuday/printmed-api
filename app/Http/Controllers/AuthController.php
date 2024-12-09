@@ -168,7 +168,8 @@ class AuthController extends Controller
         $request->validate([
             // 'first_name' => 'required|string',
             // 'last_name' => 'required|string',
-            // 'birthdate' => 'required|date|date_format:Y-m-d',
+            'personnel_number' => 'required|string',
+            'birthdate' => 'required|date|date_format:Y-m-d',
             'token' => 'required|string',
             'email' => 'required|email',
             'password' => 'required|string|min:8|regex:/[a-z]/|regex:/[A-Z]/|regex:/[0-9]/|regex:/[@$!%*?&]/|confirmed'
@@ -182,7 +183,10 @@ class AuthController extends Controller
             return response()->json(['message'=> 'Reset token is expired.'], 410);
         }
 
-        $user = User::whereBlind('email', 'email_index', $request->email)->first();
+        $user = User::whereBlind('personnel_number', 'personnel_number_index', $request->personnel_number)
+                    // ->whereBlind('last_name', 'last_name_index', $request->last_name)
+                    ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
+                    ->whereBlind('email', 'email_index', $request->email)->first();
 
         if (!$user) {
             return response()->json(['message'=> 'Invalid credentials'], 401);

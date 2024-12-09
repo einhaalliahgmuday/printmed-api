@@ -89,7 +89,7 @@ class PatientQrController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'qr_code' => 'string|max:100'
+            'qr_code' => 'string|size:43'
         ]);
 
         $patientQr = PatientQr::whereBlind('uuid', 'uuid_index', $request->qr_code)

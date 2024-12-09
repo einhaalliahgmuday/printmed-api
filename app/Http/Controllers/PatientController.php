@@ -95,17 +95,22 @@ class PatientController extends Controller
             'last_name'=> 'required|string|max:100',
             'suffix' => 'nullable|string|max:20',
             'birthdate' => 'required|date|date_format:Y-m-d',
-            'birthplace' => 'nullable|string',
+            'birthplace' => 'required|string',
             'sex' => 'required|string|max:6',
             'house_number' => 'string|max:30',
             'street' => 'nullable|string|max:20',
-            'barangay' => 'required|string|max:20',
-            'city' => 'required|string|max:20',
-            'province' => 'required|string|max:20',
+            'barangay' => 'required|string|max:50',
+            'barangay_code' => 'required|string|max:10',
+            'city' => 'required|string|max:50',
+            'city_code' => 'required|string|max:10',
+            'province' => 'required|string|max:50',
+            'province_code' => 'required|string|max:10',
+            'region' => 'required|string|max:50',
+            'region_code' => 'required|string|max:10',
             'postal_code' => 'nullable|int|digits_between:1,4',
             'civil_status' => 'required|string|max:20',
             'religion' => 'nullable|string|max:100',
-            'phone_number' => 'string|size:11',
+            'phone_number' => 'string|size:10',
             'email' => 'nullable|email|max:100',
             'registration_id' => 'int|exists:registrations,id',
         ]);
@@ -187,17 +192,22 @@ class PatientController extends Controller
             'last_name'=> 'string|max:100',
             'suffix' => 'nullable|string|max:20',
             'birthdate' => 'date|date_format:Y-m-d',
-            'birthplace' => 'nullable|string',
+            'birthplace' => 'string',
             'sex' => 'string|max:6',
             'house_number' => 'string|max:30',
             'street' => 'nullable|string|max:20',
-            'barangay' => 'string|max:20',
-            'city' => 'string|max:20',
-            'province' => 'string|max:20',
+            'barangay' => 'string|max:50',
+            'barangay_code' => 'string|max:10',
+            'city' => 'string|max:50',
+            'city_code' => 'string|max:10',
+            'province' => 'string|max:50',
+            'province_code' => 'string|max:10',
+            'region' => 'string|max:50',
+            'region_code' => 'string|max:10',
             'postal_code' => 'nullable|int|digits_between:1,4',
             'civil_status' => 'string|max:20',
             'religion' => 'nullable|string|max:100',
-            'phone_number' => 'string|size:11',
+            'phone_number' => 'string|size:10',
             'email' => 'nullable|email|max:100'
         ]);
 
@@ -242,7 +252,7 @@ class PatientController extends Controller
         // implements audit of update
         event(new ModelAction(AuditAction::UPDATE, $request->user(), $patient, $originalData, $request));
 
-        $patient->append(['qr_status', 'age', 'address', 'vital_signs', 'full_name']);
+        $patient->makeVisible(['qr_status', 'age', 'address', 'vital_signs', 'full_name']);
         if ($patient->photo) {
             $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
         }

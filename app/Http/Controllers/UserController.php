@@ -188,17 +188,17 @@ class UserController extends Controller
             'email' => 'email|max:100',
         ]);
 
-        if ($request->email !== $userToUpdate->email && $this->isUserEmailExists($request->email)) 
+        if ($request->filled('email') && $request->email !== $userToUpdate->email && $this->isUserEmailExists($request->email)) 
         {
             return response()->json(['field' => 'email', 'message' => 'The email is already taken.'], 422);
         }
 
-        if ($request->personnel_number !== $userToUpdate->personnel_number && $this->isUserPersonnelNumberExists($request->personnel_number)) 
+        if ($request->filled('personnl_number') && $request->personnel_number !== $userToUpdate->personnel_number && $this->isUserPersonnelNumberExists($request->personnel_number)) 
         {
             return response()->json(['field' => 'personnel_number', 'message' => 'The personnel number is already taken'], 422);
         }
 
-        if (in_array($request->role, ['physician', 'secretary'])) 
+        if ($request->filled('role') && in_array($request->role, ['physician', 'secretary'])) 
         {
             if (!$request->filled('department_id') || $request->department_id == "")
             {
@@ -208,7 +208,7 @@ class UserController extends Controller
 
         $originalData = $userToUpdate->toArray();
 
-        if (!in_array($userToUpdate->role, ['physician', 'secretary']))
+        if ($request->filled('role') && !in_array($userToUpdate->role, ['physician', 'secretary']))
         {
             $fields["department_id"] = null;
         }
@@ -224,30 +224,6 @@ class UserController extends Controller
         event(new ModelAction(AuditAction::UPDATE, $request->user(), $userToUpdate, $originalData, $request));
 
         return $userToUpdate;
-    }
-
-    // send reset link to user
-    public function forgotPassword(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email'
-        ]);
-
-        $user = User::whereBlind('email', 'email_index', $request->email)->first();
-
-        if (!$user) 
-        {
-            return response()->json(['message' => 'User not found.'], 404);
-        }
-
-        $this->sendResetLink(false, $user);
-
-        // implements audit of sending reset link, which is executed by Admin
-        // event(new ModelAction(AuditAction::SENT_RESET_LINK, $request->user(), $user, null, $request));
-
-        return response()->json([
-            'message' => 'Reset link sent.'
-        ], 200);
     }
 
     public function toggleLock(Request $request, User $userToUpdate)
@@ -297,6 +273,29 @@ class UserController extends Controller
 
 
     // USER ACTIONS
+
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $user = User::whereBlind('email', 'email_index', $request->email)->first();
+
+        if (!$user) 
+        {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        $this->sendResetLink(false, $user);
+
+        // implements audit of sending reset link, which is executed by Admin
+        // event(new ModelAction(AuditAction::SENT_RESET_LINK, $request->user(), $user, null, $request));
+
+        return response()->json([
+            'message' => 'Reset link sent.'
+        ], 200);
+    }
 
     public function updateEmail(Request $request) 
     {
