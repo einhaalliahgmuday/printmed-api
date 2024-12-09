@@ -7,6 +7,7 @@ use App\Events\ModelAction;
 use App\Mail\VerifyEmailOtp;
 use App\Models\Otp;
 use App\Models\User;
+use App\Notifications\AccountLockedNotification;
 use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -236,6 +237,7 @@ class UserController extends Controller
         if($userToUpdate->is_locked)
         {
             $userToUpdate->tokens()->delete();
+            $userToUpdate->notify(new AccountLockedNotification($userToUpdate->first_name));
         }
 
         // audit locking of account
@@ -274,29 +276,6 @@ class UserController extends Controller
 
     // USER ACTIONS
 
-    public function forgotPassword(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email'
-        ]);
-
-        $user = User::whereBlind('email', 'email_index', $request->email)->first();
-
-        if (!$user) 
-        {
-            return response()->json(['message' => 'User not found.'], 404);
-        }
-
-        $this->sendResetLink(false, $user);
-
-        // implements audit of sending reset link, which is executed by Admin
-        // event(new ModelAction(AuditAction::SENT_RESET_LINK, $request->user(), $user, null, $request));
-
-        return response()->json([
-            'message' => 'Reset link sent.'
-        ], 200);
-    }
-
     public function updateEmail(Request $request) 
     {
         $request->validate([
@@ -328,7 +307,34 @@ class UserController extends Controller
         ], 200);
     }
 
-    public function verifyEmailOtp(Request $request) 
+    public function resendUpdateEmailOtp(Request $request) 
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email'
+        ]);
+
+        $otp = Otp::whereBlind('email', 'email_index', $request->email)->orderByDesc('expires_at')->first();
+        
+        if (!$otp || ($otp && !Hash::check($request->token, $otp->token))) {
+            return response()->json([
+                'message' => 'Invalid request'
+            ], 400);
+        }
+        
+        $otp->update([
+            'code' => rand(100000, 999999),
+            'expires_at' => now()->addMinutes(5)
+        ]);
+
+        Mail::to($request->email)->send(new VerifyEmailOtp($otp->code));
+
+        return response()->json([
+            'message' => "OTP resent successfully.",
+        ], 200);
+    }
+
+    public function verifyUpdateEmailOtp(Request $request) 
     {
         $request->validate([
             'token' => 'required',
