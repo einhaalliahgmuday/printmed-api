@@ -20,7 +20,7 @@ Route::post('/registrations', [RegistrationController::class, 'store']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
-Route::post('/forgot-password', [UserController::class, 'forgotPassword']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 //routes that requires authentication to access
@@ -45,7 +45,8 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/users-count', [UserController::class, 'count'])->middleware(['role:admin']);
     // user controls
     Route::put('/update-email', [UserController::class, 'updateEmail']);
-    Route::put('/update-email/verify-otp', [UserController::class, 'verifyEmailOtp']);
+    Route::post('/resend-update-email-otp', [UserController::class, 'resendUpdateEmailOtp']);
+    Route::post('/update-email/verify-otp', [UserController::class, 'verifyUpdateEmailOtp']);
     Route::put('/change-password', [UserController::class,'changePassword']);
     Route::get('/physicians', [UserController::class, 'getPhysicians'])->middleware(['role:secretary']);
 

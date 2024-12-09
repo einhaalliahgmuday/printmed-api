@@ -100,19 +100,18 @@ class PatientQrController extends Controller
         if($patientQr) {
             $patient = $patientQr->patient;
 
-            if ($request->user()->role === "physician") {
-                Gate::authorize('is-assigned-physician', [$patient->id]);
-                $patient['consultations'] = $patient->consultations()->orderBy('created_at', 'desc')->get();
-            } else {
-                $patient['physician'] = $patient->getPhysician($user->department_id);
-            }
-
             if ($patient->photo) {
                 $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
             }
             $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
             $patient['last_visit'] = $patient->getLastVisitDate($user->department_id);
             $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
+            if ($request->user()->role === "physician") {
+                Gate::authorize('is-assigned-physician', [$patient->id]);
+                $patient['consultations'] = $patient->consultations()->orderBy('created_at', 'desc')->get();
+            } else {
+                $patient['physician'] = $patient->getPhysician($user->department_id);
+            }
 
             // implements audit of patient retrieval
             event(new ModelAction(AuditAction::RETRIEVE, $user, $patient, null, $request));
