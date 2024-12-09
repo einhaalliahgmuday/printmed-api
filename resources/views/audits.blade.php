@@ -8,17 +8,27 @@
         * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
         body {
-            box-sizing: border-box;
             font-family: Arial, Helvetica, sans-serif;
             font-size: 1rem;
-            margin: 3rem;
+        }
+        main {
+            position: relative;
+        }
+        h1 {
+            text-decoration: underline;
+            font: bold;
+            text-align: center;
+            padding: 0;
+            margin: 0;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
+            margin-top: 16px;
         }
         th, td {
             border: 1px solid black;
@@ -50,43 +60,46 @@
     </style>
 </head>
 <body>
-    <table>
-        <thead>
-            <tr>
-                <th class="w-10">Timestamp</th>
-                <th class="w-10">User ID</th>
-                <th class="w-10">Role</th>
-                <th class="w-15">Description</th>
-                <th class="w-10">Entity</th>
-                <th class="w-15">Old Values</th>
-                <th class="w-15">New Values</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach ($audits as $audit)
+    <main>
+        <h1>AUDITS</h1>
+        <table>
+            <thead>
                 <tr>
-                    <td class="w-10">{{"{$audit['date']} {$audit['time']}"}}</td>
-                    <td class="w-10">{{$audit['user_personnel_number']}}</td>
-                    <td class="w-10">{{$audit['user_role']}}</td>
-                    <td class="w-15">{{$audit['message']}}</td>
-                    <td class="w-10">{{$audit['resource_entity']}}</td>
-                    <td class="w-15 ta-left">
-                        @if ($audit['old_values'])
-                            @foreach ($audit['old_values'] as $value)
-                                <p>{{$value}}</p>
-                            @endforeach
-                        @endif
-                    </td>
-                    <td class="w-15 ta-left">
-                        @if ($audit['new_values'])
-                            @foreach ($audit['new_values'] as $value)
-                                <p>{{$value}}</p>
-                            @endforeach
-                        @endif
-                    </td>
+                    <th class="w-10">Timestamp</th>
+                    <th class="w-10">User ID</th>
+                    <th class="w-10">Role</th>
+                    <th class="w-15">Description</th>
+                    <th class="w-10">Entity</th>
+                    <th class="w-15">Old Values</th>
+                    <th class="w-15">New Values</th>
                 </tr>
-            @endforeach
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach ($audits as $audit)
+                    <tr>
+                        <td class="w-10">{{"{$audit['date']} {$audit['time']}"}}</td>
+                        <td class="w-10">{{$audit['user_personnel_number']}}</td>
+                        <td class="w-10">{{$audit['user_role']}}</td>
+                        <td class="w-15">{{$audit['message']}}</td>
+                        <td class="w-10">{{$audit['resource_entity']}}</td>
+                        <td class="w-15 ta-left">
+                            @if ($audit['old_values'])
+                                @foreach ($audit['old_values'] as $value)
+                                    <p>{{$value}}</p>
+                                @endforeach
+                            @endif
+                        </td>
+                        <td class="w-15 ta-left">
+                            @if ($audit['new_values'])
+                                @foreach ($audit['new_values'] as $value)
+                                    <p>{{$value}}</p>
+                                @endforeach
+                            @endif
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </main>
 </body>
 </html>
