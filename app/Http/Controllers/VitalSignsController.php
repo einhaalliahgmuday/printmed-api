@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\VitalSignsNew;
+use App\Events\VitalSignsUpdated;
 use App\Models\Patient;
 use App\Models\VitalSigns;
 use Illuminate\Http\Request;
@@ -27,6 +29,8 @@ class VitalSignsController extends Controller
 
         $vitalSigns = $patient->vitalSigns()->create($fields);
 
+        VitalSignsNew::dispatch($vitalSigns);
+
         return $vitalSigns;
     }
 
@@ -34,11 +38,11 @@ class VitalSignsController extends Controller
     {
         $fields = $request->validate([
             'height' => 'numeric|decimal:0,2',
-            'height_unit' => 'string|in:cm,m|required_with:height',
+            'height_unit' => 'string|in:cm,m',
             'weight' => 'numeric|decimal:0,2',
-            'weight_unit' => 'string|in:kg,lb|required_with:weight',
+            'weight_unit' => 'string|in:kg,lb',
             'temperature' => 'numeric|decimal:0,2',
-            'temperature_unit' => 'string|in:K,C|required_with:temperature',
+            'temperature_unit' => 'string|in:K,C',
             'systolic' => 'string|max:3',
             'diastolic' => 'string|max:3',
         ]);
@@ -47,6 +51,8 @@ class VitalSignsController extends Controller
 
         if ($vitalSigns) {
             $vitalSigns->update($fields);
+
+            VitalSignsUpdated::dispatch($vitalSigns);
 
             return $vitalSigns;
         }

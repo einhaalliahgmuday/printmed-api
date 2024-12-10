@@ -52,7 +52,12 @@ class AuditController extends Controller
 
         $date = now()->format('Y-m-d');
 
-        $pdf = SnappyPdf::loadView('audits', ['audits' => $auditsInformation['data']])->setPaper('a4', 'landscape');
+        $pdf = SnappyPdf::loadView('audits', ['audits' => $auditsInformation['data']])
+                        ->setPaper('a4', 'landscape')
+                        ->setOptions(['margin-top' => 20, 'margin-bottom' => 10, 'margin-left' => 10, 'margin-right' => 10])
+                        ->setOption('header-html', view()->make('document_header')->render())
+                        ->setOption('footer-html', view()->make('document_footer')->render())
+                        ->setOption('enable-local-file-access', true);
 
         return $pdf->download("printmed_audits_retrieved_at_{$date}.pdf");
     }

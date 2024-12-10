@@ -125,9 +125,9 @@ class ConsultationController extends Controller
         return $consultation;
     }
 
-    public function printPrescription(Request $request, Consultation $consultation)
+    public function printPrescription(Consultation $consultation)
     {
-        Gate::authorize('is-assigned-physician', [$consultation->patient_id]);
+        // Gate::authorize('is-assigned-physician', [$consultation->patient_id]);
 
         $prescriptions = $this->getPrescriptionsPages($consultation->prescriptions()->get());
 

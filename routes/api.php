@@ -20,7 +20,7 @@ Route::post('/registrations', [RegistrationController::class, 'store']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
-Route::post('/forgot-password', [UserController::class, 'forgotPassword']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 //routes that requires authentication to access
@@ -45,7 +45,8 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/users-count', [UserController::class, 'count'])->middleware(['role:admin']);
     // user controls
     Route::put('/update-email', [UserController::class, 'updateEmail']);
-    Route::put('/update-email/verify-otp', [UserController::class, 'verifyEmailOtp']);
+    Route::post('/resend-update-email-otp', [UserController::class, 'resendUpdateEmailOtp']);
+    Route::post('/update-email/verify-otp', [UserController::class, 'verifyUpdateEmailOtp']);
     Route::put('/change-password', [UserController::class,'changePassword']);
     Route::get('/physicians', [UserController::class, 'getPhysicians'])->middleware(['role:secretary']);
 
@@ -66,6 +67,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/patient-photo/{patient}', [PatientController::class, 'getPhoto'])->middleware(['role:secretary,physician']);
     Route::post('/patient-photo/{patient}', [PatientController::class, 'updatePhoto'])->middleware(['role:secretary,physician']);
     Route::get('/duplicate-patients', [PatientController::class, 'getDuplicates'])->middleware(['role:secretary']);
+    Route::post('/patient-using-id', [PatientController::class, 'getUsingId'])->middleware(['role:physician']);
 
     // PATIENT VITAL SIGNS
     Route::post('/vital-signs/{patient}', [VitalSignsController::class, 'store'])->middleware('role:secretary');
@@ -76,7 +78,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/consultations/{consultation}/print-prescription', [ConsultationController::class, 'printPrescription'])->middleware(['role:physician']);
     Route::get('/patients/{patient}/consultations', [ConsultationController::class, 'index'])->middleware(['role:physician']);
 
-    // PATIENT QR IDs
+    // PATIENT QR
     Route::post('/generate-patient-id-card/{patient}', [PatientQrController::class, 'store'])->middleware(['role:secretary']);
     Route::post('/deactivate-patient-id-card/{patient}', [PatientQrController::class, 'deactivate'])->middleware(['role:secretary']);
     Route::post('/patient-using-qr', [PatientQrController::class, 'getPatient'])->middleware(['role:secretary,physician']);

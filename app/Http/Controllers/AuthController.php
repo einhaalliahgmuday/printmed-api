@@ -7,6 +7,7 @@ use App\Events\ModelAction;
 use App\Models\Otp;
 use App\Models\ResetToken;
 use App\Models\User;
+use App\Notifications\AccountRestrictionNotification;
 use App\Notifications\OtpVerificationNotification;
 use App\Traits\CommonMethodsTrait;
 use Carbon\Carbon;
@@ -53,11 +54,14 @@ class AuthController extends Controller
             $user->failed_login_timestamp = now();
             $user->save();
 
+            $user->notify(new AccountRestrictionNotification($user->first_name));
+
             // implemented custom audit event in when account is restricted due to 3 failed login attempts
-            // if ($user->failed_login_attempts >= 3)
-            // {
+            if ($user->failed_login_attempts >= 3)
+            {
+                $user->notify(new AccountRestrictionNotification($user->first_name));
                 // event(new ModelAction(AuditAction::RESTRICT, $user, $user, null, $request));
-            // }
+            }
 
             return response()->json([
                 'message' => 'The provided credentials are incorrect.'
@@ -163,6 +167,29 @@ class AuthController extends Controller
         ], 200);
     }
 
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $user = User::whereBlind('email', 'email_index', $request->email)->where('is_locked', 0)->first();
+
+        if (!$user) 
+        {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        $this->sendResetLink(false, $user);
+
+        // implements audit of sending reset link, which is executed by Admin
+        // event(new ModelAction(AuditAction::SENT_RESET_LINK, $request->user(), $user, null, $request));
+
+        return response()->json([
+            'message' => 'Reset link sent.'
+        ], 200);
+    }
+
     public function resetPassword(Request $request) 
     {
         $request->validate([
@@ -190,6 +217,10 @@ class AuthController extends Controller
 
         if (!$user) {
             return response()->json(['message'=> 'Invalid credentials'], 401);
+        } else if ($user->is_locked) {
+            return response()->json([
+                'message' => 'User not found.'
+            ], 404);
         }
     
         $user->forceFill(['password' => Hash::make($request->password), 'email_verified_at' => now()])->save();

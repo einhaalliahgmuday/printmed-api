@@ -40,7 +40,7 @@
         }
         .bg-container {
             position: absolute;
-            top: 45px;
+            top: 35px;
             left: 0;
             bottom: 0;
             right: 0;
@@ -54,7 +54,7 @@
         }
         .prescriptions-container {
             position: relative;
-            height: 450px;
+            height: 410px;
         }
         .bold {
             font-weight: bold;
@@ -169,9 +169,17 @@
                         <p class="inline-block mr-10">Physician</p>
                         <div class="inline-block bb-black pl-5" style="width: 400px;">{{$physician->full_name}}, MD</div>
                     </div>  
-                    <div class="mt-15">
+                    <div class="mt-15 mb-8">
                         <p class="inline-block mr-10">Signature of Physician</p>
-                        <div class="inline-block bb-black pl-5" style="width: 317px;"></div>
+                        <div class="inline-block bb-black pl-5" style="width: 319px;"></div>
+                    </div>  
+                    <div class="mb-8">
+                        <p class="inline-block mr-10">PTR #</p>
+                        <div class="inline-block bb-black pl-5" style="width: 422px;"></div>
+                    </div>  
+                    <div class="mb-8">
+                        <p class="inline-block mr-10">S2 #</p>
+                        <div class="inline-block bb-black pl-5" style="width: 432px;"></div>
                     </div>  
                 </div>
             </div>
