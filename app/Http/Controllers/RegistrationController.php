@@ -61,6 +61,8 @@ class RegistrationController extends Controller
             'religion' => 'nullable|string|max:100',
             'phone_number' => 'required|string|size:10',
             'email' => 'nullable|email|max:100',
+            'payment_method' => 'required|string|in:Cash,HMO',
+            'hmo' => 'required_if:payment_method,HMO|string',
         ]);
         $fields['full_name'] = "{$request->first_name} {$request->last_name}";
 

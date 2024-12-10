@@ -113,6 +113,8 @@ class PatientController extends Controller
             'religion' => 'nullable|string|max:100',
             'phone_number' => 'string|size:10',
             'email' => 'nullable|email|max:100',
+            'payment_method' => 'required|string|in:Cash,HMO',
+            'hmo' => 'required_if:payment_method,HMO|string',
             'registration_id' => 'int|exists:registrations,id',
         ]);
 
@@ -209,7 +211,9 @@ class PatientController extends Controller
             'civil_status' => 'string|max:20',
             'religion' => 'nullable|string|max:100',
             'phone_number' => 'string|size:10',
-            'email' => 'nullable|email|max:100'
+            'email' => 'nullable|email|max:100',
+            'payment_method' => 'required|string|in:Cash,HMO',
+            'hmo' => 'nullable|required_if:payment_method,HMO|string'
         ]);
 
         $request->validate([

@@ -47,7 +47,8 @@ class Registration extends Model implements CipherSweetEncrypted
             ->addOptionalTextField('civil_status')
             ->addOptionalTextField('religion')
             ->addOptionalTextField('phone_number')
-            ->addOptionalTextField('email');
+            ->addOptionalTextField('email')
+            ->addOptionalTextField('hmo');
     }
 
     protected $fillable = [
@@ -75,6 +76,8 @@ class Registration extends Model implements CipherSweetEncrypted
         'religion',
         'phone_number',
         'email',
+        'payment_method',
+        'hmo',
         'photo'
     ];
 
