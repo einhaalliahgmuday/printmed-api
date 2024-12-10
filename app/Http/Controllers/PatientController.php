@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\AuditAction;
 use App\Events\ModelAction;
-use App\Events\PatientNew;
-use App\Events\PatientUpdated;
 use App\Events\RegistrationDeleted;
 use App\Models\Patient;
 use App\Models\PatientPhysician;
@@ -33,7 +31,7 @@ class PatientController extends Controller
         ]);
 
         
-        $query = Patient::query()->select('id', 'patient_number', 'first_name', 'last_name', 'full_name', 'birthdate', 'sex', 'created_at');
+        $query = Patient::query()->select('id', 'patient_number', 'first_name', 'middle_name', 'last_name', 'suffix', 'full_name', 'birthdate', 'sex', 'created_at');
         
         if ($request->filled('search')) 
         {
@@ -212,7 +210,7 @@ class PatientController extends Controller
             'religion' => 'nullable|string|max:100',
             'phone_number' => 'string|size:10',
             'email' => 'nullable|email|max:100',
-            'payment_method' => 'required|string|in:Cash,HMO',
+            'payment_method' => 'string|in:Cash,HMO',
             'hmo' => 'nullable|required_if:payment_method,HMO|string'
         ]);
 
@@ -374,7 +372,8 @@ class PatientController extends Controller
             'sex' => 'required|string|max:6'
         ]);
 
-        $patients = Patient::whereBlind('first_name', 'first_name_index', $request->first_name)
+        $patients = Patient::select('id', 'patient_number', 'first_name', 'middle_name', 'last_name', 'suffix', 'full_name', 'birthdate', 'sex', 'photo', 'created_at')
+                            ->whereBlind('first_name', 'first_name_index', $request->first_name)
                             ->whereBlind('last_name', 'last_name_index', $request->last_name)
                             ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
                             ->whereBlind('sex', 'sex_index', $request->sex)
@@ -383,10 +382,7 @@ class PatientController extends Controller
         foreach ($patients as $patient) {
             if ($patient->photo && Storage::exists($patient->photo)) {
                 $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
-            }   
-            $patient['physician'] = $patient->getPhysician($user->department_id);
-            $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
-            $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
+            }
         }
 
         return $patients;

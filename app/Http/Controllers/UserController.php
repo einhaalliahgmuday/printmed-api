@@ -457,7 +457,8 @@ class UserController extends Controller
         $user = $request->user();
 
         // gets physicians from the same department as secretary and whose accounts are not locked
-        $query = User::query()->whereBlind('role', 'role_index', 'physician')->where('department_id', $user->department_id)->where('is_locked', false);
+        $query = User::query()->select('id', 'full_name', 'first_name', 'middle_name', 'last_name', 'suffix', 'department_id')
+                    ->whereBlind('role', 'role_index', 'physician')->where('department_id', $user->department_id)->where('is_locked', false);
 
         $physicians = $query->get()->makeHidden('email');
 
