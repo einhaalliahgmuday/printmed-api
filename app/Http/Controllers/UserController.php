@@ -11,6 +11,7 @@ use App\Notifications\AccountLockedNotification;
 use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -34,7 +35,21 @@ class UserController extends Controller
             'order_by' => 'string|in:asc,desc'
         ]);
 
+        $user = $request->user();
+
         $query = User::query();
+
+        if ($user->role == "admin") {
+            if ($request->filled('role') && in_array($request->role, ['physician', 'secretary'])) {
+                $query->whereBlind('role', 'role_index', $request->role);
+            } else {
+                $query->whereBlind('role', 'role_index', "physician")->orWhereBlind('role', 'role_index', 'secretary');
+            }
+        } else {
+            if ($request->filled('role')) {
+                $query->whereBlind('role', 'role_index', $request->role);
+            }
+        }
 
         if ($request->filled('search')) 
         {
@@ -47,11 +62,7 @@ class UserController extends Controller
                 ->orWhereBlind('last_name', 'last_name_index', $search);
             });
         }
-        
-        if ($request->filled('role')) 
-        {
-            $query->whereBlind('role', 'role_index', $request->role);
-        }
+
 
         if ($request->filled('department_id') && (!$request->filled('role') || in_array($request->role, ['physician', 'secretary']))) 
         {
@@ -108,7 +119,7 @@ class UserController extends Controller
     public function store(Request $request) 
     {
         $fields = $request->validate([
-            'role' => 'required|string|in:admin,physician,secretary,queue manager',
+            'role' => 'required|string|in:admin,physician,secretary',
             'personnel_number' => 'required|string|size:10',
             'first_name' => 'required|string|max:100',
             'middle_name' => 'string|max:100',
@@ -119,6 +130,15 @@ class UserController extends Controller
             'department_id' => 'integer|exists:departments,id',
             'email' => 'required|email|max:100',
         ]);
+
+        Gate::authorize('is-authorized-admin-action', [$request->role]);
+
+        // $user = $request->user();
+
+        // // cannot create admin account if not super admin
+        // if ($user->role != "super admin" && $request->role == "admin") {
+        //     return response()->json(['message' => 'Unauthorized to create admin account.'], 401);
+        // }
 
         if (in_array($request->role, ['physician', 'secretary'])) 
         {
@@ -171,7 +191,14 @@ class UserController extends Controller
         return $this->isUserPersonnelNumberExists($request->personnel_number);
     }
 
-    public function show(User $user) {
+    public function show(Request $request, User $user) {
+        // cannot view admin account if not super admin
+        // if ($request->user()->role == "admin" && ($user->role == "admin" || $user->role == "super admin")) {
+        //     return response()->json(['message' => 'Unauthorized to view this account.'], 401);
+        // }
+
+        Gate::authorize('is-authorized-admin-action', [$user->role]);
+
         return $user;
     }
 
@@ -188,6 +215,15 @@ class UserController extends Controller
             'department_id' => 'nullable|integer|exists:departments,id',
             'email' => 'email|max:100',
         ]);
+
+        $user = $request->user();
+
+        // // cannot update admin account if not super admin
+        // if ($user->role != "super admin" && ($userToUpdate->role == "admin" || $userToUpdate->role == "super admin")) {
+        //     return response()->json(['message' => 'Unauthorized'], 401);
+        // }
+
+        Gate::authorize('is-authorized-admin-action', [$userToUpdate->role]);
 
         if ($request->filled('email') && $request->email !== $userToUpdate->email && $this->isUserEmailExists($request->email)) 
         {
@@ -222,13 +258,22 @@ class UserController extends Controller
         }
 
         // implements audit of update
-        event(new ModelAction(AuditAction::UPDATE, $request->user(), $userToUpdate, $originalData, $request));
+        event(new ModelAction(AuditAction::UPDATE, $user, $userToUpdate, $originalData, $request));
 
         return $userToUpdate;
     }
 
     public function toggleLock(Request $request, User $userToUpdate)
     {
+        $user = $request->user();
+
+        // // cannot update admin account if not super admin
+        // if ($user->role != "super admin" && ($userToUpdate->role == "admin" || $userToUpdate->role == "super admin")) {
+        //     return response()->json(['message' => 'Unauthorized'], 401);
+        // }
+
+        Gate::authorize('is-authorized-admin-action', [$userToUpdate->role]);
+
         $userToUpdate->is_locked = !$userToUpdate->is_locked;
         $userToUpdate->failed_login_attempts = 0;
         $userToUpdate->save();
@@ -241,13 +286,22 @@ class UserController extends Controller
         }
 
         // audit locking of account
-        event(new ModelAction(AuditAction::LOCK, $request->user(), $userToUpdate, null, $request));
+        event(new ModelAction(AuditAction::LOCK, $user, $userToUpdate, null, $request));
 
         return $userToUpdate;
     }
 
     public function unrestrict(Request $request, User $userToUpdate)
     {
+        // $user = $request->user();
+
+        // // cannot unrestrict admin account if not super admin
+        // if ($user->role != "super admin" && ($userToUpdate->role == "admin" || $userToUpdate->role == "super admin")) {
+        //     return response()->json(['message' => 'Unauthorized'], 401);
+        // }
+
+        Gate::authorize('is-authorized-admin-action', [$userToUpdate->role]);
+
         // $failedLoginAttempts = $userToUpdate->failed_login_attempts;
         
         $userToUpdate->failed_login_attempts = 0;
@@ -258,15 +312,22 @@ class UserController extends Controller
         return $userToUpdate;
     }
 
-    public function count()
+    public function count(Request $request)
     {
-        //only gets count users who are not locked
-        $admins = User::whereBlind('role', 'role_index', 'admin')->count();
+        $user = $request->user();
+
         $physicians = User::whereBlind('role', 'role_index', 'physician')->count();
         $secretaries = User::whereBlind('role', 'role_index', 'secretary')->count();
+
+        if ($user->role == "super admin") {
+            return response()->json([
+                'admins' => User::whereBlind('role', 'role_index', 'admin')->count(),
+                'physicians' => $physicians,
+                'secretaries' => $secretaries
+            ]);
+        }
         
         return response()->json([
-            'admins' => $admins,
             'physicians' => $physicians,
             'secretaries' => $secretaries
         ]);

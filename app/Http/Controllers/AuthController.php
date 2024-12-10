@@ -22,14 +22,17 @@ class AuthController extends Controller
     public function login(Request $request) 
     {
         $request->validate([
-            'role' => 'required|string',
+            'role' => 'required|string|in:admin,physician,secretary',
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        $user = User::whereBlind('role', 'role_index', $request->role)
-                    ->whereBlind('email', 'email_index', $request->email)
-                    ->first();
+        $query = User::whereBlind('email', 'email_index', $request->email);
+        if ($request->role == "admin") {
+            $query->whereBlind('role', 'role_index', "superadmin")->orWhereBlind('role', 'role_index', "admin");
+        }
+        $user = $query->first();
+                    
 
         //if account is not found or locked
         if (!$user || $user->is_locked) 

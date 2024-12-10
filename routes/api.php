@@ -34,15 +34,15 @@ Route::middleware(['auth:sanctum'])->group(function() {
 
     // USERS
     // admin controls
-    Route::get('/users', [UserController::class, 'index'])->middleware(['role:admin']);
-    Route::post('/users', [UserController::class, 'store'])->middleware(['role:admin']);
-    Route::get('/is-user-email-exists', [UserController::class, 'isEmailExists'])->middleware(['role:admin']);
-    Route::get('/is-personnel-number-exists', [UserController::class, 'isPersonnelNumberExists'])->middleware(['role:admin']);
-    Route::get('/users/{user}', [UserController::class, 'show'])->middleware(['role:admin']);
-    Route::put('/users/{user_to_update}/toggle-lock', [UserController::class,'toggleLock'])->middleware(['role:admin']);
-    Route::put('/users/{user_to_update}/update-information', [UserController::class, 'updateInformation'])->middleware(['role:admin']);
-    Route::put('/users/{user_to_update}/unrestrict', [UserController::class, 'unrestrict'])->middleware(['role:admin']);
-    Route::get('/users-count', [UserController::class, 'count'])->middleware(['role:admin']);
+    Route::get('/users', [UserController::class, 'index'])->middleware(['role:super admin,admin']);
+    Route::post('/users', [UserController::class, 'store'])->middleware(['role:super admin,admin']);
+    Route::get('/is-user-email-exists', [UserController::class, 'isEmailExists'])->middleware(['role:super admin,admin']);
+    Route::get('/is-personnel-number-exists', [UserController::class, 'isPersonnelNumberExists'])->middleware(['role:super admin,admin']);
+    Route::get('/users/{user}', [UserController::class, 'show'])->middleware(['role:super admin,admin']);
+    Route::put('/users/{user_to_update}/toggle-lock', [UserController::class,'toggleLock'])->middleware(['role:super admin,admin']);
+    Route::put('/users/{user_to_update}/update-information', [UserController::class, 'updateInformation'])->middleware(['role:super admin, admin']);
+    Route::put('/users/{user_to_update}/unrestrict', [UserController::class, 'unrestrict'])->middleware(['role:super admin,admin']);
+    Route::get('/users-count', [UserController::class, 'count'])->middleware(['role:super admin,admin']);
     // user controls
     Route::put('/update-email', [UserController::class, 'updateEmail']);
     Route::post('/resend-update-email-otp', [UserController::class, 'resendUpdateEmailOtp']);
@@ -51,12 +51,12 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/physicians', [UserController::class, 'getPhysicians'])->middleware(['role:secretary']);
 
     // AUDITS
-    Route::get('/audits', [AuditController::class, 'index'])->middleware(['role:admin']);
-    Route::get('/audits/download', [AuditController::class, 'downloadAudits'])->middleware(['role:admin']);
+    Route::get('/audits', [AuditController::class, 'index'])->middleware(['role:super admin,admin']);
+    Route::get('/audits/download', [AuditController::class, 'downloadAudits'])->middleware(['role:super admin,admin']);
 
     // DEPARTMENTS
-    Route::get('/departments', [DepartmentController::class, 'index']);
-    Route::apiResource('departments', DepartmentController::class)->except(['show', 'index'])->middleware(['role:admin']);
+    Route::get('/departments', [DepartmentController::class, 'index'])->middleware(['role:super admin']);
+    Route::apiResource('departments', DepartmentController::class)->except(['show', 'index'])->middleware(['role:super admin']);
 
     // REGISTRATIONS
     Route::apiResource('registrations', RegistrationController::class)->only(['index', 'show'])->middleware(['role:secretary']);
