@@ -46,7 +46,7 @@ class RegistrationController extends Controller
             'birthdate' => 'required|date|date_format:Y-m-d',
             'birthplace' => 'string',
             'sex' => 'required|string|max:6',
-            'house_number' => 'required|string|max:30',
+            'house_number' => 'required|string|max:50',
             'street' => 'nullable|string|max:20',
             'barangay' => 'required|string|max:50',
             'barangay_code' => 'required|string|max:10',
