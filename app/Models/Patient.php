@@ -105,7 +105,7 @@ class Patient extends Model implements CipherSweetEncrypted
         {
             if (str_contains($lastPatient->patient_number, $year))
             {
-                $increment = (int) substr($lastPatient->patient_number,5) + 1;
+                $increment = (int) substr($lastPatient->patient_number, 1, 5) + 1;
             }
         }
 
