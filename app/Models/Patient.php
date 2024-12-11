@@ -147,6 +147,33 @@ class Patient extends Model implements CipherSweetEncrypted
     public function getAgeAttribute()
     {
         $age = Carbon::parse($this->birthdate)->age;
+
+        if ($age < 1) {
+            $today = Carbon::now();
+            $birthdate = Carbon::parse($this->birthdate);
+
+            $days = floor($birthdate->diffInDays($today));
+            $months = floor($birthdate->diffInMonths($today));
+            $weeks = floor($birthdate->diffInWeeks($today));
+
+            if ($days < 32) {
+                return "$days days";
+            } else if ($months < 6) {
+                return "$weeks weeks";
+            } else if ($months >= 6) {
+                $ageMonths = $months == 1 ? "$months month" : "$months months";
+                $ageWeeks = floor($birthdate->addMonths($months)->diffInWeeks($today));
+
+                if ($ageWeeks == 0) {
+                    return $ageMonths;
+                } else if ($ageWeeks == 1) {
+                    return "$ageMonths 1 week";
+                } else if ($ageWeeks > 1) {
+                    return "$ageMonths $ageWeeks weeks";
+                }
+            }
+        }
+
         return $age;
     }
 
