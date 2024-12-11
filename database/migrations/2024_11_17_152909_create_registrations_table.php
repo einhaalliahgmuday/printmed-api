@@ -34,6 +34,8 @@ return new class extends Migration
             $table->string('religion')->nullable();
             $table->string('phone_number')->nullable();
             $table->string('email')->nullable();
+            $table->string('payment_method')->nullable();
+            $table->string('hmo')->nullable();
             $table->timestamps();
         });
     }

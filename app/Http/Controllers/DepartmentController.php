@@ -19,6 +19,10 @@ class DepartmentController extends Controller
             'name' => 'required|string|max:50|unique:departments,name'
         ]);
 
+        if (Department::where('name', $request->name)->exists()) {
+            return response()->json(['message' => 'Department already exists.'], 409);
+        } 
+
         $department = Department::create($fields);
 
         return $department;

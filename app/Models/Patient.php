@@ -49,7 +49,8 @@ class Patient extends Model implements CipherSweetEncrypted
             ->addOptionalTextField('religion')
             ->addOptionalTextField('phone_number')
             ->addOptionalTextField('email')
-            ->addOptionalTextField('photo');
+            ->addOptionalTextField('photo')
+            ->addOptionalTextField('hmo');
     }
 
     protected $fillable = [
@@ -77,7 +78,9 @@ class Patient extends Model implements CipherSweetEncrypted
         'religion',
         'phone_number',
         'email',
-        'photo'
+        'photo',
+        'payment_method',
+        'hmo'
     ];
 
     protected $appends = [

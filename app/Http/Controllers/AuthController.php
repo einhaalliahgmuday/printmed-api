@@ -22,14 +22,19 @@ class AuthController extends Controller
     public function login(Request $request) 
     {
         $request->validate([
-            'role' => 'required|string',
+            'role' => 'required|string|in:admin,physician,secretary,super admin',
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        $user = User::whereBlind('role', 'role_index', $request->role)
-                    ->whereBlind('email', 'email_index', $request->email)
-                    ->first();
+        $query = User::query();
+        // if ($request->role == "admin") {
+        //     $query->whereBlind('role', 'role_index', "super admin")->orWhereBlind('role', 'role_index', "admin");
+        // } else {
+            $query->whereBlind('role', 'role_index', $request->role);
+        // }
+        $user = $query->whereBlind('email', 'email_index', $request->email)->first();
+                    
 
         //if account is not found or locked
         if (!$user || $user->is_locked) 
@@ -53,8 +58,6 @@ class AuthController extends Controller
             $user->failed_login_attempts++;
             $user->failed_login_timestamp = now();
             $user->save();
-
-            $user->notify(new AccountRestrictionNotification($user->first_name));
 
             // implemented custom audit event in when account is restricted due to 3 failed login attempts
             if ($user->failed_login_attempts >= 3)

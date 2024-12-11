@@ -13,7 +13,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         User::create([
-            'role' => 'admin',
+            'role' => 'super admin',
             'personnel_number' => 'PN-0000001',
             'full_name' => 'Einha Alliah Muday',
             'first_name' => 'Einha Alliah',
@@ -65,14 +65,14 @@ class UserSeeder extends Seeder
         ]);
         
         User::create([
-            'role' => 'physician',
+            'role' => 'admin',
             'personnel_number' => 'PN-0000005',
             'full_name' => 'Nico Ampoloquio',
             'first_name' => 'Nico',
             'last_name' => 'Ampoloquio',
             'sex' => 'Male',
             'birthdate' => '2003-02-10',
-            'email' => 'nicoampoloquio@gmail.com',
+            'email' => 'louiejhe.store@gmail.com',
             'password' => 'Pass12**',
             'department_id' => 1
         ]);

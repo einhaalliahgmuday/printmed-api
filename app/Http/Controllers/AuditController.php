@@ -17,7 +17,7 @@ class AuditController extends Controller
     {
         $request->validate([
             'page' => 'integer',
-            'resource' => 'string|in:user,patient',
+            // 'resource' => 'string|in:user,patient',
             'date_from' => 'date|date_format:Y-m-d',
             'date_until' => 'date|date_format:Y-m-d|after_or_equal:date_from'
         ]);
@@ -43,7 +43,7 @@ class AuditController extends Controller
     public function downloadAudits(Request $request)
     {
         $request->validate([
-            'resource' => 'string|in:user,patient',
+            // 'resource' => 'string|in:user,patient',
             'date_from' => 'date|date_format:Y-m-d',
             'date_until' => 'date|date_format:Y-m-d|after_or_equal:date_from'
         ]);
@@ -66,17 +66,27 @@ class AuditController extends Controller
     {
         $auditsQuery = Audit::query();
 
-        if ($request->filled('resource')) {
-            switch($request->resource) {
-                case 'user':
-                    $auditsQuery->whereBlind('auditable_type', 'auditable_type_index', 'App\Models\User');
-                    break; 
-                case 'patient':
-                    $auditsQuery->whereBlind('auditable_type', 'auditable_type_index', 'App\Models\Patient')
-                                ->orWhereBlind('auditable_type', 'auditable_type_index', 'App\Models\Consultation');
-                    break;
-            }
+        // if ($request->filled('resource')) {
+        //     switch($request->resource) {
+        //         case 'user':
+        //             $auditsQuery->whereBlind('auditable_type', 'auditable_type_index', 'App\Models\User');
+        //             break; 
+        //         case 'patient':
+        //             $auditsQuery->whereBlind('auditable_type', 'auditable_type_index', 'App\Models\Patient')
+        //                         ->orWhereBlind('auditable_type', 'auditable_type_index', 'App\Models\Consultation');
+        //             break;
+        //     }
+        // }
+
+        $user = $request->user();
+
+        // not include user-related audits if not super admin
+        if ($user->role == "admin") {
+            $auditsQuery->whereBlind('auditable_type', 'auditable_type_index', 'App\Models\Patient')
+                        ->orWhereBlind('auditable_type', 'auditable_type_index', 'App\Models\Consultation');
         }
+
+
 
         if ($request->filled('date_from')) {
             $dateFrom = Carbon::parse($request->date_from)->startOfDay();
