@@ -40,7 +40,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/is-personnel-number-exists', [UserController::class, 'isPersonnelNumberExists'])->middleware(['role:super admin,admin']);
     Route::get('/users/{user}', [UserController::class, 'show'])->middleware(['role:super admin,admin']);
     Route::put('/users/{user_to_update}/toggle-lock', [UserController::class,'toggleLock'])->middleware(['role:super admin,admin']);
-    Route::put('/users/{user_to_update}/update-information', [UserController::class, 'updateInformation'])->middleware(['role:super admin, admin']);
+    Route::put('/users/{user_to_update}/update-information', [UserController::class, 'updateInformation'])->middleware(['role:super admin,admin']);
     Route::put('/users/{user_to_update}/unrestrict', [UserController::class, 'unrestrict'])->middleware(['role:super admin,admin']);
     Route::get('/users-count', [UserController::class, 'count'])->middleware(['role:super admin,admin']);
     // user controls

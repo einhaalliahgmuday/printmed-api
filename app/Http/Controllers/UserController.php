@@ -43,7 +43,10 @@ class UserController extends Controller
             if ($request->filled('role') && in_array($request->role, ['physician', 'secretary'])) {
                 $query->whereBlind('role', 'role_index', $request->role);
             } else {
-                $query->whereBlind('role', 'role_index', "physician")->orWhereBlind('role', 'role_index', 'secretary');
+                $query->where(function($q) {
+                    $q->whereBlind('role', 'role_index', 'secretary')
+                    ->orWhereBlind('role', 'role_index', "physician");
+                });
             }
         } else {
             if ($request->filled('role')) {
@@ -73,7 +76,7 @@ class UserController extends Controller
         {
             switch($request->status) {
                 case 'new':
-                    $query->where('email_verified_at', null);
+                    $query->where('email_verified_at', null)->where('is_locked', 0);
                     break;
                 case 'active':
                     $query->where('email_verified_at', '!=', null)->where('is_locked', 0, )->where('failed_login_attempts', '<=', 2);
@@ -131,7 +134,7 @@ class UserController extends Controller
             'email' => 'required|email|max:100',
         ]);
 
-        Gate::authorize('is-authorized-admin-action', [$request->role]);
+        // Gate::authorize('is-authorized-admin-action', [$request->role]);
 
         // $user = $request->user();
 
@@ -197,7 +200,7 @@ class UserController extends Controller
         //     return response()->json(['message' => 'Unauthorized to view this account.'], 401);
         // }
 
-        Gate::authorize('is-authorized-admin-action', [$user->role]);
+        // Gate::authorize('is-authorized-admin-action', [$user->role]);
 
         return $user;
     }
@@ -205,6 +208,7 @@ class UserController extends Controller
     public function updateInformation(Request $request, User $userToUpdate) 
     {
         $fields = $request->validate([
+            'role' => 'string|in:admin,physician,secretary',
             'personnel_number' => 'string|size:10',
             'first_name' => 'string|max:100',
             'middle_name' => 'nullable|string|max:100',
@@ -223,7 +227,12 @@ class UserController extends Controller
         //     return response()->json(['message' => 'Unauthorized'], 401);
         // }
 
-        Gate::authorize('is-authorized-admin-action', [$userToUpdate->role]);
+        // Gate::authorize('is-authorized-admin-action', [$userToUpdate->role]);
+
+        // if ($request->filled('role'))
+        // {
+        //     Gate::authorize('is-authorized-admin-action', [$request->role]);
+        // }
 
         if ($request->filled('email') && $request->email !== $userToUpdate->email && $this->isUserEmailExists($request->email)) 
         {
@@ -245,7 +254,7 @@ class UserController extends Controller
 
         $originalData = $userToUpdate->toArray();
 
-        if ($request->filled('role') && !in_array($userToUpdate->role, ['physician', 'secretary']))
+        if ($request->filled('role') && !in_array($request->role, ['physician', 'secretary']))
         {
             $fields["department_id"] = null;
         }
@@ -272,7 +281,7 @@ class UserController extends Controller
         //     return response()->json(['message' => 'Unauthorized'], 401);
         // }
 
-        Gate::authorize('is-authorized-admin-action', [$userToUpdate->role]);
+        // Gate::authorize('is-authorized-admin-action', [$userToUpdate->role]);
 
         $userToUpdate->is_locked = !$userToUpdate->is_locked;
         $userToUpdate->failed_login_attempts = 0;
@@ -300,7 +309,7 @@ class UserController extends Controller
         //     return response()->json(['message' => 'Unauthorized'], 401);
         // }
 
-        Gate::authorize('is-authorized-admin-action', [$userToUpdate->role]);
+        // Gate::authorize('is-authorized-admin-action', [$userToUpdate->role]);
 
         // $failedLoginAttempts = $userToUpdate->failed_login_attempts;
         
@@ -434,7 +443,7 @@ class UserController extends Controller
         
         $request->validate([
             'current_password' => 'required|string',
-            'new_password' => 'required|string|min:8|regex:/[a-z]/|regex:/[A-Z]/|regex:/[0-9]/|regex:/[@$!%*?&]/|confirmed'
+            'new_password' => 'required|string|min:8|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/|confirmed'
         ]);
 
         if (!Hash::check($request->current_password, $user->password))

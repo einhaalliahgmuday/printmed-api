@@ -202,7 +202,7 @@ class AuthController extends Controller
             'birthdate' => 'required|date|date_format:Y-m-d',
             'token' => 'required|string',
             'email' => 'required|email',
-            'password' => 'required|string|min:8|regex:/[a-z]/|regex:/[A-Z]/|regex:/[0-9]/|regex:/[@$!%*?&]/|confirmed'
+            'password' => 'required|string|min:8|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/|confirmed'
         ]);
 
         $resetToken = ResetToken::orderByDesc('expires_at')->whereBlind('email', 'email_index', $request->email)->first();
