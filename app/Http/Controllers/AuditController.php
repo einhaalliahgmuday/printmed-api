@@ -44,15 +44,18 @@ class AuditController extends Controller
     {
         $request->validate([
             // 'resource' => 'string|in:user,patient',
-            'date_from' => 'date|date_format:Y-m-d',
-            'date_until' => 'date|date_format:Y-m-d|after_or_equal:date_from'
+            'date_from' => 'required|date|date_format:Y-m-d',
+            'date_until' => 'required|date|date_format:Y-m-d|after_or_equal:date_from'
         ]);
 
         $auditsInformation = $this->getAudits($request, null, null);
 
         $date = now()->format('Y-m-d');
 
-        $pdf = SnappyPdf::loadView('audits', ['audits' => $auditsInformation['data']])
+        $pdf = SnappyPdf::loadView('audits', ['audits' => $auditsInformation['data'], 
+                                        'audits_length' => count($auditsInformation['data']), 
+                                        'date_from' => Carbon::parse($request->date_from)->format('F d, Y'), 
+                                        'date_until' => Carbon::parse($request->date_until)->format('F d, Y')])
                         ->setPaper('a4', 'landscape')
                         ->setOptions(['margin-top' => 20, 'margin-bottom' => 10, 'margin-left' => 10, 'margin-right' => 10])
                         ->setOption('header-html', view()->make('document_header')->render())

@@ -24,6 +24,11 @@
             padding: 0;
             margin: 0;
         }
+        .date-text {
+            font-size: 20px;
+            text-align: center;
+            margin-top: 8px;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -62,6 +67,11 @@
 <body>
     <main>
         <h1>AUDITS</h1>
+        @if ($date_from == $date_until)
+            <p class="date-text">{{$date_from}}</p>
+        @else
+            <p class="date-text">{{$date_from}} to {{$date_until}}</p>
+        @endif
         <table>
             <thead>
                 <tr>
@@ -75,29 +85,35 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($audits as $audit)
+                @if ($audits_length > 0)
+                    @foreach ($audits as $audit)
+                        <tr>
+                            <td class="w-10">{{"{$audit['date']} {$audit['time']}"}}</td>
+                            <td class="w-10">{{$audit['user_personnel_number']}}</td>
+                            <td class="w-10">{{$audit['user_role']}}</td>
+                            <td class="w-15">{{$audit['message']}}</td>
+                            <td class="w-10">{{$audit['resource_entity']}}</td>
+                            <td class="w-15 ta-left">
+                                @if ($audit['old_values'])
+                                    @foreach ($audit['old_values'] as $value)
+                                        <p>{{$value}}</p>
+                                    @endforeach
+                                @endif
+                            </td>
+                            <td class="w-15 ta-left">
+                                @if ($audit['new_values'])
+                                    @foreach ($audit['new_values'] as $value)
+                                        <p>{{$value}}</p>
+                                    @endforeach
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                @else
                     <tr>
-                        <td class="w-10">{{"{$audit['date']} {$audit['time']}"}}</td>
-                        <td class="w-10">{{$audit['user_personnel_number']}}</td>
-                        <td class="w-10">{{$audit['user_role']}}</td>
-                        <td class="w-15">{{$audit['message']}}</td>
-                        <td class="w-10">{{$audit['resource_entity']}}</td>
-                        <td class="w-15 ta-left">
-                            @if ($audit['old_values'])
-                                @foreach ($audit['old_values'] as $value)
-                                    <p>{{$value}}</p>
-                                @endforeach
-                            @endif
-                        </td>
-                        <td class="w-15 ta-left">
-                            @if ($audit['new_values'])
-                                @foreach ($audit['new_values'] as $value)
-                                    <p>{{$value}}</p>
-                                @endforeach
-                            @endif
-                        </td>
+                        <td colspan="7">No audits</td>
                     </tr>
-                @endforeach
+                @endif
             </tbody>
         </table>
     </main>
