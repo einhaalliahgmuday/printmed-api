@@ -36,7 +36,7 @@ class Registration extends Model implements CipherSweetEncrypted
             ->addOptionalTextField('house_number')
             ->addOptionalTextField('street')
             ->addOptionalTextField('barangay')
-            ->addOptionalTextField('barangay_code')
+            // ->addOptionalTextField('barangay_code')
             ->addOptionalTextField('city')
             ->addOptionalTextField('city_code')
             ->addOptionalTextField('province')
@@ -64,7 +64,7 @@ class Registration extends Model implements CipherSweetEncrypted
         'house_number',
         'street',
         'barangay',
-        'barangay_code',
+        // 'barangay_code',
         'city',
         'city_code',
         'province',
