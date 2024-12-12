@@ -31,7 +31,7 @@ class UserController extends Controller
             'role' => 'string|in:admin,physician,secretary',
             'department_id' => 'integer|exists:departments,id',
             'status' => 'string|in:new,active,locked,restricted',
-            'sort_by' => 'string|in:personnel_number,last_name',
+            'sort_by' => 'string|in:personnel_number',
             'order_by' => 'string|in:asc,desc'
         ]);
 
@@ -230,7 +230,7 @@ class UserController extends Controller
             return response()->json(['field' => 'email', 'message' => 'The email is already taken.'], 422);
         }
 
-        if ($request->filled('personnl_number') && $request->personnel_number !== $userToUpdate->personnel_number && $this->isUserPersonnelNumberExists($request->personnel_number)) 
+        if ($request->filled('personnel_number') && $request->personnel_number !== $userToUpdate->personnel_number && $this->isUserPersonnelNumberExists($request->personnel_number)) 
         {
             return response()->json(['field' => 'personnel_number', 'message' => 'The personnel number is already taken'], 422);
         }

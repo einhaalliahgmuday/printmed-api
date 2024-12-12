@@ -22,17 +22,17 @@ class AuthController extends Controller
     public function login(Request $request) 
     {
         $request->validate([
-            'role' => 'required|string|in:admin,physician,secretary,super admin',
+            'role' => 'required|string|in:admin,physician,secretary',   //super admin
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
         $query = User::query();
-        // if ($request->role == "admin") {
-        //     $query->whereBlind('role', 'role_index', "super admin")->orWhereBlind('role', 'role_index', "admin");
-        // } else {
+        if ($request->role == "admin") {
+            $query->whereBlind('role', 'role_index', "super admin")->orWhereBlind('role', 'role_index', "admin");
+        } else {
             $query->whereBlind('role', 'role_index', $request->role);
-        // }
+        }
         $user = $query->whereBlind('email', 'email_index', $request->email)->first();
                     
 
