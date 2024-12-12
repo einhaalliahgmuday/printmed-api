@@ -39,6 +39,9 @@
             .h-8 {
                 height: 8px;
             }
+            li {
+                text-align: start;
+            }
         </style>
     </head>
     <body>

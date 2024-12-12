@@ -73,8 +73,7 @@ class UserSeeder extends Seeder
             'sex' => 'Male',
             'birthdate' => '2003-02-10',
             'email' => 'louiejhe.store@gmail.com',
-            'password' => 'Pass12**',
-            'department_id' => 1
+            'password' => 'Pass12**'
         ]);
     }
 }
