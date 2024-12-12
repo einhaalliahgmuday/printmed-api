@@ -296,6 +296,33 @@ class PatientController extends Controller
         return $patient;
     }
 
+    public function getDuplicates(Request $request) 
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'first_name' => 'required|string|max:100',
+            'last_name'=> 'required|string|max:100',
+            'birthdate' => 'required|date|date_format:Y-m-d',
+            'sex' => 'required|string|max:6'
+        ]);
+
+        $patients = Patient::select('id', 'patient_number', 'first_name', 'middle_name', 'last_name', 'suffix', 'full_name', 'birthdate', 'sex', 'photo', 'created_at')
+                            ->whereBlind('first_name', 'first_name_index', $request->first_name)
+                            ->whereBlind('last_name', 'last_name_index', $request->last_name)
+                            ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
+                            ->whereBlind('sex', 'sex_index', $request->sex)
+                            ->get();
+
+        foreach ($patients as $patient) {
+            if ($patient->photo && Storage::exists($patient->photo)) {
+                $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
+            }
+        }
+
+        return $patients;
+    }
+
     // public function destroy(Patient $patient)
     // {
     //     $dateThreshold = now()->subYears(10);
@@ -360,31 +387,4 @@ class PatientController extends Controller
 
     //     return response(Storage::get($path))->header('Content-Type', $mimeType);
     // }
-
-    public function getDuplicates(Request $request) 
-    {
-        $user = $request->user();
-
-        $request->validate([
-            'first_name' => 'required|string|max:100',
-            'last_name'=> 'required|string|max:100',
-            'birthdate' => 'required|date|date_format:Y-m-d',
-            'sex' => 'required|string|max:6'
-        ]);
-
-        $patients = Patient::select('id', 'patient_number', 'first_name', 'middle_name', 'last_name', 'suffix', 'full_name', 'birthdate', 'sex', 'photo', 'created_at')
-                            ->whereBlind('first_name', 'first_name_index', $request->first_name)
-                            ->whereBlind('last_name', 'last_name_index', $request->last_name)
-                            ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
-                            ->whereBlind('sex', 'sex_index', $request->sex)
-                            ->get();
-
-        foreach ($patients as $patient) {
-            if ($patient->photo && Storage::exists($patient->photo)) {
-                $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
-            }
-        }
-
-        return $patients;
-    }
 }

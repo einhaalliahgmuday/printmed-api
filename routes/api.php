@@ -52,10 +52,10 @@ Route::middleware(['auth:sanctum'])->group(function() {
 
     // AUDITS
     Route::get('/audits', [AuditController::class, 'index'])->middleware(['role:super admin,admin']);
-    Route::get('/audits/download', [AuditController::class, 'downloadAudits'])->middleware(['role:super admin,admin']);
+    Route::get('/audits/download', [AuditController::class, 'downloadAudits'])->middleware(['role:super admin']);
 
     // DEPARTMENTS
-    Route::get('/departments', [DepartmentController::class, 'index'])->middleware(['role:super admin']);
+    Route::get('/departments', [DepartmentController::class, 'index'])->middleware(['role:super admin,admin']);
     Route::apiResource('departments', DepartmentController::class)->except(['show', 'index'])->middleware(['role:super admin']);
 
     // REGISTRATIONS
