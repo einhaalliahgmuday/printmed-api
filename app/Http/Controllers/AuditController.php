@@ -48,6 +48,8 @@ class AuditController extends Controller
             'date_until' => 'required|date|date_format:Y-m-d|after_or_equal:date_from'
         ]);
 
+        set_time_limit(300);
+
         $auditsInformation = $this->getAudits($request, null, null);
 
         $date = now()->format('Y-m-d');

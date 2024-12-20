@@ -89,10 +89,12 @@ class PatientQrController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'qr_code' => 'string|size:43'
+            'qr_code' => 'required|string|size:43'
         ]);
 
-        $patientQr = PatientQr::whereBlind('uuid', 'uuid_index', $request->qr_code)
+        $code = strtolower($request->qr_code);
+
+        $patientQr = PatientQr::whereBlind('uuid', 'uuid_index', $code)
                                 ->where('is_deactivated', 0)
                                 ->where('created_at', '>', now()->subYear())
                                 ->latest()->first();

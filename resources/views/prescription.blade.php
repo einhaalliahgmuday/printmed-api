@@ -163,7 +163,11 @@
                 <div>
                     <div class="mb-8">
                         <p class="inline-block mr-10">Follow-up Date</p>
-                        <div class="inline-block bb-black pl-5" style="width: 362px;">{{Carbon\Carbon::parse($follow_up_date)->format('F j, Y')}}</div>
+                        <div class="inline-block bb-black pl-5" style="width: 362px;">
+                            @if ($follow_up_date)
+                                {{Carbon\Carbon::parse($follow_up_date)->format('F j, Y')}}
+                            @endif
+                        </div>
                     </div>  
                     <div>
                         <p class="inline-block mr-10">Physician</p>
