@@ -242,6 +242,10 @@ class PatientController extends Controller
 
         if ($request->file('photo'))
         {
+            if ($patient->photo != null && $patient->photo != "") {
+                Storage::delete($patient->photo);
+            }
+
             $path = $request->file('photo')->store('images/patients', ['local', 'private']);
             $patient->update(['photo' => $path]);
         }

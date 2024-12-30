@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Let's log you in</title>
+        <title>Your Digital Patient Identification Card</title>
         <style>
             body {
                 font-family: Arial, sans-serif;
