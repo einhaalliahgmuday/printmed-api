@@ -4,14 +4,18 @@ namespace App\Http\Controllers;
 
 use App\AuditAction;
 use App\Events\ModelAction;
+use App\Mail\Prescription as MailPrescription;
 use App\Models\Consultation;
 use App\Models\Patient;
 use App\Models\Prescription;
 use App\Traits\CommonMethodsTrait;
+use Barryvdh\Snappy\Facades\SnappyImage;
 use Barryvdh\Snappy\Facades\SnappyPdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class ConsultationController extends Controller
 {
@@ -125,23 +129,77 @@ class ConsultationController extends Controller
         return $consultation;
     }
 
-    public function printPrescription(Consultation $consultation)
+    public function printPrescription(Request $request, Consultation $consultation)
     {
         Gate::authorize('is-assigned-physician', [$consultation->patient_id]);
+        
+        $request->validate([
+            'ptr' => 'string|max:255',
+            's2' => 'string|max:255',
+            'sendToPatientEmail' => 'string|in:true,false'
+        ]);
+
+        $patient = $consultation->patient; 
 
         $prescriptions = $this->getPrescriptionsPages($consultation->prescriptions()->get());
+        $ptr = '';
+        $s2 = '';
+        if ($request->filled('ptr')) {
+            $ptr = $request->ptr;
+        }
+        if ($request->filled('s2')) {
+            $s2 = $request->s2;
+        }
+
+        $user = $request->user();
+        $signature = null;
+        if ($user->signature != null && $user->signature != "") {
+            if (Storage::exists($user->signature)) {
+                $signature = base64_encode(Storage::get($user->signature));
+            }
+        }
 
         $pdf = SnappyPdf::loadView('prescription', 
                                 ['date' => $consultation->created_at, 
                                 'follow_up_date' => $consultation->follow_up_date, 
                                 'patient' => $consultation->patient()->first(), 
                                 'physician' => $consultation->physician()->first(), 
-                                'prescriptions' => $prescriptions
+                                'signature' => $signature,
+                                'prescriptions' => $prescriptions,
+                                'ptr' => $ptr,
+                                's2' => $s2,
+                                'pdf' => true 
                                 ])
                         ->setPaper('a4', 'landscape')
                         ->setOptions(['margin-top' => 1.5, 'margin-bottom' => 1.5, 'margin-right' => 1.5, 'margin-left' => 1.5])
-                        ->setOption('zoom', 1.15)
+                        ->setOption('zoom', 1.13)
                         ->setOption('enable-local-file-access', true);
+
+        if ($request->filled('sendToPatientEmail') && $request->sendToPatientEmail == "true" && $patient->email)
+        {
+            $prescriptionImages = [];
+            foreach($prescriptions as $prescription) {
+                $image = SnappyImage::loadView('prescription', 
+                                ['date' => $consultation->created_at, 
+                                'follow_up_date' => $consultation->follow_up_date, 
+                                'patient' => $consultation->patient()->first(), 
+                                'physician' => $consultation->physician()->first(), 
+                                'signature' => $signature,
+                                'prescriptions' => [$prescription],
+                                'ptr' => $ptr,
+                                's2' => $s2,
+                                'pdf' => false])
+                        ->setOption('width', 550)
+                        ->setOption('zoom', 1.2)
+                        ->setOption('quality', 100)
+                        ->setOption('format', 'jpeg')
+                        ->setOption('enable-local-file-access', true);
+
+                $prescriptionImages[] = $image->output();
+            }
+
+            Mail::to($patient->email)->send(new MailPrescription($prescriptionImages, $patient->first_name));
+        }
 
         return $pdf->download("prescription.pdf");
     }

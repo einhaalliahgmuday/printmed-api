@@ -6,9 +6,6 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Prescription</title>
     <style>
-        @page {
-			size: 8.5in 11in;
-		}
 		* {
 			box-sizing: border-box;
 			margin: 0;
@@ -23,9 +20,10 @@
             background-color: white;
 		}
         .container {
-            border: 2px solid black;
+            border-right: {{ $pdf == true ? '2px solid black' : '0px solid transparent' }};
+            /* border-bottom: 2px solid black; */
             width: 5.5in;
-            height: 8.8in;
+            height: 9in;
             padding: 16px 20px 20px;
         }
         .logo {
@@ -54,7 +52,11 @@
         }
         .prescriptions-container {
             position: relative;
-            height: 410px;
+            height: 395px;
+        }
+        .signature {
+            max-width: 100%;
+            height: 30px;
         }
         .bold {
             font-weight: bold;
@@ -92,6 +94,9 @@
         .mt-20 {
             margin-top: 20px;
         } 
+        .mt-10 {
+            margin-top: 10px;
+        }
         .mb-8 {
             margin-bottom: 8px;
         }   
@@ -110,84 +115,86 @@
     </style>
 </head>
 <body>
-    <div>
-        @foreach ($prescriptions as $prescription)
-            <div class="container inline-block">
+    @foreach ($prescriptions as $prescription)
+        <div class="container inline-block">
+            <div>
+                <img class="logo" src="{{ public_path('images/carmona_hospital_logo_4.png') }}" alt="">
+            </div>
+            <p class="bold text-lg text-center">Carmona Hospital and Medical Center</p>
+            <p class="text-center mb-20">Cabilang Baybay, Carmona Cavite, Philippines</p>
+            <p class="bold text-lg text-center">OUTPATIENT DEPARTMENT</p>
+            <p class="text-center mb-20 text-lg bold">Pediatrics</p>
+            <div class="mb-20">
+                <div class="mb-8">
+                    <p class="inline-block mr-10">Date</p>
+                    <div class="inline-block bb-black mr-10 pl-5" style="width: 150px;">{{$date->format('F j, Y')}}</div>
+                    <p class="inline-block mr-10">Patient Number</p>
+                    <div class="inline-block bb-black pl-5" style="width: 155px;">{{$patient->patient_number}}</div>
+                </div>   
+                <div class="mb-8">
+                    <p class="inline-block mr-10">Name of Patient</p>
+                    <div class="inline-block bb-black pl-5" style="width: 360px;">{{$patient->full_name}}</div>
+                </div>  
+                <div class="mb-8">   
+                    <p class="inline-block mr-10">Age</p>
+                    <div class="inline-block bb-black mr-10 pl-5" style="width: 50px;">{{$patient->age}}</div>
+                    <p class="inline-block mr-10">Birthdate</p>
+                    <div class="inline-block bb-black mr-10 pl-5" style="width: 140px;">{{Carbon\Carbon::parse($patient->birthdate)->format('F j, Y')}}</div>
+                    <p class="inline-block mr-10">Gender</p>
+                    <div class="inline-block bb-black pl-5" style="width: 100px;">{{$patient->sex}}</div>
+                </div>   
                 <div>
-                    <img class="logo" src="{{ public_path('images/carmona_hospital_logo_4.png') }}" alt="">
-                </div>
-                <p class="bold text-lg text-center">Carmona Hospital and Medical Center</p>
-                <p class="text-center mb-20">Cabilang Baybay, Carmona Cavite, Philippines</p>
-                <p class="bold text-lg text-center">OUTPATIENT DEPARTMENT</p>
-                <p class="text-center mb-20 text-lg bold">Pediatrics</p>
-                <div class="mb-20">
-                    <div class="mb-8">
-                        <p class="inline-block mr-10">Date</p>
-                        <div class="inline-block bb-black mr-10 pl-5" style="width: 150px;">{{$date->format('F j, Y')}}</div>
-                        <p class="inline-block mr-10">Patient Number</p>
-                        <div class="inline-block bb-black pl-5" style="width: 155px;">{{$patient->patient_number}}</div>
-                    </div>   
-                    <div class="mb-8">
-                        <p class="inline-block mr-10">Name of Patient</p>
-                        <div class="inline-block bb-black pl-5" style="width: 360px;">{{$patient->full_name}}</div>
-                    </div>  
-                    <div class="mb-8">   
-                        <p class="inline-block mr-10">Age</p>
-                        <div class="inline-block bb-black mr-10 pl-5" style="width: 50px;">{{$patient->age}}</div>
-                        <p class="inline-block mr-10">Birthdate</p>
-                        <div class="inline-block bb-black mr-10 pl-5" style="width: 140px;">{{Carbon\Carbon::parse($patient->birthdate)->format('F j, Y')}}</div>
-                        <p class="inline-block mr-10">Gender</p>
-                        <div class="inline-block bb-black pl-5" style="width: 100px;">{{$patient->sex}}</div>
-                    </div>   
-                    <div>
-                        <p class="inline-block mr-10">Address</p>
-                        <div class="inline-block bb-black pl-5" style="width: 414px;">{{$patient->address}}</div>
-                    </div>
-                </div>
-                <div class="prescriptions-container">
-                    <div class="bg-container">
-                        <img class="bg" src="{{ public_path('images/carmona_hospital_logo_transparent_2.png') }}" alt="">
-                    </div>
-                    <div>
-                        <img class="rx inline-block" src="{{ public_path('images/rx.png') }}" alt="">
-                    </div>
-                    <div class="text-md">
-                        @foreach ($prescription as $item)
-                            <div class="mt-15 text-lg">
-                                <p class="bold"><span class="mr-10">{{$item['name']}}</span>{{$item['dosage']}}</p>
-                                <p>{{$item['instruction']}}</p>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-                <div>
-                    <div class="mb-8">
-                        <p class="inline-block mr-10">Follow-up Date</p>
-                        <div class="inline-block bb-black pl-5" style="width: 362px;">
-                            @if ($follow_up_date)
-                                {{Carbon\Carbon::parse($follow_up_date)->format('F j, Y')}}
-                            @endif
-                        </div>
-                    </div>  
-                    <div>
-                        <p class="inline-block mr-10">Physician</p>
-                        <div class="inline-block bb-black pl-5" style="width: 400px;">{{$physician->full_name}}, MD</div>
-                    </div>  
-                    <div class="mt-15 mb-8">
-                        <p class="inline-block mr-10">Signature of Physician</p>
-                        <div class="inline-block bb-black pl-5" style="width: 319px;"></div>
-                    </div>  
-                    <div class="mb-8">
-                        <p class="inline-block mr-10">PTR #</p>
-                        <div class="inline-block bb-black pl-5" style="width: 422px;"></div>
-                    </div>  
-                    <div class="mb-8">
-                        <p class="inline-block mr-10">S2 #</p>
-                        <div class="inline-block bb-black pl-5" style="width: 432px;"></div>
-                    </div>  
+                    <p class="inline-block mr-10">Address</p>
+                    <div class="inline-block bb-black pl-5" style="width: 414px;">{{$patient->address}}</div>
                 </div>
             </div>
-        @endforeach
-    </div>
+            <div class="prescriptions-container">
+                <div class="bg-container">
+                    <img class="bg" src="{{ public_path('images/carmona_hospital_logo_transparent_2.png') }}" alt="">
+                </div>
+                <div>
+                    <img class="rx inline-block" src="{{ public_path('images/rx.png') }}" alt="">
+                </div>
+                <div class="text-md">
+                    @foreach ($prescription as $item)
+                        <div class="mt-15 text-lg">
+                            <p class="bold"><span class="mr-10">{{$item['name']}}</span>{{$item['dosage']}}</p>
+                            <p>{{$item['instruction']}}</p>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            <div>
+                <div class="mb-8">
+                    <p class="inline-block mr-10">PTR #</p>
+                    <div class="inline-block bb-black pl-5" style="width: 422px;">{{$ptr}}</div>
+                </div>  
+                <div class="mb-8">
+                    <p class="inline-block mr-10">S2 #</p>
+                    <div class="inline-block bb-black pl-5" style="width: 432px;">{{$s2}}</div>
+                </div>  
+                <div class="mb-8">
+                    <p class="inline-block mr-10">Follow-up Date</p>
+                    <div class="inline-block bb-black pl-5" style="width: 362px;">
+                        @if ($follow_up_date)
+                            {{Carbon\Carbon::parse($follow_up_date)->format('F j, Y')}}
+                        @endif
+                    </div>
+                </div>  
+                <div>
+                    <p class="inline-block mr-10">Physician</p>
+                    <div class="inline-block bb-black pl-5" style="width: 400px;">{{$physician->full_name}}, MD</div>
+                </div>  
+                <div class="mt-10 mb-8">
+                    <p class="inline-block mr-10">Signature of Physician</p>
+                    <div class="inline-block bb-black pl-5" style="width: 319px;">
+                        @if ($signature != null)
+                            <img class="signature" src="{{ 'data:image/png;base64,' . $signature }}" alt="">
+                        @endif
+                    </div>
+                </div>  
+            </div>
+        </div>
+    @endforeach
 </body>
 </html>
