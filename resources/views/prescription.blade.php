@@ -52,7 +52,7 @@
         }
         .prescriptions-container {
             position: relative;
-            height: 395px;
+            height: 410px;
         }
         .signature {
             max-width: 100%;

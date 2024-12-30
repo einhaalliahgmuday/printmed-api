@@ -60,15 +60,15 @@ trait CommonMethodsTrait
             $instructionLength = strlen($prescription->instruction);
             $instructionLineCount = 0;
 
-            if ($instructionLength < 45) {
+            if ($instructionLength <= 45) {
                 $instructionLineCount = 1;
-            } else if ($instructionLength > 45 && $instructionLength < 90) {
+            } else if ($instructionLength > 45 && $instructionLength <= 90) {
                 $instructionLineCount = 2;
-            } else if ($instructionLength > 90 && $instructionLength < 135) {
+            } else if ($instructionLength > 90 && $instructionLength <= 135) {
                 $instructionLineCount = 3;
-            } else if ($instructionLength > 135 && $instructionLength < 180) {
+            } else if ($instructionLength > 135 && $instructionLength <= 180) {
                 $instructionLineCount = 4;
-            } else if ($instructionLength > 180 && $instructionLength < 225) {
+            } else if ($instructionLength > 180 && $instructionLength <= 225) {
                 $instructionLineCount = 5;
             } else if ($instructionLength > 225) {
                 $instructionLineCount = 6;

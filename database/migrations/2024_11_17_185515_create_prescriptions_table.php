@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('dosage');
-            $table->string('instruction');
+            $table->text('instruction');
             $table->foreignId('consultation_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
         });

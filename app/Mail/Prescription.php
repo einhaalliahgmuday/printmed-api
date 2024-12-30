@@ -23,7 +23,7 @@ class Prescription extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your Prescription from Latest Consultation at Carmona Hospital and Medical Center',
+            subject: 'Your Prescription from Recent Consultation',
         );
     }
 
