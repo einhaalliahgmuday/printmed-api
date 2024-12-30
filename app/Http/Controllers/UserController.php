@@ -14,6 +14,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class UserController extends Controller
@@ -459,6 +460,45 @@ class UserController extends Controller
         return response()->json([
             'message' => 'Password changed successfully.'
         ]);
+    }
+
+    public function uploadSignature(Request $request) {
+        $user = $request->user();
+        if ($user->role != "physician") {
+            return response()->json([
+                'message' => "Unauthorized"
+            ], 403);
+        }
+
+        $request->validate([
+            'signature' => 'required|image|mimes:png,jpg,jpeg|max:2048',
+        ]);
+
+        if ($user->signature != null && $user->signature != "") {
+            Storage::delete($user->signature);
+        }
+        $path = $request->file('signature')->store('images/signatures', ['local', 'private']);
+        $user->update(['signature' => $path]);
+
+        return response()->json([
+            'signature' => Storage::temporaryUrl($user->signature, now()->addHours(16))
+        ], 200);
+    }
+
+    public function deleteSignature(Request $request) {
+        $user = $request->user();
+        if ($user->role != "physician") {
+            return response()->json([
+                'message' => "Unauthorized"
+            ], 403);
+        }
+
+        if ($user->signature != null && $user->signature != "") {
+            Storage::delete($user->signature);
+            $user->update(['signature' => '']);
+        }
+
+        return response()->json(['message' => 'Signature deleted successfully.'], 200);
     }
 
     public function getPhysicians(Request $request) 

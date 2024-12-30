@@ -12,6 +12,7 @@ use App\Http\Controllers\PatientQrController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VitalSignsController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 // PATIENT REGISTRATION
 Route::post('/registrations', [RegistrationController::class, 'store']);
@@ -26,7 +27,12 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 //routes that requires authentication to access
 Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/user', function (Request $request) {
-        return $request->user();
+        $user = $request->user();
+        if ($user->role == "physician" && $user->signature != null && $user->signature != "") {
+            $user['signature'] = Storage::temporaryUrl($user->signature, now()->addHours(16));
+        }
+
+        return $user;
     });
 
     // AUTH
@@ -44,6 +50,8 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::put('/users/{user_to_update}/unrestrict', [UserController::class, 'unrestrict'])->middleware(['role:super admin,admin']);
     Route::get('/users-count', [UserController::class, 'count'])->middleware(['role:super admin,admin']);
     // user controls
+    Route::post('/upload-signature', [UserController::class, 'uploadSignature']);
+    Route::delete('/delete-signature', [UserController::class, 'deleteSignature']);
     Route::put('/update-email', [UserController::class, 'updateEmail']);
     Route::post('/resend-update-email-otp', [UserController::class, 'resendUpdateEmailOtp']);
     Route::post('/update-email/verify-otp', [UserController::class, 'verifyUpdateEmailOtp']);

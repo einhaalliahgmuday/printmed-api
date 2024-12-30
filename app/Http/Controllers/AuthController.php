@@ -13,6 +13,7 @@ use App\Traits\CommonMethodsTrait;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
@@ -117,6 +118,10 @@ class AuthController extends Controller
         
         $token = $user->createToken($user->id)->plainTextToken;
         $user->update(['email_verified_at' => now()]);
+        if ($user->role == "physician" && $user->signature != null && $user->signature != "") {
+            $user['signature'] = Storage::temporaryUrl($user->signature, now()->addHours(16));
+        }
+
         $otp->delete();
 
         // audits login
@@ -146,7 +151,7 @@ class AuthController extends Controller
         }
         
         $otp->update([
-            'code' => rand(100000, 999999),
+            // 'code' => rand(100000, 999999),
             'expires_at' => now()->addMinutes(5)
         ]);
 

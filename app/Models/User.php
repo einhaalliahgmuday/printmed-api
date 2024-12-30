@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Traits\CommonMethodsTrait;
+use Illuminate\Support\Facades\Storage;
 use ParagonIE\CipherSweet\BlindIndex;
 use ParagonIE\CipherSweet\EncryptedRow;
 use Spatie\LaravelCipherSweet\Concerns\UsesCipherSweet;
@@ -36,6 +37,7 @@ class User extends Authenticatable implements CipherSweetEncrypted
             ->addField('sex')
             ->addField('birthdate')
             ->addBlindIndex('birthdate', new BlindIndex('birthdate_index'))
+            ->addOptionalTextField('signature')
             ->addField('email')
             ->addBlindIndex('email', new BlindIndex('email_index'));
     }
@@ -50,6 +52,7 @@ class User extends Authenticatable implements CipherSweetEncrypted
         'suffix',
         'sex',
         'birthdate',
+        'signature',
         'department_id',
         'email',
         'password',
