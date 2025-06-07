@@ -1,0 +1,173 @@
+<?php
+
+namespace App\Services;
+
+require 'vendor/autoload.php';
+
+use Aws\Exception\AwsException;
+use Aws\Rekognition\RekognitionClient;
+use Exception;
+
+use function PHPUnit\Framework\isEmpty;
+
+class AmazonRekognitionService
+{
+    private $rekognition;
+
+    public function __construct() {
+        $this->rekognition = new RekognitionClient([
+            'region' => env('AWS_DEFAULT_REGION', 'ap-southeast-1'),
+            'version' => 'latest',
+            'credentials' => [
+                'key' => env('AWS_ACCESS_KEY_ID'),
+                'secret' => env('AWS_SECRET_ACCESS_KEY')
+            ]
+        ]);
+    }
+
+    public function detectFaces($imageBytes) {
+        try {
+            $result = $this->rekognition->detectFaces([
+                'Image' => [
+                    'Bytes' => $imageBytes
+                ],
+                'Attributes' => ['ALL'] // FACE_OCCLUDED, EYE-DIRECTION, DEFAULT
+            ]);
+
+            return $result['FaceDetails'] ?? [];
+        } catch(AwsException $e) {
+            return [
+                'error' => true,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function compareFaces($sourceImageBytes, $targetImageBytes) {
+        try {
+            $result = $this->rekognition->compareFaces([
+                'SourceImage' => ['Bytes' => $sourceImageBytes],
+                'TargetImage' => ['Bytes' => $targetImageBytes],
+                'SimilarityThreshold' => 99
+            ]);
+
+            return $result['FaceMatches'] ?? [];
+        } catch(AwsException $e) {
+            return [
+                'error' => true,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function indexFaces($imageBytes, string $externalImageId, string $collectionId) {
+        try {
+            $result = $this->rekognition->indexFaces([
+                'Image' => [
+                    'Bytes' => $imageBytes
+                ],
+                'CollectionId' => $collectionId,
+                'ExternalImageId' => $externalImageId,
+                'MaxFaces' => 1,
+                'DetectionAttributes' => [],
+                'QualityFilter' => 'HIGH'
+            ]);
+
+            return $result['FaceRecords'] ?? [];
+        } catch(AwsException $e) {
+            return [
+                'error' => true,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function searchFacesByImage($imageBytes, string $collectionId) {
+        try {
+            $result = $this->rekognition->searchFacesByImage([
+                'CollectionId' => $collectionId,
+                'FaceMatchThreshold' => 99,
+                'Image' => [
+                    'Bytes' => $imageBytes
+                ],
+                'MaxFaces' => 1,
+                'QualityFilter' => 'HIGH'
+            ]);
+
+            return $result['FaceMatches'] ?? [];
+        } catch(AwsException $e) {
+            return [
+                'error' => true,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+     public function createCollection(string $collectionId) {
+        try {
+            $result = $this->rekognition->createCollection([
+                'CollectionId' => $collectionId
+            ]);
+
+            return [
+                'success' => true,
+                'result' => $result
+            ];
+        } catch(AwsException $e) {
+            return [
+                'error' => true,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function getCollectionDescription(string $collectionId) {
+        try {
+            return $this->rekognition->describeCollection([
+                'CollectionId' => $collectionId
+            ]);
+        } catch(AwsException $e) {
+            return [
+                'error' => true,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function deleteFaceFromCollection(string $faceId, string $collectionId) {
+        try {
+            $result = $this->rekognition->deleteFaces([
+                'CollectionId' => $collectionId,
+                'FaceIds' => [
+                    $faceId
+                ]
+            ]);
+
+            return [
+                'success' => $result['DeletedFaces'].isEmpty() ? false : true
+            ];
+        } catch(AwsException $e) {
+            return [
+                'error' => true,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function deleteCollection(string $collectionId) {
+        try {
+            $result = $this->rekognition->deleteCollection([
+                'CollectionId' => $collectionId
+            ]);
+
+            return [
+                'success' => $result['StatusCode'] == 200 ? true : false
+            ];
+        } catch(AwsException $e) {
+            return [
+                'error' => true,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+}
