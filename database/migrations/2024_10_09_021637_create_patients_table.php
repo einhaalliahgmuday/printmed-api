@@ -37,6 +37,7 @@ return new class extends Migration
             $table->string('photo')->nullable();
             $table->string('payment_method')->nullable();
             $table->string('hmo')->nullable();
+            $table->string('rekognitionFaceId')->nullable();
             $table->timestamps();
         });
     }

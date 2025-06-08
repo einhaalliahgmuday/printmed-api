@@ -9,6 +9,7 @@ use App\Models\Patient;
 use App\Models\PatientPhysician;
 use App\Models\Registration;
 use App\Models\User;
+use App\Services\AmazonRekognitionService;
 use App\Traits\CommonMethodsTrait;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -115,28 +116,24 @@ class PatientController extends Controller
             'hmo' => 'required_if:payment_method,HMO|string',
             'registration_id' => 'int|exists:registrations,id',
         ]);
-
         $request->validate([
             'photo' => 'required|image|mimes:jpg,png|max:2048|dimensions:min_width=640,min_height=480',
             'physician_id' => 'required|int|exists:users,id'
         ]);
 
+        // checks if assigned physician exists
         $physician = User::where('id', $request->physician_id)
                         ->whereBlind('role', 'role_index', 'physician')
                         ->select('id', 'full_name', 'first_name', 'middle_name', 'last_name', 'suffix')
                         ->first();
-
         if (!$physician) {
             return response()->json([
                 'message' => 'Physician not found.'
             ], 400);
         }
 
-        $fields['patient_number'] = Patient::generatePatientNumber();
-        $fields['full_name'] = "{$request->first_name} {$request->last_name}";
-
+        // validates patient's photo quality
         $photo = $request->file('photo');
-
         $imageBytes = file_get_contents($photo->getRealPath());
         if(!$this->isQualityIdentificationPhoto($imageBytes)) {
             return response()->json([
@@ -144,11 +141,22 @@ class PatientController extends Controller
             ], 400);
         }
 
+        // creates the patient
+        $fields['patient_number'] = Patient::generatePatientNumber();
+        $fields['full_name'] = "{$request->first_name} {$request->last_name}";
         $patient = Patient::create($fields);
         $path = $photo->store('images/patients', ['local', 'private']);
         $patient->update(['photo' => $path]);
-
         $patient->physicians()->syncWithoutDetaching([$request->physician_id => ['department_id' => $user->department_id]]);
+
+        // index face to rekognition collection
+        $rekognition = new AmazonRekognitionService();
+        $result = $rekognition->indexFaces($imageBytes, $patient->patient_number, 'patients');
+        if($result['success'] == true) {
+            if(count($result['result']) > 0) {
+                $patient->update(['rekognitionFaceId' => $result['result']['Face']['FaceId']]);
+            }
+        }
 
         // delete record at registrations
         if ($request->filled('registration_id')) {
@@ -163,6 +171,7 @@ class PatientController extends Controller
         // audit creation of patient
         event(new ModelAction(AuditAction::CREATE, $user, $patient, null, $request));
 
+        // returns the patient
         $patient['physician'] = $physician;
         $patient['follow_up_date'] = null;
         $patient['last_visit'] = null;
@@ -170,7 +179,6 @@ class PatientController extends Controller
             $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
         }
         $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
-
         return $patient;
     }
 
@@ -261,9 +269,20 @@ class PatientController extends Controller
             if ($patient->photo != null && $patient->photo != "") {
                 Storage::delete($patient->photo);
             }
-
-            $path = $request->file('photo')->store('images/patients', ['local', 'private']);
+            $path = $photo->store('images/patients', ['local', 'private']);
             $patient->update(['photo' => $path]);
+            
+            // delete previous indexed face and index the new face to rekognition collection
+            $rekognition = new AmazonRekognitionService();
+            if($patient->rekognitionFaceId != null) {
+                $rekognition->deleteFaceFromCollection($patient->rekognitionFaceId, 'patients');
+            }
+            $result = $rekognition->indexFaces($imageBytes, $patient->patient_number, 'patients');
+            if($result['success'] == true) {
+                if(count($result['result']) > 0) {
+                    $patient->update(['rekognitionFaceId' => $result['result']['Face']['FaceId']]);
+                }
+            }
         }
 
         $patient->makeHidden(['qr_status', 'age', 'address', 'vital_signs', 'full_name']);

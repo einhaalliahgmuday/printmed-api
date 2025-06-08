@@ -80,7 +80,8 @@ class Patient extends Model implements CipherSweetEncrypted
         'email',
         'photo',
         'payment_method',
-        'hmo'
+        'hmo',
+        'rekognitionFaceId'
     ];
 
     protected $appends = [
