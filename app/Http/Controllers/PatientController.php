@@ -117,7 +117,7 @@ class PatientController extends Controller
         ]);
 
         $request->validate([
-            'photo' => 'required|image|mimes:png|max:2048|dimensions:min_width=200,min_height=200',
+            'photo' => 'required|image|mimes:jpg,png|max:2048|dimensions:min_width=640,min_height=480',
             'physician_id' => 'required|int|exists:users,id'
         ]);
 
@@ -135,8 +135,17 @@ class PatientController extends Controller
         $fields['patient_number'] = Patient::generatePatientNumber();
         $fields['full_name'] = "{$request->first_name} {$request->last_name}";
 
+        $photo = $request->file('photo');
+
+        $imageBytes = file_get_contents($photo->getRealPath());
+        if(!$this->isQualityIdentificationPhoto($imageBytes)) {
+            return response()->json([
+                'message' => 'Invalid Photo'
+            ], 400);
+        }
+
         $patient = Patient::create($fields);
-        $path = $request->file('photo')->store('images/patients', ['local', 'private']);
+        $path = $photo->store('images/patients', ['local', 'private']);
         $patient->update(['photo' => $path]);
 
         $patient->physicians()->syncWithoutDetaching([$request->physician_id => ['department_id' => $user->department_id]]);
@@ -240,8 +249,15 @@ class PatientController extends Controller
             $patient->update(['full_name' => "{$request->first_name} {$request->last_name}"]);
         }
 
-        if ($request->file('photo'))
-        {
+        $photo = $request->file('photo');
+        if ($photo) {
+            $imageBytes = file_get_contents($photo->getRealPath());
+            if(!$this->isQualityIdentificationPhoto($imageBytes)) {
+                return response()->json([
+                    'message' => 'Invalid Photo'
+                ], 400);
+            }
+
             if ($patient->photo != null && $patient->photo != "") {
                 Storage::delete($patient->photo);
             }

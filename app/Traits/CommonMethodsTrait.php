@@ -5,6 +5,7 @@ namespace App\Traits;
 use App\Models\ResetToken;
 use App\Models\User;
 use App\Notifications\ResetPasswordNotification;
+use App\Services\AmazonRekognitionService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -48,6 +49,26 @@ trait CommonMethodsTrait
         ]);
         
         $user->notify(new ResetPasswordNotification($isNewAccount, $token, $user->email)); //$user->notify
+    }
+
+    public function isQualityIdentificationPhoto($imageBytes): bool {
+        $rekognitionService = new AmazonRekognitionService();
+
+        $result = $rekognitionService->detectFaces($imageBytes);
+
+        if(count($result) === 1) {
+            $face = $result[0];
+
+            if($face != null && $face['Confidence'] > 98 && $face['Quality']['Brightness'] >= 50
+                && $face['Quality']['Sharpness'] >= 50 && $face['Pose']['Roll'] >= -15 && $face['Pose']['Roll'] <= 15
+                && $face['Pose']['Yaw'] >= -15 && $face['Pose']['Yaw'] <= 15 && $face['Pose']['Pitch'] >= -15 && $face['Pose']['Pitch'] <= 15
+                && $face['BoundingBox']['Height'] > 0.4 && $face['FaceOccluded']['Value'] == false && $face['Sunglasses']['Value'] == false
+                && $face['Eyeglasses']['Value'] == false) {
+                return true;
+            }
+            return false;
+        }
+        return false;
     }
 
     public function getPrescriptionsPages($prescriptions) {
