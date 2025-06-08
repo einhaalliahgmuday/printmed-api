@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-require 'vendor/autoload.php';
+// require 'vendor/autoload.php';
 
 use Aws\Exception\AwsException;
 use Aws\Rekognition\RekognitionClient;
@@ -37,7 +37,7 @@ class AmazonRekognitionService
             return $result['FaceDetails'] ?? [];
         } catch(AwsException $e) {
             return [
-                'error' => true,
+                'success' => false,
                 'message' => $e->getMessage()
             ];
         }
@@ -54,7 +54,7 @@ class AmazonRekognitionService
             return $result['FaceMatches'] ?? [];
         } catch(AwsException $e) {
             return [
-                'error' => true,
+                'success' => false,
                 'message' => $e->getMessage()
             ];
         }
@@ -73,10 +73,13 @@ class AmazonRekognitionService
                 'QualityFilter' => 'HIGH'
             ]);
 
-            return $result['FaceRecords'] ?? [];
+            return [
+                'success' => true,
+                'result' => $result['FaceRecords'][0] ?? []
+            ];
         } catch(AwsException $e) {
             return [
-                'error' => true,
+                'success' => false,
                 'message' => $e->getMessage()
             ];
         }
@@ -97,7 +100,45 @@ class AmazonRekognitionService
             return $result['FaceMatches'] ?? [];
         } catch(AwsException $e) {
             return [
-                'error' => true,
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function deleteFaceFromCollection(string $faceId, string $collectionId) {
+        try {
+            $result = $this->rekognition->deleteFaces([
+                'CollectionId' => $collectionId,
+                'FaceIds' => [
+                    $faceId
+                ]
+            ]);
+
+            return [
+                'success' => count($result['DeletedFaces']) < 0 ? false : true
+            ];
+        } catch(AwsException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function listFacesFromCollection(string $collectionId) {
+        try {
+            $result = $this->rekognition->listFaces([
+                'CollectionId' => $collectionId
+            ]);
+
+            return [
+                'success' => true,
+                'result' => $result['Faces'] ?? []
+            ];
+        } catch(AwsException $e) {
+            return [
+                'success' => false,
                 'message' => $e->getMessage()
             ];
         }
@@ -115,7 +156,7 @@ class AmazonRekognitionService
             ];
         } catch(AwsException $e) {
             return [
-                'error' => true,
+                'success' => false,
                 'message' => $e->getMessage()
             ];
         }
@@ -128,27 +169,7 @@ class AmazonRekognitionService
             ]);
         } catch(AwsException $e) {
             return [
-                'error' => true,
-                'message' => $e->getMessage()
-            ];
-        }
-    }
-
-    public function deleteFaceFromCollection(string $faceId, string $collectionId) {
-        try {
-            $result = $this->rekognition->deleteFaces([
-                'CollectionId' => $collectionId,
-                'FaceIds' => [
-                    $faceId
-                ]
-            ]);
-
-            return [
-                'success' => $result['DeletedFaces'].isEmpty() ? false : true
-            ];
-        } catch(AwsException $e) {
-            return [
-                'error' => true,
+                'success' => false,
                 'message' => $e->getMessage()
             ];
         }
@@ -165,7 +186,7 @@ class AmazonRekognitionService
             ];
         } catch(AwsException $e) {
             return [
-                'error' => true,
+                'success' => false,
                 'message' => $e->getMessage()
             ];
         }
