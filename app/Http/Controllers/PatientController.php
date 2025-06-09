@@ -7,6 +7,7 @@ use App\Events\ModelAction;
 use App\Events\RegistrationDeleted;
 use App\Models\Patient;
 use App\Models\PatientPhysician;
+use App\Models\PatientQr;
 use App\Models\Registration;
 use App\Models\User;
 use App\Services\AmazonRekognitionService;
@@ -19,6 +20,12 @@ use Illuminate\Support\Facades\Storage;
 class PatientController extends Controller
 {
     use CommonMethodsTrait;
+
+    private $rekognitionService;
+
+    public function __construct() {
+        $this->rekognitionService = new AmazonRekognitionService();
+    }
     
     public function index(Request $request)
     {        
@@ -135,7 +142,7 @@ class PatientController extends Controller
         // validates patient's photo quality
         $photo = $request->file('photo');
         $imageBytes = file_get_contents($photo->getRealPath());
-        if(!$this->isQualityIdentificationPhoto($imageBytes)) {
+        if(!$this->isQualityIdentificationPhoto($imageBytes, $this->rekognitionService)) {
             return response()->json([
                 'message' => 'Invalid Photo'
             ], 400);
@@ -150,8 +157,7 @@ class PatientController extends Controller
         $patient->physicians()->syncWithoutDetaching([$request->physician_id => ['department_id' => $user->department_id]]);
 
         // index face to rekognition collection
-        $rekognition = new AmazonRekognitionService();
-        $result = $rekognition->indexFaces($imageBytes, $patient->patient_number, 'patients');
+        $result = $this->rekognitionService->indexFaces($imageBytes, $patient->patient_number, 'patients');
         if($result['success'] == true) {
             if(count($result['result']) > 0) {
                 $patient->update(['rekognitionFaceId' => $result['result']['Face']['FaceId']]);
@@ -186,13 +192,8 @@ class PatientController extends Controller
     {
         $user = $request->user();
 
-        if ($patient->photo) {
-            $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
-        }
+        $this->getPatientAdditionalInformation($patient, $user);
         $patient['physician'] = $patient->getPhysician($user->department_id);
-        $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
-        $patient['last_visit'] = $patient->getLastVisitDate($user->department_id);
-        $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
 
         // implements audit of patient retrieval
         event(new ModelAction(AuditAction::RETRIEVE, $request->user(), $patient, null, $request));
@@ -259,8 +260,9 @@ class PatientController extends Controller
 
         $photo = $request->file('photo');
         if ($photo) {
+
             $imageBytes = file_get_contents($photo->getRealPath());
-            if(!$this->isQualityIdentificationPhoto($imageBytes)) {
+            if(!$this->isQualityIdentificationPhoto($imageBytes, $this->rekognitionService)) {
                 return response()->json([
                     'message' => 'Invalid Photo'
                 ], 400);
@@ -273,11 +275,10 @@ class PatientController extends Controller
             $patient->update(['photo' => $path]);
             
             // delete previous indexed face and index the new face to rekognition collection
-            $rekognition = new AmazonRekognitionService();
             if($patient->rekognitionFaceId != null) {
-                $rekognition->deleteFaceFromCollection($patient->rekognitionFaceId, 'patients');
+                $this->rekognitionService->deleteFaceFromCollection($patient->rekognitionFaceId, 'patients');
             }
-            $result = $rekognition->indexFaces($imageBytes, $patient->patient_number, 'patients');
+            $result = $this->rekognitionService->indexFaces($imageBytes, $patient->patient_number, 'patients');
             if($result['success'] == true) {
                 if(count($result['result']) > 0) {
                     $patient->update(['rekognitionFaceId' => $result['result']['Face']['FaceId']]);
@@ -312,22 +313,90 @@ class PatientController extends Controller
         ]);
 
         $patient = Patient::whereBlind('patient_number', 'patient_number_index', $request->patient_number)->first();
-
         if (!$patient) {
             return response()->json(['message' => 'Patient not found.'], 404);
         }
-
         Gate::authorize('is-assigned-physician', [$patient->id]);
 
         $user = $request->user();
 
-        if($patient->photo) {
-            $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
-        }
-        $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
-        $patient['last_visit'] = $patient->getLastVisitDate($user->department_id);
-        $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
+        $this->getPatientAdditionalInformation($patient, $user);
         $patient['consultations'] = $patient->consultations()->orderBy('created_at', 'desc')->get();
+
+        // implements audit of patient retrieval
+        event(new ModelAction(AuditAction::RETRIEVE, $user, $patient, null, $request));
+
+        return $patient;
+    }
+
+    public function getUsingQr(Request $request) 
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'qr_code' => 'required|string|size:43'
+        ]);
+
+        $code = strtolower($request->qr_code);
+        $patientQr = PatientQr::whereBlind('uuid', 'uuid_index', $code)
+                                ->where('is_deactivated', 0)
+                                ->where('created_at', '>', now()->subYear())
+                                ->latest()->first();
+
+        if($patientQr) {
+            $patient = $patientQr->patient;
+            $this->getPatientAdditionalInformation($patient, $user);
+            if ($request->user()->role === "physician") {
+                Gate::authorize('is-assigned-physician', [$patient->id]);
+                $patient['consultations'] = $patient->consultations()->orderBy('created_at', 'desc')->get();
+            } else {
+                $patient['physician'] = $patient->getPhysician($user->department_id);
+            }
+
+            // implements audit of patient retrieval
+            event(new ModelAction(AuditAction::RETRIEVE, $user, $patient, null, $request));
+
+            return $patient;
+        }
+
+        return response()->json([
+            'message' => 'QR code not found.'
+        ], 404);
+    }
+
+    public function getUsingFace(Request $request) 
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'photo' => 'required|image|mimes:jpg,png|max:2048|dimensions:min_width=640,min_height=480'
+        ]);
+
+        $imageBytes = file_get_contents($request->file('photo')->getRealPath());
+        $result = $this->rekognitionService->searchFacesByImage($imageBytes, 'patients');
+
+        if($result['success'] == false || count($result['result']) < 1) {
+            return response()->json([
+                'message' => 'Patient not found.'
+            ], 404);
+        }
+
+        $patientFaceId = $result['result']['Face']['FaceId'];
+        $patient = Patient::where('rekognitionFaceId', $patientFaceId)->first();
+
+        if($patient == null) {
+            return response()->json([
+                'message' => 'Patient not found.'
+            ], 404);
+        }
+
+        $this->getPatientAdditionalInformation($patient, $user);
+        if ($user->role === "physician") {
+            Gate::authorize('is-assigned-physician', [$patient->id]);
+            $patient['consultations'] = $patient->consultations()->orderBy('created_at', 'desc')->get();
+        } else {
+            $patient['physician'] = $patient->getPhysician($user->department_id);
+        }
 
         // implements audit of patient retrieval
         event(new ModelAction(AuditAction::RETRIEVE, $user, $patient, null, $request));

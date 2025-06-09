@@ -6,13 +6,20 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\FacialRecognitionController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PatientPhysicianController;
 use App\Http\Controllers\PatientQrController;
+use App\Http\Controllers\RekognitionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VitalSignsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+
+// Route::post('/create-collection', [RekognitionController::class, 'createPatientsCollection']);
+// Route::post('/delete-collection', [RekognitionController::class, 'deletePatientsCollection']);
+// Route::post('/list-faces', [RekognitionController::class, 'listFacesFromPatientsCollection']);
+// Route::post('/search-face', [RekognitionController::class, 'searchFacesByImage']);
 
 // PATIENT REGISTRATION
 Route::post('/registrations', [RegistrationController::class, 'store']);
@@ -71,11 +78,13 @@ Route::middleware(['auth:sanctum'])->group(function() {
 
     // PATIENTS
     Route::apiResource('patients', PatientController::class)->only(['store', 'index', 'show'])->middleware(['role:secretary']);
-    Route::POST('/patients/{patient}', [PatientController::class, 'update'])->middleware(['role:secretary']);
+    Route::post('/patients/{patient}', [PatientController::class, 'update'])->middleware(['role:secretary']);
     Route::get('/patient-photo/{patient}', [PatientController::class, 'getPhoto'])->middleware(['role:secretary,physician']);
     Route::post('/patient-photo/{patient}', [PatientController::class, 'updatePhoto'])->middleware(['role:secretary,physician']);
     Route::get('/duplicate-patients', [PatientController::class, 'getDuplicates'])->middleware(['role:secretary']);
     Route::post('/patient-using-id', [PatientController::class, 'getUsingId'])->middleware(['role:physician']);
+    Route::post('/patient-using-qr', [PatientController::class, 'getUsingQr'])->middleware(['role:secretary,physician']);
+    Route::post('/patient-using-face', [PatientController::class, 'getUsingFace'])->middleware(['role:secretary,physician']);
 
     // PATIENT VITAL SIGNS
     Route::post('/vital-signs/{patient}', [VitalSignsController::class, 'store'])->middleware('role:secretary');
@@ -89,7 +98,6 @@ Route::middleware(['auth:sanctum'])->group(function() {
     // PATIENT QR
     Route::post('/generate-patient-id-card/{patient}', [PatientQrController::class, 'store'])->middleware(['role:secretary']);
     Route::post('/deactivate-patient-id-card/{patient}', [PatientQrController::class, 'deactivate'])->middleware(['role:secretary']);
-    Route::post('/patient-using-qr', [PatientQrController::class, 'getPatient'])->middleware(['role:secretary,physician']);
 
     // PATIENT-PHYSICIAN RELATIONSHIP
     Route::post('/patients/{patient}/assign-physician', [PatientPhysicianController::class, 'store'])->middleware(['role:secretary']);

@@ -2,11 +2,13 @@
 
 namespace App\Traits;
 
+use App\Models\Patient;
 use App\Models\ResetToken;
 use App\Models\User;
 use App\Notifications\ResetPasswordNotification;
 use App\Services\AmazonRekognitionService;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 trait CommonMethodsTrait
@@ -51,9 +53,18 @@ trait CommonMethodsTrait
         $user->notify(new ResetPasswordNotification($isNewAccount, $token, $user->email)); //$user->notify
     }
 
-    public function isQualityIdentificationPhoto($imageBytes): bool {
-        $rekognitionService = new AmazonRekognitionService();
+    public function getPatientAdditionalInformation(Patient $patient, User $user) {
+        if($patient->photo) {
+            $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
+        }
+        $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
+        $patient['last_visit'] = $patient->getLastVisitDate($user->department_id);
+        $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
 
+        // return $patient;
+    }
+
+    public function isQualityIdentificationPhoto($imageBytes, AmazonRekognitionService $rekognitionService): bool {
         $result = $rekognitionService->detectFaces($imageBytes);
 
         if(count($result) === 1) {
