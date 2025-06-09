@@ -404,6 +404,40 @@ class PatientController extends Controller
         return $patient;
     }
 
+    public function verifyPatientUsingFace(Request $request) {
+        $request->validate([
+            'patient_id' => 'required|numeric',
+            'photo' => 'required|image|mimes:jpg,png|max:2048|dimensions:min_width=640,min_height=480',
+        ]);
+
+        $patient = Patient::select('photo')->where('id', $request->patient_id)->first();
+
+        if(!$patient) {
+            return response()->json([
+                'message' => 'Patient not found.'
+            ], 404);
+        }
+
+        if(!$patient->photo) {
+            return response()->json([
+                'message' => 'Photo not available.'
+            ], 400);
+        }
+        
+        $sourceImageBytes = Storage::get($patient->photo);
+        $targetImageBytes = file_get_contents($request->file('photo')->getRealPath());
+
+        $result = $this->rekognitionService->compareFaces($sourceImageBytes, $targetImageBytes);
+
+        if($result['success'] ==  false) {
+            return response()->json([], status: 500);
+        }
+
+        return response()->json([
+            'success' => count($result['result']) > 0 ? true : false,
+        ]);
+    }
+
     public function getDuplicates(Request $request) 
     {
         $user = $request->user();

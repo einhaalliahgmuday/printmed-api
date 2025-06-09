@@ -51,7 +51,10 @@ class AmazonRekognitionService
                 'SimilarityThreshold' => 99
             ]);
 
-            return $result['FaceMatches'] ?? [];
+            return [
+                'success' => true,
+                'result' => $result['FaceMatches'] ?? []
+            ];
         } catch(AwsException $e) {
             return [
                 'success' => false,
