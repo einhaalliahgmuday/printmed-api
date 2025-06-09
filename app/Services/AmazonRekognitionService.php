@@ -97,7 +97,10 @@ class AmazonRekognitionService
                 'QualityFilter' => 'HIGH'
             ]);
 
-            return $result['FaceMatches'] ?? [];
+            return [
+                'success' => true,
+                'result' => $result['FaceMatches'][0] ?? []
+            ];
         } catch(AwsException $e) {
             return [
                 'success' => false,

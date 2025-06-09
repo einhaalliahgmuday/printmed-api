@@ -7,6 +7,7 @@ use App\Events\ModelAction;
 use App\Mail\PatientIdCard;
 use App\Models\Patient;
 use App\Models\PatientQr;
+use App\Traits\CommonMethodsTrait;
 use Barryvdh\Snappy\Facades\SnappyImage;
 use Barryvdh\Snappy\Facades\SnappyPdf;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class PatientQrController extends Controller
 {
+    use CommonMethodsTrait;
+
     public function store(Request $request, Patient $patient) {
         $request->validate([
             'send_email' => 'boolean'
@@ -82,47 +85,5 @@ class PatientQrController extends Controller
         PatientQr::where('patient_id', $patient->id)->where('is_deactivated', 0)->update(['is_deactivated' => 1]);
 
         return response()->json(['message' => 'Patient identification card successfully deactivated.']);
-    }
-
-    public function getPatient(Request $request) 
-    {
-        $user = $request->user();
-
-        $request->validate([
-            'qr_code' => 'required|string|size:43'
-        ]);
-
-        $code = strtolower($request->qr_code);
-
-        $patientQr = PatientQr::whereBlind('uuid', 'uuid_index', $code)
-                                ->where('is_deactivated', 0)
-                                ->where('created_at', '>', now()->subYear())
-                                ->latest()->first();
-
-        if($patientQr) {
-            $patient = $patientQr->patient;
-
-            if ($patient->photo) {
-                $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
-            }
-            $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
-            $patient['last_visit'] = $patient->getLastVisitDate($user->department_id);
-            $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
-            if ($request->user()->role === "physician") {
-                Gate::authorize('is-assigned-physician', [$patient->id]);
-                $patient['consultations'] = $patient->consultations()->orderBy('created_at', 'desc')->get();
-            } else {
-                $patient['physician'] = $patient->getPhysician($user->department_id);
-            }
-
-            // implements audit of patient retrieval
-            event(new ModelAction(AuditAction::RETRIEVE, $user, $patient, null, $request));
-
-            return $patient;
-        }
-
-        return response()->json([
-            'message' => 'QR code not found.'
-        ], 404);
     }
 }
