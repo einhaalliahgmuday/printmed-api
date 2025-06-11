@@ -48,7 +48,7 @@ class AmazonRekognitionService
             $result = $this->rekognition->compareFaces([
                 'SourceImage' => ['Bytes' => $sourceImageBytes],
                 'TargetImage' => ['Bytes' => $targetImageBytes],
-                'SimilarityThreshold' => 99
+                'SimilarityThreshold' => 99.99
             ]);
 
             return [
@@ -58,7 +58,8 @@ class AmazonRekognitionService
         } catch(AwsException $e) {
             return [
                 'success' => false,
-                'message' => $e->getMessage()
+                'error_code' => $e->getAwsErrorCode(),
+                'message' => $e->getAwsErrorMessage()
             ];
         }
     }
@@ -92,7 +93,7 @@ class AmazonRekognitionService
         try {
             $result = $this->rekognition->searchFacesByImage([
                 'CollectionId' => $collectionId,
-                'FaceMatchThreshold' => 99,
+                'FaceMatchThreshold' => 99.99,
                 'Image' => [
                     'Bytes' => $imageBytes
                 ],

@@ -430,7 +430,13 @@ class PatientController extends Controller
         $result = $this->rekognitionService->compareFaces($sourceImageBytes, $targetImageBytes);
 
         if($result['success'] ==  false) {
-            return response()->json([], status: 500);
+            if($result['error_code'] == "InvalidParameterException") {
+                return response()->json([
+                    'message' => 'Invalid image'
+                ], 400);
+            } else {
+                return response()->json($result['message'], 500);
+            }
         }
 
         return response()->json([

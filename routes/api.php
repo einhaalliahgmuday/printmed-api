@@ -16,10 +16,12 @@ use App\Http\Controllers\VitalSignsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-// Route::post('/create-collection', [RekognitionController::class, 'createPatientsCollection']);
-// Route::post('/delete-collection', [RekognitionController::class, 'deletePatientsCollection']);
-// Route::post('/list-faces', [RekognitionController::class, 'listFacesFromPatientsCollection']);
-// Route::post('/search-face', [RekognitionController::class, 'searchFacesByImage']);
+Route::post('/create-collection', [RekognitionController::class, 'createPatientsCollection']);
+Route::post('/compare-faces', [FacialRecognitionController::class, 'compareTwoFaces']);
+Route::post('/delete-collection', [RekognitionController::class, 'deletePatientsCollection']);
+Route::post('/list-faces', [RekognitionController::class, 'listFacesFromPatientsCollection']);
+Route::post('/search-face', [RekognitionController::class, 'searchFacesByImage']);
+Route::post('/compare-patient-face', [PatientController::class, 'verifyPatientUsingFace']);
 
 // PATIENT REGISTRATION
 Route::post('/registrations', [RegistrationController::class, 'store']);
@@ -85,6 +87,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::post('/patient-using-id', [PatientController::class, 'getUsingId'])->middleware(['role:physician']);
     Route::post('/patient-using-qr', [PatientController::class, 'getUsingQr'])->middleware(['role:secretary,physician']);
     Route::post('/patient-using-face', [PatientController::class, 'getUsingFace'])->middleware(['role:secretary,physician']);
+    Route::post('/verify-patient-face', [PatientController::class, 'verifyPatientUsingFace'])->middleware(['role:secretary,physician']);
 
     // PATIENT VITAL SIGNS
     Route::post('/vital-signs/{patient}', [VitalSignsController::class, 'store'])->middleware('role:secretary');

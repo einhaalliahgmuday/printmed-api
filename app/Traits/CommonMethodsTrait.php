@@ -70,8 +70,7 @@ trait CommonMethodsTrait
         if(count($result) === 1) {
             $face = $result[0];
 
-            if($face != null && $face['Confidence'] > 98 && $face['Quality']['Brightness'] >= 50
-                && $face['Quality']['Sharpness'] >= 50 && $face['Pose']['Roll'] >= -15 && $face['Pose']['Roll'] <= 15
+            if($face != null && $face['Confidence'] > 98 && $face['Pose']['Roll'] >= -15 && $face['Pose']['Roll'] <= 15
                 && $face['Pose']['Yaw'] >= -15 && $face['Pose']['Yaw'] <= 15 && $face['Pose']['Pitch'] >= -15 && $face['Pose']['Pitch'] <= 15
                 && $face['BoundingBox']['Height'] > 0.4 && $face['FaceOccluded']['Value'] == false && $face['Sunglasses']['Value'] == false
                 && $face['Eyeglasses']['Value'] == false) {
