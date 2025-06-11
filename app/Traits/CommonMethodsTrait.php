@@ -60,8 +60,6 @@ trait CommonMethodsTrait
         $patient['follow_up_date'] = $patient->getFollowUpDate($user->department_id);
         $patient['last_visit'] = $patient->getLastVisitDate($user->department_id);
         $patient['is_new_in_department'] = $patient->isNewInDepartment($user->department_id);
-
-        // return $patient;
     }
 
     public function isQualityIdentificationPhoto($imageBytes, AmazonRekognitionService $rekognitionService): bool {
@@ -70,7 +68,7 @@ trait CommonMethodsTrait
         if(count($result) === 1) {
             $face = $result[0];
 
-            if($face != null && $face['Confidence'] > 98 && $face['Pose']['Roll'] >= -15 && $face['Pose']['Roll'] <= 15
+            if($face != null && $face['Confidence'] > 98 
                 && $face['Pose']['Yaw'] >= -15 && $face['Pose']['Yaw'] <= 15 && $face['Pose']['Pitch'] >= -15 && $face['Pose']['Pitch'] <= 15
                 && $face['BoundingBox']['Height'] > 0.4 && $face['FaceOccluded']['Value'] == false && $face['Sunglasses']['Value'] == false
                 && $face['Eyeglasses']['Value'] == false) {

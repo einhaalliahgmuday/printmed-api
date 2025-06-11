@@ -83,7 +83,7 @@ Route::middleware(['auth:sanctum'])->group(function() {
     Route::post('/patients/{patient}', [PatientController::class, 'update'])->middleware(['role:secretary']);
     Route::get('/patient-photo/{patient}', [PatientController::class, 'getPhoto'])->middleware(['role:secretary,physician']);
     Route::post('/patient-photo/{patient}', [PatientController::class, 'updatePhoto'])->middleware(['role:secretary,physician']);
-    Route::get('/duplicate-patients', [PatientController::class, 'getDuplicates'])->middleware(['role:secretary']);
+    Route::post('/duplicate-patient', [PatientController::class, 'getDuplicates'])->middleware(['role:secretary']);
     Route::post('/patient-using-id', [PatientController::class, 'getUsingId'])->middleware(['role:physician']);
     Route::post('/patient-using-qr', [PatientController::class, 'getUsingQr'])->middleware(['role:secretary,physician']);
     Route::post('/patient-using-face', [PatientController::class, 'getUsingFace'])->middleware(['role:secretary,physician']);

@@ -446,29 +446,57 @@ class PatientController extends Controller
 
     public function getDuplicates(Request $request) 
     {
-        $user = $request->user();
-
         $request->validate([
             'first_name' => 'required|string|max:100',
             'last_name'=> 'required|string|max:100',
             'birthdate' => 'required|date|date_format:Y-m-d',
-            'sex' => 'required|string|max:6'
+            'sex' => 'required|string|max:6',
+            'photo' => 'required|image|mimes:jpg,png|max:2048|dimensions:min_width=640,min_height=480',
         ]);
 
-        $patients = Patient::select('id', 'patient_number', 'first_name', 'middle_name', 'last_name', 'suffix', 'full_name', 'birthdate', 'sex', 'photo', 'created_at')
-                            ->whereBlind('first_name', 'first_name_index', $request->first_name)
-                            ->whereBlind('last_name', 'last_name_index', $request->last_name)
-                            ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
-                            ->whereBlind('sex', 'sex_index', $request->sex)
-                            ->get();
+        // $isExists = Patient::whereBlind('first_name', 'first_name_index', $request->first_name)
+        //                     ->whereBlind('last_name', 'last_name_index', $request->last_name)
+        //                     ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
+        //                     ->whereBlind('sex', 'sex_index', $request->sex)
+        //                     ->exists();
 
-        foreach ($patients as $patient) {
-            if ($patient->photo && Storage::exists($patient->photo)) {
-                $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
+        // if(!$isExists) {
+        //     return response()->json(['message' => "No duplicates found"],  200);
+        // }         
+
+        $imageBytes = file_get_contents($request->file('photo')->getRealPath());
+        $result = $this->rekognitionService->searchFacesByImage($imageBytes, 'patients');
+        if($result['success'] == false) {
+            if($result['message'] == "InvalidParameterException") {
+                return response()->json(['message' => "No duplicates found"],  200);
             }
+
+            return response()->json([
+                'message' => $result['message']
+            ],  500);
         }
 
-        return $patients;
+        if(count($result['result']) < 1) {
+            return response()->json(['message' => "No duplicates found"],  200);
+        }
+
+        $patient = Patient::select('id', 'patient_number', 'first_name', 'middle_name', 'last_name', 'suffix', 'full_name', 'birthdate', 'sex', 'photo', 'created_at')
+                            // ->whereBlind('first_name', 'first_name_index', $request->first_name)
+                            // ->whereBlind('last_name', 'last_name_index', $request->last_name)
+                            // ->whereBlind('birthdate', 'birthdate_index', $request->birthdate)
+                            // ->whereBlind('sex', 'sex_index', $request->sex)
+                            ->whereBlind('patient_number', 'patient_number_index', $result['result']['Face']['ExternalImageId'])
+                            ->first();
+
+        if (!$patient) {
+            return response()->json(['message' => "No duplicates found"],  200);
+        }
+
+        if ($patient->photo && Storage::exists($patient->photo)) {
+            $patient['photo_url'] = Storage::temporaryUrl($patient->photo, now()->addMinutes(45));
+        }
+
+        return $patient;
     }
 
     // public function destroy(Patient $patient)
