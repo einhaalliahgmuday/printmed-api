@@ -21,7 +21,7 @@ class UserSeeder extends Seeder
             'last_name' => 'Muday',
             'sex' => 'Female',
             'birthdate' => '2003-02-19',
-            'email' => 'einhalliahmuday@gmail.com',
+            'email' => 'superadmin1@gmail.com',
             'password' => 'Pass12**',
         ]);
 
@@ -33,7 +33,7 @@ class UserSeeder extends Seeder
             'last_name' => 'Lumaoang',
             'sex' => 'Female',
             'birthdate' => '2003-08-09',
-            'email' => 'einhaalliah@gmail.com',
+            'email' => 'physician1@gmail.com',
             'password' => 'Pass12**',
             'department_id' => 1
         ]);
@@ -46,7 +46,7 @@ class UserSeeder extends Seeder
             'last_name' => 'Legaspino',
             'sex' => 'Female',
             'birthdate' => '2002-01-07',
-            'email' => 'aynamuday@gmail.com',
+            'email' => 'secretary1@gmail.com',
             'password' => 'Pass12**',
             'department_id' => 1
         ]);
@@ -59,7 +59,7 @@ class UserSeeder extends Seeder
             'last_name' => 'Aguila',
             'sex' => 'Female',
             'birthdate' => '2003-11-06',
-            'email' => 'mekailamaeaguila@gmail.com',
+            'email' => 'physician2@gmail.com',
             'password' => 'Pass12**',
             'department_id' => 2
         ]);
@@ -72,7 +72,7 @@ class UserSeeder extends Seeder
             'last_name' => 'Ampoloquio',
             'sex' => 'Male',
             'birthdate' => '2003-02-10',
-            'email' => 'louiejhe.store@gmail.com',
+            'email' => 'admin1@gmail.com',
             'password' => 'Pass12**'
         ]);
     }
