@@ -375,9 +375,15 @@ class PatientController extends Controller
         $imageBytes = file_get_contents($request->file('photo')->getRealPath());
         $result = $this->rekognitionService->searchFacesByImage($imageBytes, 'patients');
 
-        if($result['success'] == false || count($result['result']) < 1) {
+        if($result['success'] == false) {
             return response()->json([
-                'message' => 'Patient not found.'
+                'message' => $result['message']
+            ], 404);
+        }
+
+        if(count($result['result']) < 1) {
+            return response()->json([
+                'message' => $result['result']
             ], 404);
         }
 
@@ -386,7 +392,7 @@ class PatientController extends Controller
 
         if($patient == null) {
             return response()->json([
-                'message' => 'Patient not found.'
+                'message' => $patientFaceId
             ], 404);
         }
 

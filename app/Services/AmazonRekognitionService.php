@@ -48,7 +48,7 @@ class AmazonRekognitionService
             $result = $this->rekognition->compareFaces([
                 'SourceImage' => ['Bytes' => $sourceImageBytes],
                 'TargetImage' => ['Bytes' => $targetImageBytes],
-                'SimilarityThreshold' => 99.9
+                'SimilarityThreshold' => 98
             ]);
 
             return [
@@ -93,7 +93,7 @@ class AmazonRekognitionService
         try {
             $result = $this->rekognition->searchFacesByImage([
                 'CollectionId' => $collectionId,
-                'FaceMatchThreshold' => 99.9,
+                'FaceMatchThreshold' => 98,
                 'Image' => [
                     'Bytes' => $imageBytes
                 ],
