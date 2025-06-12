@@ -20,11 +20,11 @@
             background-color: white;
 		}
         .container {
-            border-right: {{ $pdf == true ? '2px solid black' : '0px solid transparent' }};
+            /* border-right: {{ $pdf == true ? '2px solid black' : '0px solid transparent' }}; */
             /* border-bottom: 2px solid black; */
             width: 5.5in;
             height: 9in;
-            padding: 16px 20px 20px;
+            /* padding: 16px 20px 20px; */
         }
         .logo {
             height: 60px;

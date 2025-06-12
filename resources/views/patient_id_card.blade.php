@@ -130,16 +130,8 @@
 			margin-bottom: 2px;
 		}
 
-		.qr-container {
-			margin-top: 6px;
-			height: .68in;
-			width: .68in;
-		}
-
-		.qr {
-			height: 100%;
-			width: 100%;
-			object-fit: cover;
+		.mt-10 {
+			margin-top: 10px;
 		}
 
 		.information-container.back div {
@@ -196,7 +188,7 @@
 										</div>
 									</td>
 									<td>
-										<div>
+										<div class="mt-10">
 											<div class="mb-2">
 												<p class="information-title">Patient Number</p>
 												<p class="information">{{"$patient->patient_number"}}</p>
@@ -212,7 +204,7 @@
 										</div>
 									</td>
 									<td>
-										<div>
+										<div class="mt-10">
 											<div class="mb-2">
 												<p class="information-title">Birthdate</p>
 												<p class="information">{{\Carbon\Carbon::parse($patient->birthdate)->format('F j, Y')}}</p>
@@ -220,9 +212,6 @@
 											<div class="mb-2">
 												<p class="information-title">Sex</p>
 												<p class="information">{{"$patient->sex"}}</p>
-											</div>
-											<div class="qr-container">
-												<img class="qr" src="{{ 'data:image/png;base64,' . $qr }}" alt="">
 											</div>
 										</div>
 									</td>
@@ -248,9 +237,6 @@
 								<p>If this ID is lost or stolen, please immediately report it to the hospital's registration desk or contact our support team to deactivate and reissue your ID.</p>
 								<p><span>Phone: </span>{{"(00) 0000-0000"}}</p>
 								<p><span>Email: </span>{{"printmed.samsantech@gmail.com"}}</p>
-							</div>
-							<div class="w-95">
-								<p class="fs-8 fi">This QR code is used exclusively for accessing the patient's record within the Patient Management Record System. It serves as an identification method to ensure secure and authorized access to the patient’s health information. Unauthorized use of this QR code is prohibited and may result in legal action.</p>
 							</div>
 						</div>
 					</div>

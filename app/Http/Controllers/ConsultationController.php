@@ -170,13 +170,12 @@ class ConsultationController extends Controller
                                 's2' => $s2,
                                 'pdf' => true 
                                 ])
-                        ->setPaper('a4', 'landscape')
-                        ->setOptions(['margin-top' => 1.5, 'margin-bottom' => 1.5, 'margin-right' => 1.5, 'margin-left' => 1.5])
-                        ->setOption('zoom', 1.13)
+                        ->setPaper('a6', 'portrait')
+                        ->setOptions(['margin-top' => 1, 'margin-bottom' => .5, 'margin-right' => 10, 'margin-left' => 10])
+                        ->setOption('zoom', 0.83)
                         ->setOption('enable-local-file-access', true);
 
-        if ($request->filled('sendToPatientEmail') && $request->sendToPatientEmail == "true" && $patient->email)
-        {
+        if ($request->filled('sendToPatientEmail') && $request->sendToPatientEmail == "true" && $patient->email) {
             $prescriptionImages = [];
             foreach($prescriptions as $prescription) {
                 $image = SnappyImage::loadView('prescription', 
