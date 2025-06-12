@@ -47,19 +47,18 @@ class PatientQrController extends Controller
         $photo = Storage::get($photoPath);
         $photoBytes = base64_encode($photo);
 
-        $qr = QrCode::size(300)
-                    ->style('round') //square, dot, round
-                    ->eye('circle') // square, circle
-                    ->format('png')
-                    ->merge('/public/images/carmona_hospital_logo_3.png')
-                    ->gradient(19, 147, 79, 159, 16, 8, 'vertical')
-                    ->generate($uuid);
-        $qrBytes = base64_encode($qr);
+        // $qr = QrCode::size(300)
+        //             ->style('round') //square, dot, round
+        //             ->eye('circle') // square, circle
+        //             ->format('png')
+        //             ->merge('/public/images/carmona_hospital_logo_3.png')
+        //             ->gradient(19, 147, 79, 159, 16, 8, 'vertical')
+        //             ->generate($uuid);
+        // $qrBytes = base64_encode($qr);
         $expirationDate = now()->addMonths(12);
 
-        if ($request->filled('send_email') && $request->send_email == 1 && $patient->email)
-        {
-            $idImage = SnappyImage::loadView('patient_id_card', ['patient' => $patient, 'photo' => $photoBytes, 'qr' => $qrBytes, 'expirationDate' => $expirationDate->format('F j, Y'), 'isImage' => true])
+        if ($request->filled('send_email') && $request->send_email == 1 && $patient->email) {
+            $idImage = SnappyImage::loadView('patient_id_card', ['patient' => $patient, 'photo' => $photoBytes, 'expirationDate' => $expirationDate->format('F j, Y'), 'isImage' => true])
                         ->setOption('quality', 100)
                         ->setOption('zoom', 5)
                         ->setOption('format', 'jpeg')
@@ -68,7 +67,7 @@ class PatientQrController extends Controller
             Mail::to($patient->email)->send(new PatientIdCard($idImage->output(), $patient->first_name));
         }
 
-        $idPdf = SnappyPdf::loadView('patient_id_card', ['patient' => $patient, 'photo' => $photoBytes,  'qr' => $qrBytes, 'expirationDate' => $expirationDate->format('F j, Y'), 'isImage' => false])
+        $idPdf = SnappyPdf::loadView('patient_id_card', ['patient' => $patient, 'photo' => $photoBytes,  'expirationDate' => $expirationDate->format('F j, Y'), 'isImage' => false])
                         ->setPaper('Letter', 'portrait')
                         ->setOption('zoom', 1.3)
                         ->setOption('enable-local-file-access', true);
