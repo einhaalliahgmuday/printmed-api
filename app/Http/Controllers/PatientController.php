@@ -253,9 +253,14 @@ class PatientController extends Controller
             }
         }
 
-        if ($request->filled('first_name') || $request->filled('last_name'))
+        if ($request->filled('first_name'))
         {
-            $patient->update(['full_name' => "{$request->first_name} {$request->last_name}"]);
+            $patient->update(['full_name' => "{$request->first_name} {$patient->last_name}"]);
+        }
+
+        if ($request->filled('last_name'))
+        {
+            $patient->update(['full_name' => "{$patient->first_name} {$request->last_name}"]);
         }
 
         $photo = $request->file('photo');
