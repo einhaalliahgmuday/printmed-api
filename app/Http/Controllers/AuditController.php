@@ -91,8 +91,6 @@ class AuditController extends Controller
                         ->orWhereBlind('auditable_type', 'auditable_type_index', 'App\Models\Consultation');
         }
 
-
-
         if ($request->filled('date_from')) {
             $dateFrom = Carbon::parse($request->date_from)->startOfDay();
             $auditsQuery->where('created_at', '>=', $dateFrom);
@@ -118,8 +116,7 @@ class AuditController extends Controller
 
         $audits = [];
 
-        foreach ($auditsGet as $audit)
-        {
+        foreach ($auditsGet as $audit) {
             $audits[] = $this->formatAudit($audit);     // formats audit information
         } 
 
