@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\AuditAction;
-use App\Events\ModelAction;
 use App\Mail\PatientIdCard;
 use App\Models\Patient;
 use App\Models\PatientQr;
@@ -11,7 +9,6 @@ use App\Traits\CommonMethodsTrait;
 use Barryvdh\Snappy\Facades\SnappyImage;
 use Barryvdh\Snappy\Facades\SnappyPdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -42,23 +39,24 @@ class PatientQrController extends Controller
         $latestPatientQr = PatientQr::select('id')->latest()->first();
         $id = $latestPatientQr ? $latestPatientQr->id : 0;
         $uuid .= "-" . substr(str_pad($id, 6, '0', STR_PAD_LEFT), 0, 6);
-
+        
         $photoPath = $patient->photo;
         $photo = Storage::get($photoPath);
         $photoBytes = base64_encode($photo);
 
-        // $qr = QrCode::size(300)
-        //             ->style('round') //square, dot, round
-        //             ->eye('circle') // square, circle
-        //             ->format('png')
-        //             ->merge('/public/images/carmona_hospital_logo_3.png')
-        //             ->gradient(19, 147, 79, 159, 16, 8, 'vertical')
-        //             ->generate($uuid);
-        // $qrBytes = base64_encode($qr);
+        $qr = QrCode::size(300)
+                    ->style('round') //square, dot, round
+                    ->eye('circle') // square, circle
+                    ->format('png')
+                    ->merge('/public/images/carmona_hospital_logo_3.png')
+                    ->gradient(19, 147, 79, 159, 16, 8, 'vertical')
+                    ->generate($uuid);
+        $qrBytes = base64_encode($qr);
         $expirationDate = now()->addMonths(12);
 
-        if ($request->filled('send_email') && $request->send_email == 1 && $patient->email) {
-            $idImage = SnappyImage::loadView('patient_id_card', ['patient' => $patient, 'photo' => $photoBytes, 'expirationDate' => $expirationDate->format('F j, Y'), 'isImage' => true])
+        if ($request->filled('send_email') && $request->send_email == 1 && $patient->email)
+        {
+            $idImage = SnappyImage::loadView('patient_id_card', ['patient' => $patient, 'photo' => $photoBytes, 'qr' => $qrBytes, 'expirationDate' => $expirationDate->format('F j, Y'), 'isImage' => true])
                         ->setOption('quality', 100)
                         ->setOption('zoom', 5)
                         ->setOption('format', 'jpeg')
@@ -67,7 +65,7 @@ class PatientQrController extends Controller
             Mail::to($patient->email)->send(new PatientIdCard($idImage->output(), $patient->first_name));
         }
 
-        $idPdf = SnappyPdf::loadView('patient_id_card', ['patient' => $patient, 'photo' => $photoBytes,  'expirationDate' => $expirationDate->format('F j, Y'), 'isImage' => false])
+        $idPdf = SnappyPdf::loadView('patient_id_card', ['patient' => $patient, 'photo' => $photoBytes,  'qr' => $qrBytes, 'expirationDate' => $expirationDate->format('F j, Y'), 'isImage' => false])
                         ->setPaper('Letter', 'portrait')
                         ->setOption('zoom', 1.3)
                         ->setOption('enable-local-file-access', true);
@@ -79,6 +77,8 @@ class PatientQrController extends Controller
 
         return response($idPdf->output())->header('Content-Type', 'application/pdf');
     }
+
+
 
     public function deactivate(Patient $patient) {
         PatientQr::where('patient_id', $patient->id)->where('is_deactivated', 0)->update(['is_deactivated' => 1]);

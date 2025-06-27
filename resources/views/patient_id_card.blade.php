@@ -9,19 +9,19 @@
 			size: 8.5in 11in;
 			margin: 1in;
 		}
-		
+
 		* {
 			box-sizing: border-box;
 			margin: 0;
 			padding: 0;
 		}
-		
+
 		body {
 			font-family: Calibri;
 			font-size: 10px;
 			line-height: 1;
 		}
-		
+
         .id-card-container {
 			position: relative;
             width: 3.375in;
@@ -45,14 +45,14 @@
 			opacity: 75%;
 			border-radius: 7px;
 		}
-		
+
 		.logo {
 			max-width: 100%;
 			height: 25px;
 			display: block;
 			margin: auto;
 		}
-		
+
 		.title-container {
 			background-color: #B43C3A; 
 			color: white; 
@@ -62,7 +62,7 @@
 			text-align: center;
 			margin: 7px 0;
 		}
-		
+
 		.information-container {
 			margin: 0 7px;
 			height: 1.3in;
@@ -93,7 +93,7 @@
 			width: 1in;
 			max-width: 100%;
 		}
-		
+
 		.id-photo {
 			height: 100%;
 			width: 100%;
@@ -130,8 +130,16 @@
 			margin-bottom: 2px;
 		}
 
-		.mt-10 {
-			margin-top: 10px;
+		.qr-container {
+			margin-top: 6px;
+			height: .68in;
+			width: .68in;
+		}
+
+		.qr {
+			height: 100%;
+			width: 100%;
+			object-fit: cover;
 		}
 
 		.information-container.back div {
@@ -168,7 +176,6 @@
 	@endif
 				<div class="id-card-container">
 					<img class="bg" src="{{ public_path('images/patient_id_card_bg.png') }}" alt="">
-					
 					<div class="id-card-content">
 						<div>
 							<img class="logo" src="{{ public_path('images/carmona_hospital_logo_1.png') }}" alt="">
@@ -188,7 +195,7 @@
 										</div>
 									</td>
 									<td>
-										<div class="mt-10">
+										<div>
 											<div class="mb-2">
 												<p class="information-title">Patient Number</p>
 												<p class="information">{{"$patient->patient_number"}}</p>
@@ -204,7 +211,7 @@
 										</div>
 									</td>
 									<td>
-										<div class="mt-10">
+										<div>
 											<div class="mb-2">
 												<p class="information-title">Birthdate</p>
 												<p class="information">{{\Carbon\Carbon::parse($patient->birthdate)->format('F j, Y')}}</p>
@@ -212,6 +219,9 @@
 											<div class="mb-2">
 												<p class="information-title">Sex</p>
 												<p class="information">{{"$patient->sex"}}</p>
+											</div>
+											<div class="qr-container">
+												<img class="qr" src="{{ 'data:image/png;base64,' . $qr }}" alt="">
 											</div>
 										</div>
 									</td>
@@ -224,7 +234,6 @@
 			<td>
 				<div class="id-card-container">
 					<img class="bg" src="{{ public_path('images/patient_id_card_bg.png') }}" alt="">
-					
 					<div class="id-card-content">
 						<div>
 							<img class="logo" src="{{ public_path('images/carmona_hospital_logo_1.png') }}" alt="">
@@ -238,6 +247,9 @@
 								<p><span>Phone: </span>{{"(00) 0000-0000"}}</p>
 								<p><span>Email: </span>{{"printmed.samsantech@gmail.com"}}</p>
 							</div>
+							<div class="w-95">
+								<p class="fs-8 fi">This QR code is used exclusively for accessing the patient's record within the Patient Management Record System. It serves as an identification method to ensure secure and authorized access to the patient’s health information. Unauthorized use of this QR code is prohibited and may result in legal action.</p>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -247,4 +259,3 @@
 	</table>
 	@endif
 </body>
-</html>
