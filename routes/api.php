@@ -17,7 +17,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 Route::post('/create-collection', [RekognitionController::class, 'createPatientsCollection']);
-Route::post('/compare-faces', [FacialRecognitionController::class, 'compareTwoFaces']);
 Route::post('/delete-collection', [RekognitionController::class, 'deletePatientsCollection']);
 Route::post('/list-faces', [RekognitionController::class, 'listFacesFromPatientsCollection']);
 Route::post('/search-face', [RekognitionController::class, 'searchFacesByImage']);
